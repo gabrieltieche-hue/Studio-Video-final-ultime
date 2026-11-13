@@ -15,8 +15,11 @@ import {
   Volume2,
   VolumeX,
   Zap,
+  Sparkles,
+  Film,
 } from 'lucide-react';
 import { ShortStage } from './components/short/ShortStage';
+import { TopicResearchView } from './components/TopicResearchView';
 import {
   BEATS,
   DEFAULT_PLAYBACK_SPEED,
@@ -40,6 +43,7 @@ export default function App() {
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('renderMode') === '1';
 
   const [t, setT] = useState(0);
+  const [viewMode, setViewMode] = useState<'player' | 'research'>('player');
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed] = useState(DEFAULT_PLAYBACK_SPEED);
   const [lookId, setLookId] = useState<LookId>('papier');
@@ -235,7 +239,7 @@ export default function App() {
 
   // Keyboard shortcuts (Space: play/pause, Left/Right: scrub 1s)
   useEffect(() => {
-    if (isRenderMode) return;
+    if (isRenderMode || viewMode !== 'player') return;
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -252,7 +256,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isRenderMode, handleTogglePlay, handleSeek]);
+  }, [isRenderMode, viewMode, handleTogglePlay, handleSeek]);
 
   // Pure full-bleed 1080x1920 stage for deterministic MP4 capture & visual QA
   if (isRenderMode) {
@@ -269,8 +273,60 @@ export default function App() {
   const displayDuration = SHORT_DURATION / speed;
 
   return (
-    <div className="min-h-screen bg-[#F6F5F1] text-[#14161B] flex flex-col items-center justify-center px-4 py-3 sm:py-4">
-      <main className="w-full max-w-[420px] flex flex-col items-center gap-3">
+    <div className="min-h-screen bg-[#F6F5F1] text-[#14161B] flex flex-col">
+      {/* Compact Studio Navigation Bar */}
+      <header className="w-full border-b border-[#E3DED3] bg-[#FCFBF8]">
+        <div className="max-w-[1160px] mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
+          <span
+            className="text-sm sm:text-base font-extrabold tracking-tight text-[#14161B] whitespace-nowrap shrink-0"
+            style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+          >
+            Studio Short
+          </span>
+
+          <nav aria-label="Modes du studio" className="inline-flex items-center gap-1 p-1 bg-[#EAE7DF] rounded-xl min-w-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('player')}
+              aria-pressed={viewMode === 'player'}
+              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'player'
+                  ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                  : 'text-[#5C5F68] hover:text-[#14161B]'
+              }`}
+            >
+              <Film className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span className="sm:hidden">Lecteur</span>
+              <span className="hidden sm:inline">Lecteur Short</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsPlaying(false);
+                setViewMode('research');
+              }}
+              aria-pressed={viewMode === 'research'}
+              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'research'
+                  ? 'bg-[#258EFF] text-white shadow-sm'
+                  : 'text-[#5C5F68] hover:text-[#14161B]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span className="sm:hidden">Veille &amp; CSV</span>
+              <span className="hidden sm:inline">Créer un Short · Veille &amp; CSV</span>
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {viewMode === 'research' ? (
+        <main className="flex-1">
+          <TopicResearchView />
+        </main>
+      ) : (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 sm:py-3">
+      <main className="w-full max-w-[400px] flex flex-col items-center gap-2.5">
         {/* Minimal Title Line */}
         <div className="w-full flex items-center justify-between gap-3 px-1">
           <div className="min-w-0">
@@ -290,7 +346,7 @@ export default function App() {
         </div>
 
         {/* 9:16 Short Stage Preview sized to stay above the fold */}
-        <div className="w-[300px] sm:w-[340px] mx-auto">
+        <div className="w-[276px] sm:w-[300px] mx-auto">
           <ShortStage t={t} look={look} showSafeZones={false} />
         </div>
 
@@ -415,6 +471,8 @@ export default function App() {
           )}
         </div>
       </main>
+      </div>
+      )}
     </div>
   );
 }

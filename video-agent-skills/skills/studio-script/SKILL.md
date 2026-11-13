@@ -9,6 +9,15 @@ allowed-tools: Bash(grep *) Bash(perl -CSD -pi -e *) Bash(yt-dlp *) Bash(treg ca
 
 Scripts that sound like the creator on their best day: short, concrete, with a hook that earns the next 30 seconds. Everything comes from their real week and their own words. Nothing is invented.
 
+## 0. Mandatory Deep Research & CSV Update (Every Creation Request)
+
+Whenever the user asks to create a new Short (with or without a suggested topic), **STOP and execute Step 0 first** (see `video-agent/topic-research-rules.md`):
+
+1. Read `video-agent/shorts-topics.csv` to avoid repeating any already-covered or selected theme.
+2. Run deep web research across **5 French viral pillars**: **Actualité France**, **IA**, **Business / Pouvoir d'achat**, **Politique / Régulation**, and **Conseils de vie / Productivité**.
+3. Score at least 5 researched candidates (`score_viral_fr`, `score_actualite`, `score_save_share`) based on French TikTok / Instagram Reels / YouTube Shorts virality.
+4. **Autonomously select the #1 winning theme** (`statut = Retenu (Choix IA)`), append all session candidates (`REQ-YYYY-MM-DD-XX`) to `video-agent/shorts-topics.csv`, and then write the Short on that winning theme (updating `statut` to `Produit` once finished).
+
 ## Before writing
 
 Read, in this order:

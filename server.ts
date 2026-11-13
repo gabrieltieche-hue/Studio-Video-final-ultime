@@ -6,6 +6,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createServer as createViteServer } from 'vite';
+import {
+  readTopicsCsv,
+  runDeepTopicResearchAndUpdateCsv,
+  updateTopicStatus,
+} from './src/engine/topicResearchService';
+import type { TopicStatus } from './src/engine/topicCsv';
 
 dotenv.config();
 
@@ -49,6 +55,57 @@ async function ensureRenderedMp4(): Promise<string> {
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
+
+  // Read or download the live CSV table of researched & produced Shorts (video-agent/shorts-topics.csv)
+  app.get('/api/topics-csv', (req, res) => {
+    try {
+      const { rows, rawCsv } = readTopicsCsv(__dirname);
+      if (req.query.format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="shorts-topics.csv"');
+        res.setHeader('Cache-Control', 'no-store');
+        res.send(`\uFEFF${rawCsv}`);
+        return;
+      }
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({ rows, rawCsv });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur de lecture du tableau CSV.',
+      });
+    }
+  });
+
+  // Step 0: Deep multi-pillar research + autonomous viral theme selection + CSV append
+  app.post('/api/topics/research', async (req, res) => {
+    try {
+      const { focus } = (req.body || {}) as { focus?: string };
+      const result = await runDeepTopicResearchAndUpdateCsv(__dirname, focus);
+      res.json(result);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Erreur lors de la recherche multi-thèmes.';
+      const status = message.includes('GEMINI_API_KEY') ? 503 : 500;
+      res.status(status).json({ error: message });
+    }
+  });
+
+  // Update a topic status inside video-agent/shorts-topics.csv
+  app.patch('/api/topics/:id/status', (req, res) => {
+    try {
+      const { statut } = (req.body || {}) as { statut?: TopicStatus };
+      if (!statut || !['Produit', 'Retenu (Choix IA)', 'Candidat'].includes(statut)) {
+        res.status(400).json({ error: 'Statut CSV invalide.' });
+        return;
+      }
+      const rows = updateTopicStatus(__dirname, req.params.id, statut);
+      res.json({ rows });
+    } catch (err) {
+      res.status(404).json({
+        error: err instanceof Error ? err.message : 'Impossible de mettre à jour le statut.',
+      });
+    }
+  });
 
   // Server-side ElevenLabs TTS proxy (keeps ELEVENLABS_API_KEY strictly on backend)
   app.post('/api/tts', async (req, res) => {
