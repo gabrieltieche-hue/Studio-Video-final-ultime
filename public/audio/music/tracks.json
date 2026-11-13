@@ -1,0 +1,26 @@
+[
+  {
+    "id": "enquete",
+    "name": "Enquête",
+    "mood": "tension",
+    "bpm": 90,
+    "desc": "Drone grave, pulse filtré, battement de coeur, piano feutré",
+    "dur": 155.3
+  },
+  {
+    "id": "arpege",
+    "name": "Arpège sombre",
+    "mood": "tension",
+    "bpm": 96,
+    "desc": "Arpège synthé qui s'ouvre lentement, basse pulsée, lead lointain",
+    "dur": 147
+  },
+  {
+    "id": "thriller",
+    "name": "Thriller",
+    "mood": "tension",
+    "bpm": 84,
+    "desc": "Ostinato staccato en 3-3-2, impacts graves lointains, piano sombre",
+    "dur": 156.6
+  }
+]

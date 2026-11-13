@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "name": "Papier Signature · Melvynx",
+  "creator": {
+    "name": "Studio Short FR",
+    "handle": "@melvynxdev",
+    "lang": "fr",
+    "voiceProvider": "elevenlabs",
+    "voiceId": "TX3LPaxmHKxFdv7VOQHJ"
+  },
+  "colors": {
+    "paper": "#F1EEE6",
+    "sheet": "#FCFBF8",
+    "ink": "#14161B",
+    "ink2": "#5C5F68",
+    "ink3": "#A19F98",
+    "line": "#E3DED3",
+    "accent": "#258EFF",
+    "onAccent": "#FFFFFF"
+  },
+  "captions": {
+    "style": "rise",
+    "groupedContainer": true,
+    "perWordBoxes": false,
+    "size": 76,
+    "maxWords": 4,
+    "maxChars": 22,
+    "straddle": true
+  },
+  "layout": {
+    "frame": { "bleed": true, "r": 32, "border": 0, "shadow": 40 },
+    "seam": 1160
+  },
+  "display": {
+    "font": "Bricolage Grotesque",
+    "weight": 800,
+    "flat": true
+  },
+  "pace": {
+    "speed": 1.2,
+    "targetDurationSec": [45, 55],
+    "tighten": { "sentence": 0.08, "comma": 0.05, "word": 0.03 }
+  },
+  "music": {
+    "bed": "upbeat",
+    "src": "assets/music/upbeat.mp3",
+    "offset": 0
+  },
+  "mix": {
+    "music": -16,
+    "musicGain": 0.16,
+    "sfx": -18,
+    "duck": 0.65
+  },
+  "cta": {
+    "type": "subscribe",
+    "label": "Abonne-toi pour suivre toute l'actualité tech"
+  },
+  "qa": {
+    "visualStoryboard": true,
+    "audioClockSync": true,
+    "singleCaptionContainer": true
+  },
+  "sfx": {
+    "swish": 0,
+    "accents": 0
+  }
+}

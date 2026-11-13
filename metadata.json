@@ -1,0 +1,6 @@
+{
+  "name": "Studio Short · video-agent-skills",
+  "description": "Analyse du repo melvynx/video-agent-skills, décryptage du style YouTube Shorts de @melvynxdev et moteur de motion design interactif sur l'interdiction des réseaux sociaux aux moins de 15 ans.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

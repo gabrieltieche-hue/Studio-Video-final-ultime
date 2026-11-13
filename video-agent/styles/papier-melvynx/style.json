@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "name": "Papier Signature · Melvynx",
+  "creator": {
+    "name": "Studio Short FR",
+    "handle": "@melvynxdev",
+    "lang": "fr",
+    "niche": "Tech, IA & Société numérique",
+    "voiceProvider": "elevenlabs",
+    "voiceId": "TX3LPaxmHKxFdv7VOQHJ"
+  },
+  "colors": {
+    "paper": "#F1EEE6",
+    "sheet": "#FCFBF8",
+    "ink": "#14161B",
+    "ink2": "#5C5F68",
+    "ink3": "#A19F98",
+    "line": "#E3DED3",
+    "accent": "#258EFF",
+    "onAccent": "#FFFFFF"
+  },
+  "captions": {
+    "style": "rise",
+    "groupedContainer": true,
+    "perWordBoxes": false,
+    "size": 76,
+    "maxWords": 4,
+    "maxChars": 22,
+    "straddle": true,
+    "blur": false
+  },
+  "paper": {
+    "grain": 1.2,
+    "tooth": 1,
+    "depth": 1.7,
+    "logos": "flat"
+  },
+  "layout": {
+    "frame": { "bleed": true, "r": 32, "border": 0, "shadow": 40 },
+    "seam": 1160
+  },
+  "display": {
+    "font": "Bricolage Grotesque",
+    "weight": 800,
+    "text": "Bricolage Grotesque",
+    "title": "ink2",
+    "flat": true
+  },
+  "font": {
+    "family": "Bricolage Grotesque"
+  },
+  "pace": {
+    "speed": 1.2,
+    "targetDurationSec": [45, 55],
+    "tighten": { "sentence": 0.08, "comma": 0.05, "word": 0.03, "lead": 0.03, "tail": 0.8 }
+  },
+  "music": {
+    "bed": "upbeat",
+    "src": "assets/music/upbeat.mp3",
+    "offset": 0
+  },
+  "mix": {
+    "music": -16,
+    "musicGain": 0.16,
+    "sfx": -18,
+    "duck": 0.65
+  },
+  "cta": {
+    "type": "subscribe",
+    "label": "Abonne-toi pour suivre toute l'actualité tech"
+  },
+  "sfx": {
+    "swish": 0,
+    "accents": 0
+  },
+  "notes": [
+    "Hook visuel en 2 actes dès la frame 0 (verrou parental -> explosion à 3.39s)",
+    "Sous-titres en conteneur de phrase unique (perWordBoxes: false)",
+    "Voix off ElevenLabs FR Liam (TX3LPaxmHKxFdv7VOQHJ) + Bright Corporate Groove (upbeat.mp3, gain 0.16)",
+    "Durée cible 45 à 55 secondes (~54.2 s à 1.20x) synchronisée sur AudioContext.currentTime",
+    "CTA fin : Abonnement + Cloche (@melvynxdev), sans mot-clé en commentaire",
+    "Vérification visuelle storyboard 8 beats + export MP4 HD 1080x1920 obligatoire"
+  ]
+}

@@ -1,0 +1,156 @@
+import express from 'express';
+import dotenv from 'dotenv';
+import fs from 'node:fs';
+import { execFile } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { createServer as createViteServer } from 'vite';
+
+dotenv.config();
+
+const execFileAsync = promisify(execFile);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PORT = Number(process.env.PORT) || 3000;
+
+const DEFAULT_FREE_VOICE_ID = 'TX3LPaxmHKxFdv7VOQHJ'; // Liam — Energetic, Social Media Creator (Free Plan premade API)
+
+function resolveVoiceId(candidate?: string): string {
+  const cleaned = typeof candidate === 'string' ? candidate.trim() : '';
+  return /^[A-Za-z0-9]{15,32}$/.test(cleaned) ? cleaned : DEFAULT_FREE_VOICE_ID;
+}
+
+const MP4_PATH = path.resolve(__dirname, 'public/video/short-interdiction-15-ans.mp4');
+let activeRenderPromise: Promise<void> | null = null;
+
+async function ensureRenderedMp4(): Promise<string> {
+  if (fs.existsSync(MP4_PATH) && fs.statSync(MP4_PATH).size > 500_000) {
+    return MP4_PATH;
+  }
+  if (!activeRenderPromise) {
+    activeRenderPromise = execFileAsync(
+      process.execPath,
+      [path.resolve(__dirname, 'scripts/render-mp4.mjs')],
+      {
+        cwd: __dirname,
+        env: { ...process.env, RENDER_URL: `http://127.0.0.1:${PORT}/?renderMode=1` },
+        timeout: 240_000,
+      }
+    )
+      .then(() => undefined)
+      .finally(() => {
+        activeRenderPromise = null;
+      });
+  }
+  await activeRenderPromise;
+  return MP4_PATH;
+}
+
+async function startServer() {
+  const app = express();
+  app.use(express.json({ limit: '1mb' }));
+
+  // Server-side ElevenLabs TTS proxy (keeps ELEVENLABS_API_KEY strictly on backend)
+  app.post('/api/tts', async (req, res) => {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ error: 'ELEVENLABS_API_KEY non configurée sur le serveur.' });
+      return;
+    }
+
+    const { text, voiceId } = req.body as { text?: string; voiceId?: string };
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      res.status(400).json({ error: 'Texte requis pour la synthèse vocale.' });
+      return;
+    }
+
+    const requestedVoice = resolveVoiceId(voiceId || process.env.ELEVENLABS_VOICE_ID);
+    const callTts = (vId: string) =>
+      fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(vId)}/with-timestamps`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          text: text.slice(0, 1200),
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.42,
+            similarity_boost: 0.78,
+            style: 0.25,
+            use_speaker_boost: true,
+          },
+        }),
+      });
+
+    try {
+      let activeVoice = requestedVoice;
+      let upstream = await callTts(activeVoice);
+
+      // Automatic fallback to Free Plan premade voice if a custom/paid voice ID fails with 402/404
+      if ((upstream.status === 402 || upstream.status === 404) && activeVoice !== DEFAULT_FREE_VOICE_ID) {
+        activeVoice = DEFAULT_FREE_VOICE_ID;
+        upstream = await callTts(activeVoice);
+      }
+
+      if (!upstream.ok) {
+        const errText = await upstream.text();
+        res.status(upstream.status).json({ error: errText });
+        return;
+      }
+
+      const data = await upstream.json();
+      res.json({
+        audioBase64: data.audio_base64,
+        alignment: data.normalized_alignment || data.alignment,
+        voiceId: activeVoice,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erreur ElevenLabs' });
+    }
+  });
+
+  // Check MP4 availability
+  app.get('/api/download-mp4/status', (_req, res) => {
+    const exists = fs.existsSync(MP4_PATH) && fs.statSync(MP4_PATH).size > 500_000;
+    const size = exists ? fs.statSync(MP4_PATH).size : 0;
+    res.json({ ready: exists, sizeBytes: size });
+  });
+
+  // High-quality 1080x1920 MP4 download endpoint (pre-rendered on disk, instant browser download)
+  app.get('/api/download-mp4', async (_req, res) => {
+    try {
+      const mp4File = await ensureRenderedMp4();
+      const stat = fs.statSync(mp4File);
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Length', String(stat.size));
+      res.setHeader('Content-Disposition', 'attachment; filename="short-interdiction-15-ans-hd.mp4"');
+      res.setHeader('Cache-Control', 'no-store');
+      fs.createReadStream(mp4File).pipe(res);
+    } catch (err) {
+      res.status(500).send(err instanceof Error ? err.message : 'Erreur de rendu MP4');
+    }
+  });
+
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distDir = path.resolve(__dirname, 'dist');
+    app.use(express.static(distDir));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distDir, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Studio Short server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
