@@ -85,3 +85,40 @@ test('socialStorage issues and resolves expiring public media tokens', () => {
   assert.equal(socialStorage.resolvePublicMediaDir(token), '/tmp/pack-dir');
   assert.equal(socialStorage.resolvePublicMediaDir('invalid-token'), null);
 });
+
+test('socialStorage persists channel branding kit and enforces platform char limits', () => {
+  const saved = socialStorage.saveChannelBrandingKit({
+    brandName: 'Studio Décode FR',
+    handle: 'studiodecode.fr',
+    tiktokBio: 'X'.repeat(120),
+    instagramBio: 'Y'.repeat(200),
+  });
+  assert.equal(saved.brandName, 'Studio Décode FR');
+  assert.equal(saved.handle, '@studiodecode.fr');
+  assert.equal(saved.tiktokBio.length, 80);
+  assert.equal(saved.instagramBio.length, 150);
+
+  const reloaded = socialStorage.getChannelBrandingKit();
+  assert.equal(reloaded.brandName, 'Studio Décode FR');
+});
+
+test('buildRailwayEnvBlock includes persistent /app/storage and conditionally embeds Treg token', () => {
+  const safeBlock = socialStorage.buildRailwayEnvBlock({
+    tregToken: 'treg_secret_123',
+    tregOrg: 'hermes-77',
+    includeTregToken: false,
+    elevenLabsConfigured: true,
+    geminiConfigured: true,
+  });
+  assert.equal(safeBlock.includes('treg_secret_123'), false);
+  assert.equal(safeBlock.includes('STORAGE_DIR=/app/storage'), true);
+
+  const fullBlock = socialStorage.buildRailwayEnvBlock({
+    tregToken: 'treg_secret_123',
+    tregOrg: 'hermes-77',
+    includeTregToken: true,
+  });
+  assert.equal(fullBlock.includes('TREG_TOKEN=treg_secret_123'), true);
+  assert.equal(fullBlock.includes('TREG_ORG=hermes-77'), true);
+});
+

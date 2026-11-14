@@ -22,6 +22,7 @@ import { seedFlagshipProjectIfMissing } from './src/server/seedFlagshipProject';
 import { createStudioRouter } from './src/server/studioRouter';
 import { createSocialRouter } from './src/server/socialRouter';
 import { startSocialScheduler } from './src/server/socialPublisher';
+import { readTregSession, syncTregConnections } from './src/server/tregClient';
 
 dotenv.config();
 
@@ -236,6 +237,11 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Studio Short server running on http://localhost:${PORT}`);
+    if (readTregSession()?.token) {
+      void syncTregConnections().catch(() => {
+        // non-fatal startup sync
+      });
+    }
     startSocialScheduler();
   });
 }

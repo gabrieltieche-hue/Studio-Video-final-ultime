@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { STORAGE_DIR, initStorage } from './storageManager';
 import type {
+  ChannelBrandingKit,
   PublishLogEntry,
   ScheduledPostItem,
   SchedulerState,
@@ -19,6 +20,7 @@ export const SOCIAL_QUEUE_FILE = path.join(SOCIAL_DIR, 'queue.json');
 export const SOCIAL_LOGS_FILE = path.join(SOCIAL_DIR, 'logs.json');
 export const SOCIAL_SCHEDULER_FILE = path.join(SOCIAL_DIR, 'scheduler.json');
 export const SOCIAL_MEDIA_TOKENS_FILE = path.join(SOCIAL_DIR, 'media-tokens.json');
+export const SOCIAL_BRANDING_FILE = path.join(SOCIAL_DIR, 'branding.json');
 
 export function initSocialStorage(): void {
   initStorage();
@@ -319,4 +321,116 @@ export function resolvePublicMediaDir(token: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function getDefaultBrandingKit(): ChannelBrandingKit {
+  return {
+    brandName: 'Alex Décode',
+    handle: '@alex.decode',
+    tagline: 'Tech, IA & Décryptages · 1 Short clair par jour',
+    youtubeDescription:
+      'Décryptages Tech, IA, lois numériques et écrans en moins de 60 secondes.\n\nChaque semaine, un sujet d’actualité décortiqué avec chiffres sourcés et visuels clairs — sans jargon ni sensationnalisme.\n\nAbonne-toi et active la cloche pour ne rater aucun épisode.\nChaîne sœur : @alex.decode',
+    instagramBio:
+      'Décryptages Tech, IA & Société en 60s ⚡\nCe que les algorithmes ne te montrent pas.\n👇 Dernier épisode',
+    tiktokBio: 'Tech, IA & Décryptages en 60s ⚡ Le numérique sans jargon.',
+    avatarUrl: '/brand/avatar-alex-decode.jpg',
+    bannerUrl: '/brand/banner-youtube-alex-decode.jpg',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function getChannelBrandingKit(): ChannelBrandingKit {
+  initSocialStorage();
+  const defaults = getDefaultBrandingKit();
+  if (!fs.existsSync(SOCIAL_BRANDING_FILE)) {
+    return defaults;
+  }
+  try {
+    const parsed = JSON.parse(
+      fs.readFileSync(SOCIAL_BRANDING_FILE, 'utf-8')
+    ) as Partial<ChannelBrandingKit>;
+    return {
+      ...defaults,
+      ...parsed,
+      tiktokBio: (parsed.tiktokBio || defaults.tiktokBio).slice(0, 80),
+      instagramBio: (parsed.instagramBio || defaults.instagramBio).slice(0, 150),
+      youtubeDescription: (parsed.youtubeDescription || defaults.youtubeDescription).slice(0, 1000),
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+export function saveChannelBrandingKit(
+  patch: Partial<ChannelBrandingKit>
+): ChannelBrandingKit {
+  const current = getChannelBrandingKit();
+  const next: ChannelBrandingKit = {
+    ...current,
+    ...(typeof patch.brandName === 'string' && patch.brandName.trim()
+      ? { brandName: patch.brandName.trim().slice(0, 50) }
+      : {}),
+    ...(typeof patch.handle === 'string' && patch.handle.trim()
+      ? {
+          handle: patch.handle.trim().startsWith('@')
+            ? patch.handle.trim().slice(0, 35)
+            : `@${patch.handle.trim().slice(0, 34)}`,
+        }
+      : {}),
+    ...(typeof patch.tagline === 'string'
+      ? { tagline: patch.tagline.trim().slice(0, 120) }
+      : {}),
+    ...(typeof patch.youtubeDescription === 'string'
+      ? { youtubeDescription: patch.youtubeDescription.trim().slice(0, 1000) }
+      : {}),
+    ...(typeof patch.instagramBio === 'string'
+      ? { instagramBio: patch.instagramBio.trim().slice(0, 150) }
+      : {}),
+    ...(typeof patch.tiktokBio === 'string'
+      ? { tiktokBio: patch.tiktokBio.trim().slice(0, 80) }
+      : {}),
+    ...(typeof patch.avatarUrl === 'string' && patch.avatarUrl.trim()
+      ? { avatarUrl: patch.avatarUrl.trim() }
+      : {}),
+    ...(typeof patch.bannerUrl === 'string' && patch.bannerUrl.trim()
+      ? { bannerUrl: patch.bannerUrl.trim() }
+      : {}),
+    updatedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(SOCIAL_BRANDING_FILE, JSON.stringify(next, null, 2), 'utf-8');
+  return next;
+}
+
+export function buildRailwayEnvBlock(params: {
+  tregToken?: string;
+  tregOrg?: string;
+  includeTregToken?: boolean;
+  cronSecret?: string;
+  elevenLabsConfigured?: boolean;
+  geminiConfigured?: boolean;
+}): string {
+  const lines = [
+    'NODE_ENV=production',
+    'PORT=3000',
+    'STORAGE_DIR=/app/storage',
+    'ALWAYS_ON_SERVER=true',
+    '',
+    '# Clés IA (à copier depuis votre panneau Secrets AI Studio / ElevenLabs)',
+    `ELEVENLABS_API_KEY=${params.elevenLabsConfigured ? '<COLLEZ_VOTRE_CLE_ELEVENLABS_ICI>' : '<VOTRE_CLE_ELEVENLABS>'}`,
+    `GEMINI_API_KEY=${params.geminiConfigured ? '<COLLEZ_VOTRE_CLE_GEMINI_ICI>' : '<VOTRE_CLE_GEMINI>'}`,
+    '',
+    '# Session Treg (YouTube + Instagram + TikTok déjà connectés)',
+  ];
+
+  if (params.includeTregToken && params.tregToken) {
+    lines.push(`TREG_TOKEN=${params.tregToken}`);
+  } else {
+    lines.push('TREG_TOKEN=<COCHEZ_INCLURE_SESSION_OU_CONNECTEZ_SUR_RAILWAY>');
+  }
+  lines.push(`TREG_ORG=${params.tregOrg || ''}`);
+
+  if (params.cronSecret) {
+    lines.push('', `CRON_SECRET=${params.cronSecret}`);
+  }
+  return lines.join('\n');
 }

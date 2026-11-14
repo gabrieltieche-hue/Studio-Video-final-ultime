@@ -1,11 +1,14 @@
 import express, { type Request, type Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProject } from './storageManager';
+import { GoogleGenAI } from '@google/genai';
+import { getAllProjects, getProject } from './storageManager';
 import {
   SOCIAL_PACKS_DIR,
   appendPublishLog,
+  buildRailwayEnvBlock,
   deleteScheduledPost,
+  getChannelBrandingKit,
   getPublishLogs,
   getRawSocialAccounts,
   getScheduledPost,
@@ -14,6 +17,7 @@ import {
   initSocialStorage,
   isPlatformOAuthConfigured,
   resolvePublicMediaDir,
+  saveChannelBrandingKit,
   saveRawSocialAccount,
   saveSchedulerState,
   toPublicAccountConfig,
@@ -34,10 +38,13 @@ import {
 } from './socialPublisher';
 import {
   clearTregSession,
+  fetchLiveChannelProfiles,
   getTregSessionPublic,
   loginTregWithToken,
   pollTregBrowserLogin,
   pollTregProviderOAuth,
+  pushYouTubeDescriptionDirect,
+  readTregSession,
   startTregBrowserLogin,
   startTregEmailLogin,
   startTregProviderOAuth,
@@ -557,6 +564,103 @@ export function createSocialRouter(): express.Router {
       }
     }
   );
+
+  // Channel Branding Kit & Live Profile Diagnostics
+  router.get('/api/social/branding', async (_req: Request, res: Response) => {
+    try {
+      const kit = getChannelBrandingKit();
+      const liveProfiles = await fetchLiveChannelProfiles();
+      res.json({ kit, liveProfiles });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur lecture branding chaînes',
+      });
+    }
+  });
+
+  router.patch('/api/social/branding', (req: Request, res: Response) => {
+    const kit = saveChannelBrandingKit(req.body || {});
+    res.json({ success: true, kit });
+  });
+
+  router.post('/api/social/branding/suggest', async (req: Request, res: Response) => {
+    const body = (req.body || {}) as { focus?: string };
+    const current = getChannelBrandingKit();
+    const projects = getAllProjects();
+    const sampleTitles = projects
+      .slice(0, 5)
+      .map((p) => p.title)
+      .join(' | ');
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+
+    if (!apiKey) {
+      res.json({ kit: current, generatedBy: 'template' });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `Tu es directeur de marque pour un créateur vidéo francophone de Shorts / Reels / TikTok.
+Sujets actuels des vidéos : ${sampleTitles || 'Décryptages Tech, IA & Société'}.
+Précision utilisateur éventuelle : ${body.focus || 'Même style percutant, visuel papier éditorial, clair et sourcé.'}
+
+Propose un branding unifié cohérent en français en JSON strict avec exactement ces clés :
+- brandName (court, mémorable, <= 24 caractères, ex: "Alex Décode")
+- handle (format "@nom.court", <= 20 caractères)
+- tagline (<= 80 caractères)
+- youtubeDescription (3 paragraphes propres, SEO français, <= 700 caractères)
+- instagramBio (3 lignes courtes avec 1 emoji discret max, STRICTEMENT <= 145 caractères)
+- tiktokBio (1 phrase percutante, STRICTEMENT <= 78 caractères)`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' },
+      });
+      const parsed = JSON.parse(response.text || '{}') as Partial<{
+        brandName: string;
+        handle: string;
+        tagline: string;
+        youtubeDescription: string;
+        instagramBio: string;
+        tiktokBio: string;
+      }>;
+      const saved = saveChannelBrandingKit(parsed);
+      res.json({ kit: saved, generatedBy: 'gemini' });
+    } catch {
+      res.json({ kit: current, generatedBy: 'template' });
+    }
+  });
+
+  router.post('/api/social/branding/apply-youtube', async (_req: Request, res: Response) => {
+    try {
+      const kit = getChannelBrandingKit();
+      const updated = await pushYouTubeDescriptionDirect(kit.youtubeDescription);
+      res.json({ success: true, ...updated });
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Mise à jour YouTube impossible.',
+      });
+    }
+  });
+
+  router.post('/api/social/deploy/railway-env', (req: Request, res: Response) => {
+    const body = (req.body || {}) as { includeTregSession?: boolean };
+    const session = readTregSession();
+    const envBlock = buildRailwayEnvBlock({
+      tregToken: session?.token,
+      tregOrg: session?.activeOrg,
+      includeTregToken: Boolean(body.includeTregSession),
+      cronSecret: process.env.CRON_SECRET,
+      elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
+      geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    });
+    res.json({
+      envBlock,
+      hasTregSession: Boolean(session?.token),
+      tregOrg: session?.activeOrg || null,
+    });
+  });
 
   router.post('/api/social/treg/logout', (_req: Request, res: Response) => {
     clearTregSession();

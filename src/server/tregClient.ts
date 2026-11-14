@@ -11,6 +11,7 @@ import {
 } from './socialStorage';
 import { truncateForYouTubeTitle } from '../engine/socialCopy';
 import type {
+  LiveChannelProfileSnapshot,
   PreparedMediaAssets,
   ScheduledPostItem,
   SocialAccountSecretRecord,
@@ -929,3 +930,237 @@ export async function publishViaTregHttp(
     inboxOnly: isInbox,
   };
 }
+
+export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnapshot[]> {
+  const session = readTregSession();
+  const rawAccounts = getRawSocialAccounts();
+  const snapshots: LiveChannelProfileSnapshot[] = [];
+
+  // 1. YouTube
+  const ytAcc = rawAccounts.youtube;
+  let ytSnapshot: LiveChannelProfileSnapshot = {
+    platform: 'youtube',
+    connected: Boolean(ytAcc.connected || session?.connections?.some((c) => c.platform === 'youtube')),
+    liveName: ytAcc.accountName,
+    liveHandle: ytAcc.accountHandle,
+    liveAvatarUrl: ytAcc.avatarUrl,
+    canAutoUpdateViaApi: Boolean(ytAcc.route === 'oauth' && ytAcc.accessToken),
+    apiNote:
+      ytAcc.route === 'oauth' && ytAcc.accessToken
+        ? 'Description modifiable en 1 clic via OAuth Direct. Le nom, @handle et photo se modifient sur YouTube Studio.'
+        : 'Nom, description, @handle et photo se modifient sur YouTube Studio (Google bloque le renommage via API).',
+    editProfileUrl: 'https://studio.youtube.com/channel/UC/editing/details',
+  };
+  if (ytAcc.route === 'oauth' && ytAcc.accessToken) {
+    try {
+      const ytRes = await fetch(
+        'https://www.googleapis.com/youtube/v3/channels?part=snippet,brandingSettings,statistics&mine=true',
+        { headers: { Authorization: `Bearer ${ytAcc.accessToken}` } }
+      );
+      if (ytRes.ok) {
+        const ytData = (await ytRes.json()) as {
+          items?: Array<{
+            id?: string;
+            snippet?: {
+              title?: string;
+              customUrl?: string;
+              description?: string;
+              thumbnails?: { default?: { url?: string } };
+            };
+            statistics?: { subscriberCount?: string; videoCount?: string };
+          }>;
+        };
+        const ch = ytData.items?.[0];
+        if (ch?.snippet) {
+          ytSnapshot = {
+            ...ytSnapshot,
+            connected: true,
+            liveName: ch.snippet.title || ytSnapshot.liveName,
+            liveHandle: ch.snippet.customUrl || ytSnapshot.liveHandle,
+            liveBio: ch.snippet.description || ytSnapshot.liveBio,
+            liveAvatarUrl: ch.snippet.thumbnails?.default?.url || ytSnapshot.liveAvatarUrl,
+            followersCount: ch.statistics?.subscriberCount
+              ? Number(ch.statistics.subscriberCount)
+              : undefined,
+            mediaCount: ch.statistics?.videoCount ? Number(ch.statistics.videoCount) : undefined,
+            editProfileUrl: ch.id
+              ? `https://studio.youtube.com/channel/${ch.id}/editing/details`
+              : ytSnapshot.editProfileUrl,
+          };
+        }
+      }
+    } catch {
+      // ignore read failure
+    }
+  } else if (session?.token && ytSnapshot.connected) {
+    try {
+      const ytRes = await tregFetch('/call/youtube.youtube.channel.profile', {
+        method: 'GET',
+        session,
+        query: { part: 'snippet,statistics', mine: true },
+      });
+      if (ytRes.status === 200) {
+        const ytData = parseJsonSafe<{
+          items?: Array<{
+            id?: string;
+            snippet?: {
+              title?: string;
+              customUrl?: string;
+              description?: string;
+              thumbnails?: { default?: { url?: string } };
+            };
+            statistics?: { subscriberCount?: string; videoCount?: string };
+          }>;
+        }>(ytRes.text);
+        const ch = ytData?.items?.[0];
+        if (ch?.snippet) {
+          ytSnapshot = {
+            ...ytSnapshot,
+            liveName: ch.snippet.title || ytSnapshot.liveName,
+            liveHandle: ch.snippet.customUrl || ytSnapshot.liveHandle,
+            liveBio: ch.snippet.description,
+            liveAvatarUrl: ch.snippet.thumbnails?.default?.url,
+            followersCount: ch.statistics?.subscriberCount
+              ? Number(ch.statistics.subscriberCount)
+              : undefined,
+            mediaCount: ch.statistics?.videoCount ? Number(ch.statistics.videoCount) : undefined,
+            editProfileUrl: ch.id
+              ? `https://studio.youtube.com/channel/${ch.id}/editing/details`
+              : ytSnapshot.editProfileUrl,
+          };
+        }
+      }
+    } catch {
+      // quota or read-only fallback
+    }
+  }
+  snapshots.push(ytSnapshot);
+
+  // 2. Instagram
+  const igAcc = rawAccounts.instagram;
+  const igUserId = igAcc.igUserId || igAcc.tregResourceRef;
+  let igSnapshot: LiveChannelProfileSnapshot = {
+    platform: 'instagram',
+    connected: Boolean(
+      igAcc.connected || session?.connections?.some((c) => c.platform === 'instagram')
+    ),
+    liveName: igAcc.accountName,
+    liveHandle: igAcc.accountHandle,
+    liveAvatarUrl: igAcc.avatarUrl,
+    canAutoUpdateViaApi: false,
+    apiNote:
+      'Meta interdit le changement de pseudo, bio et photo de profil par API — utilisez les boutons Copier/Télécharger puis collez dans Modifier le profil.',
+    editProfileUrl: 'https://www.instagram.com/accounts/edit/',
+  };
+  if (session?.token && igUserId) {
+    try {
+      const igRes = await tregFetch('/call/instagram.instagram.user.profile', {
+        method: 'GET',
+        session,
+        query: {
+          ig_user_id: igUserId,
+          fields: 'id,username,name,biography,profile_picture_url,followers_count,media_count',
+        },
+      });
+      if (igRes.status === 200) {
+        const igData = parseJsonSafe<{
+          username?: string;
+          name?: string;
+          biography?: string;
+          profile_picture_url?: string;
+          followers_count?: number;
+          media_count?: number;
+        }>(igRes.text);
+        if (igData?.username || igData?.name) {
+          igSnapshot = {
+            ...igSnapshot,
+            connected: true,
+            liveName: igData.name || igSnapshot.liveName,
+            liveHandle: igData.username ? `@${igData.username.replace(/^@/, '')}` : igSnapshot.liveHandle,
+            liveBio: igData.biography,
+            liveAvatarUrl: igData.profile_picture_url || igSnapshot.liveAvatarUrl,
+            followersCount: igData.followers_count,
+            mediaCount: igData.media_count,
+          };
+        }
+      }
+    } catch {
+      // keep cached metadata
+    }
+  }
+  snapshots.push(igSnapshot);
+
+  // 3. TikTok
+  const ttAcc = rawAccounts.tiktok;
+  const ttSnapshot: LiveChannelProfileSnapshot = {
+    platform: 'tiktok',
+    connected: Boolean(ttAcc.connected || session?.connections?.some((c) => c.platform === 'tiktok')),
+    liveName: ttAcc.accountName,
+    liveHandle: ttAcc.accountHandle,
+    liveAvatarUrl: ttAcc.avatarUrl,
+    canAutoUpdateViaApi: false,
+    apiNote:
+      'TikTok interdit la modification du nom, @handle, bio et avatar par API — utilisez les boutons Copier/Télécharger puis collez dans Modifier le profil.',
+    editProfileUrl: 'https://www.tiktok.com/',
+  };
+  snapshots.push(ttSnapshot);
+
+  return snapshots;
+}
+
+export async function pushYouTubeDescriptionDirect(description: string): Promise<{
+  channelId: string;
+  description: string;
+}> {
+  const raw = getRawSocialAccounts();
+  const yt = raw.youtube;
+  if (yt.route !== 'oauth' || !yt.accessToken) {
+    throw new Error(
+      'YouTube OAuth Direct requis pour modifier la description automatiquement via API (basculez YouTube sur OAuth Direct et connectez la chaîne, ou copiez-collez dans YouTube Studio).'
+    );
+  }
+  const getRes = await fetch(
+    'https://www.googleapis.com/youtube/v3/channels?part=brandingSettings&mine=true',
+    { headers: { Authorization: `Bearer ${yt.accessToken}` } }
+  );
+  const getData = (await getRes.json().catch(() => ({}))) as {
+    items?: Array<{
+      id?: string;
+      brandingSettings?: { channel?: Record<string, unknown> };
+    }>;
+    error?: { message?: string };
+  };
+  const ch = getData.items?.[0];
+  if (!getRes.ok || !ch?.id) {
+    throw new Error(getData.error?.message || 'Impossible de lire la chaîne YouTube.');
+  }
+
+  const putRes = await fetch(
+    'https://www.googleapis.com/youtube/v3/channels?part=brandingSettings',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${yt.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: ch.id,
+        brandingSettings: {
+          ...ch.brandingSettings,
+          channel: {
+            ...(ch.brandingSettings?.channel || {}),
+            description: description.slice(0, 1000),
+          },
+        },
+      }),
+    }
+  );
+  const putData = (await putRes.json().catch(() => ({}))) as {
+    error?: { message?: string };
+  };
+  if (!putRes.ok) {
+    throw new Error(putData.error?.message || `Échec mise à jour YouTube (HTTP ${putRes.status}).`);
+  }
+  return { channelId: ch.id, description: description.slice(0, 1000) };
+}
+

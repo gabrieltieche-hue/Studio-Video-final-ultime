@@ -85,6 +85,32 @@ export interface HostingDiagnostics {
   cronEndpoint: string;
 }
 
+export interface ChannelBrandingKit {
+  brandName: string;
+  handle: string;
+  tagline: string;
+  youtubeDescription: string;
+  instagramBio: string;
+  tiktokBio: string;
+  avatarUrl: string;
+  bannerUrl: string;
+  updatedAt: string;
+}
+
+export interface LiveChannelProfileSnapshot {
+  platform: SocialPlatform;
+  connected: boolean;
+  liveName?: string;
+  liveHandle?: string;
+  liveBio?: string;
+  liveAvatarUrl?: string;
+  followersCount?: number;
+  mediaCount?: number;
+  canAutoUpdateViaApi: boolean;
+  apiNote: string;
+  editProfileUrl: string;
+}
+
 export interface SocialCopyPack {
   youtubeTitle: string;
   youtubeDescription: string;

@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   CalendarClock,
+  Check,
   ChevronDown,
   ChevronUp,
   Cloud,
+  Copy,
+  ExternalLink,
   Loader2,
   Pause,
   Play,
@@ -22,6 +25,7 @@ import type {
   TregSessionPublic,
 } from '../types/social';
 import { SocialAccountsPanel } from './social/SocialAccountsPanel';
+import { ChannelBrandingPanel } from './social/ChannelBrandingPanel';
 import { ScheduleComposer } from './social/ScheduleComposer';
 import { PublishQueuePanel } from './social/PublishQueuePanel';
 import { ManualKitModal } from './social/ManualKitModal';
@@ -49,6 +53,9 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
   });
   const [hosting, setHosting] = useState<HostingDiagnostics | null>(null);
   const [showDeployGuide, setShowDeployGuide] = useState(false);
+  const [includeTregInRailway, setIncludeTregInRailway] = useState(true);
+  const [railwayEnvBlock, setRailwayEnvBlock] = useState('');
+  const [copiedRailwayEnv, setCopiedRailwayEnv] = useState(false);
   const [scheduler, setScheduler] = useState<SchedulerState>({
     enabled: true,
     intervalSeconds: 15,
@@ -109,6 +116,28 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       if (!silent) setLoading(false);
     }
   }, []);
+
+  const fetchRailwayEnv = useCallback(async (includeSession: boolean) => {
+    try {
+      const res = await fetch('/api/social/deploy/railway-env', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ includeTregSession: includeSession }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { envBlock?: string };
+        if (data.envBlock) setRailwayEnvBlock(data.envBlock);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showDeployGuide) {
+      void fetchRailwayEnv(includeTregInRailway);
+    }
+  }, [showDeployGuide, includeTregInRailway, fetchRailwayEnv]);
 
   useEffect(() => {
     void loadAll(false);
@@ -470,31 +499,94 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
           </div>
 
           {showDeployGuide && (
-            <div className="pt-2.5 border-t border-[#E3DED3] grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-[#14161B]">
-              <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
-                <div className="font-bold">1. Railway / Render / Fly.io</div>
-                <p className="text-[#5C5F68]">
-                  Connectez votre dépôt GitHub <span className="font-mono">Studio-Video-final-ultime</span>.
-                  Les fichiers <span className="font-mono">Dockerfile</span>,{' '}
-                  <span className="font-mono">render.yaml</span>,{' '}
-                  <span className="font-mono">railway.json</span> et{' '}
-                  <span className="font-mono">fly.toml</span> sont déjà inclus avec FFmpeg.
-                </p>
+            <div className="pt-3 border-t border-[#E3DED3] space-y-3 text-[11px] text-[#14161B]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1.5">
+                  <div className="font-bold">1. Déployer le dépôt sur Railway</div>
+                  <p className="text-[#5C5F68]">
+                    Cliquez ci-dessous → <span className="font-semibold">Deploy from GitHub repo</span>{' '}
+                    → choisissez <span className="font-mono">Studio-Video-final-ultime</span>. Le{' '}
+                    <span className="font-mono">Dockerfile</span> et <span className="font-mono">railway.json</span>{' '}
+                    installent Node 22 + FFmpeg automatiquement.
+                  </p>
+                  <a
+                    href="https://railway.com/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-7 px-2.5 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white font-semibold inline-flex items-center gap-1 whitespace-nowrap transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                    Ouvrir Railway (New Project)
+                  </a>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
+                  <div className="font-bold">2. Volume /app/storage + Domaine</div>
+                  <p className="text-[#5C5F68]">
+                    Dans Railway : clic droit sur le service → <span className="font-semibold">Attach Volume</span>{' '}
+                    sur <span className="font-mono">/app/storage</span>, puis{' '}
+                    <span className="font-semibold">Settings → Networking → Generate Domain</span> (indispensable pour Instagram Reels).
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
+                  <div className="font-bold">3. Endpoint Cron externe (optionnel)</div>
+                  <p className="text-[#5C5F68] break-all">
+                    Sur Railway le serveur tourne déjà 24h/24. Bonus sécurité :{' '}
+                    <span className="font-mono">deploy/github-cron-wakeup.yml</span> ou ping sur{' '}
+                    <span className="font-mono">{hosting.cronEndpoint}</span>.
+                  </p>
+                </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
-                <div className="font-bold">2. Volume persistant /app/storage</div>
-                <p className="text-[#5C5F68]">
-                  Montez un volume persistant sur <span className="font-mono">/app/storage</span>{' '}
-                  (<span className="font-mono">STORAGE_DIR=/app/storage</span>) pour conserver vos
-                  sessions Treg, tokens OAuth, vidéos et file cron après redémarrage.
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
-                <div className="font-bold">3. Endpoint Cron externe</div>
-                <p className="text-[#5C5F68] break-all">
-                  Template GitHub Actions inclus (<span className="font-mono">deploy/github-cron-wakeup.yml</span>) ou ping toutes les 5 min sur{' '}
-                  <span className="font-mono">{hosting.cronEndpoint}</span>.
-                </p>
+
+              {/* Turnkey Railway Raw Editor Copy Block */}
+              <div className="p-3 rounded-xl bg-white border border-[#E3DED3] space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-xs text-[#14161B]">
+                      Bloc Variables Railway prêt à coller (Variables → Raw Editor)
+                    </div>
+                    <p className="text-[11px] text-[#5C5F68]">
+                      Incluez votre session Treg actuelle pour que YouTube, Instagram et TikTok soient déjà connectés au premier démarrage sur Railway.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#14161B] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeTregInRailway}
+                        onChange={(e) => setIncludeTregInRailway(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-[#258EFF] cursor-pointer"
+                      />
+                      Inclure ma session Treg
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!railwayEnvBlock) return;
+                        try {
+                          await navigator.clipboard.writeText(railwayEnvBlock);
+                          setCopiedRailwayEnv(true);
+                          setTimeout(() => setCopiedRailwayEnv(false), 2000);
+                          handleNotify('Variables Railway copiées — collez dans Variables → Raw Editor.');
+                        } catch {
+                          handleNotify('Sélectionnez le bloc ci-dessous et copiez manuellement.', true);
+                        }
+                      }}
+                      className="h-8 px-3 rounded-lg bg-[#258EFF] hover:bg-[#14161B] text-white font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors"
+                    >
+                      {copiedRailwayEnv ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      Copier pour Railway
+                    </button>
+                  </div>
+                </div>
+                {railwayEnvBlock && (
+                  <pre className="p-2.5 rounded-lg bg-[#F6F5F1] border border-[#E3DED3] font-mono text-[10px] text-[#14161B] overflow-x-auto whitespace-pre-wrap break-all">
+                    {railwayEnvBlock}
+                  </pre>
+                )}
               </div>
             </div>
           )}
@@ -527,6 +619,9 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         pendingOAuthFlow={pendingOAuthFlow}
         onClearPendingOAuth={() => setPendingOAuthFlow(null)}
       />
+
+      {/* Channel Branding Kit */}
+      <ChannelBrandingPanel onNotify={handleNotify} />
 
       {/* Composer + Queue */}
       <ScheduleComposer
