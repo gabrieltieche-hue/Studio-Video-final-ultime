@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  CalendarClock,
   ChevronDown,
   Columns2,
   Copy,
@@ -48,6 +49,7 @@ interface StudioWorkspaceProps {
   onActivateProject: (projectId: string, version?: string) => Promise<void>;
   onRefreshWorkspace: (preferId?: string) => Promise<void>;
   onRefreshProject: (projectId: string) => Promise<void>;
+  onOpenPublish?: () => void;
 }
 
 export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
@@ -58,6 +60,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   onActivateProject,
   onRefreshWorkspace,
   onRefreshProject,
+  onOpenPublish,
 }) => {
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
@@ -714,6 +717,17 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
             <span className="hidden sm:inline">Copier Prompt IA</span>
             <span className="sm:hidden">Prompt</span>
           </button>
+
+          {onOpenPublish && (
+            <button
+              type="button"
+              onClick={onOpenPublish}
+              className="h-8 px-2.5 rounded-lg bg-[#059669] hover:opacity-90 text-white text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              <CalendarClock className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Publier</span>
+            </button>
+          )}
         </div>
       </div>
 

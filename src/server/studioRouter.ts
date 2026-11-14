@@ -43,6 +43,21 @@ import {
   type MotionComponent,
   type ShortProject,
 } from '../types/studio';
+import { createScheduledPostsForProject } from './socialRouter';
+import {
+  generateAiSocialCopy,
+  inspectTregStatus,
+  prepareMediaPackForProject,
+  runSchedulerTick,
+} from './socialPublisher';
+import {
+  deleteScheduledPost,
+  getRawSocialAccounts,
+  getScheduledQueue,
+  getSchedulerState,
+  toPublicAccountConfig,
+} from './socialStorage';
+import type { PublishRoute, SocialPlatform } from '../types/social';
 
 export const MCP_TOOLS = [
   {
@@ -381,6 +396,67 @@ export const MCP_TOOLS = [
       properties: {
         focus: { type: 'string' },
       },
+    },
+  },
+  {
+    name: 'list_social_accounts',
+    description:
+      'Lister l’état des comptes YouTube Shorts, Instagram Reels et TikTok (OAuth, Treg, Kit Manuel) et l’état du planificateur cron',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'generate_social_pack',
+    description:
+      'Préparer le pack média (social.mp4 <= 30 Mo, cover.jpg, titre YouTube, légendes IG/TikTok, hashtags) pour un projet Short',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string' },
+        version: { type: 'string' },
+      },
+      required: ['project_id'],
+    },
+  },
+  {
+    name: 'schedule_short_publish',
+    description:
+      'Programmer la publication automatique d’un Short sur YouTube Shorts, Instagram Reels et/ou TikTok à une date/heure donnée (ou immédiatement)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string' },
+        version: { type: 'string' },
+        platforms: {
+          type: 'array',
+          items: { type: 'string', enum: ['youtube', 'instagram', 'tiktok'] },
+        },
+        scheduled_at: { type: 'string', description: 'Date/heure ISO 8601 (UTC ou avec fuseau)' },
+        publish_now: { type: 'boolean', default: false },
+        youtube_title: { type: 'string' },
+        caption: { type: 'string' },
+        privacy: { type: 'string', enum: ['public', 'unlisted', 'private'], default: 'public' },
+        route: { type: 'string', enum: ['oauth', 'treg', 'manual'] },
+      },
+      required: ['project_id', 'platforms'],
+    },
+  },
+  {
+    name: 'list_scheduled_posts',
+    description: 'Lister la file de planification et l’historique des publications automatiques',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'run_publish_now',
+    description: 'Déclencher immédiatement un cycle du planificateur cron pour publier les Shorts arrivés à échéance',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'cancel_scheduled_post',
+    description: 'Annuler et supprimer une publication planifiée de la file',
+    inputSchema: {
+      type: 'object',
+      properties: { job_id: { type: 'string' } },
+      required: ['job_id'],
     },
   },
 ];
@@ -1313,6 +1389,76 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
     case 'research_viral_topics': {
       const focus = typeof args.focus === 'string' ? args.focus : undefined;
       return await runDeepTopicResearchAndUpdateCsv(ROOT_DIR, focus);
+    }
+
+    case 'list_social_accounts': {
+      const treg = inspectTregStatus();
+      const tregSet = new Set(treg.connectedPlatforms);
+      const raw = getRawSocialAccounts();
+      return {
+        accounts: (['youtube', 'instagram', 'tiktok'] as SocialPlatform[]).map((p) =>
+          toPublicAccountConfig(raw[p], tregSet)
+        ),
+        treg,
+        scheduler: getSchedulerState(),
+      };
+    }
+
+    case 'generate_social_pack': {
+      const proj = getProject(String(args.project_id || ''));
+      if (!proj) throw new Error(`Projet "${args.project_id}" introuvable.`);
+      const copy = await generateAiSocialCopy(proj);
+      const pack = prepareMediaPackForProject(proj, {
+        version: args.version ? String(args.version) : proj.currentVersion,
+        coverTimestampSec: copy.coverTimestampSec,
+        copy,
+      });
+      return { success: true, projectId: proj.id, copy, pack };
+    }
+
+    case 'schedule_short_publish': {
+      const platforms = Array.isArray(args.platforms)
+        ? (args.platforms.map(String) as SocialPlatform[])
+        : [];
+      return await createScheduledPostsForProject({
+        projectId: String(args.project_id || ''),
+        version: args.version ? String(args.version) : undefined,
+        platforms,
+        scheduledAt: args.scheduled_at ? String(args.scheduled_at) : undefined,
+        publishNow: Boolean(args.publish_now),
+        youtubeTitle: args.youtube_title ? String(args.youtube_title) : undefined,
+        caption: args.caption ? String(args.caption) : undefined,
+        privacy:
+          args.privacy === 'unlisted' || args.privacy === 'private'
+            ? args.privacy
+            : 'public',
+        routeOverride:
+          args.route === 'oauth' || args.route === 'treg' || args.route === 'manual'
+            ? (args.route as PublishRoute)
+            : undefined,
+      });
+    }
+
+    case 'list_scheduled_posts': {
+      return {
+        queue: getScheduledQueue(),
+        scheduler: getSchedulerState(),
+      };
+    }
+
+    case 'run_publish_now': {
+      const summary = await runSchedulerTick({ force: true });
+      return {
+        success: true,
+        summary,
+        queue: getScheduledQueue(),
+      };
+    }
+
+    case 'cancel_scheduled_post': {
+      const ok = deleteScheduledPost(String(args.job_id || ''));
+      if (!ok) throw new Error(`Job "${args.job_id}" introuvable.`);
+      return { success: true, deletedJobId: String(args.job_id) };
     }
 
     default:

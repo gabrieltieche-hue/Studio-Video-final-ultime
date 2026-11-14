@@ -20,6 +20,8 @@ import {
 } from './src/server/storageManager';
 import { seedFlagshipProjectIfMissing } from './src/server/seedFlagshipProject';
 import { createStudioRouter } from './src/server/studioRouter';
+import { createSocialRouter } from './src/server/socialRouter';
+import { startSocialScheduler } from './src/server/socialPublisher';
 
 dotenv.config();
 
@@ -70,6 +72,7 @@ async function startServer() {
   app.use('/renders', express.static(RENDERS_DIR));
   app.use('/storage', express.static(STORAGE_DIR));
   app.use(createStudioRouter());
+  app.use(createSocialRouter());
 
   // Read or download the live CSV table of researched & produced Shorts (video-agent/shorts-topics.csv)
   app.get('/api/topics-csv', (req, res) => {
@@ -222,6 +225,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Studio Short server running on http://localhost:${PORT}`);
+    startSocialScheduler();
   });
 }
 

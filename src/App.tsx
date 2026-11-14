@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  CalendarClock,
   Check,
   Download,
   Film,
@@ -23,6 +24,7 @@ import {
 import { ShortStage } from './components/short/ShortStage';
 import { DynamicShortStage } from './components/short/DynamicShortStage';
 import { TopicResearchView } from './components/TopicResearchView';
+import { SocialPublishView } from './components/SocialPublishView';
 import { StudioWorkspace } from './components/studio/StudioWorkspace';
 import { StudioRecorderView } from './components/studio/StudioRecorderView';
 import {
@@ -52,12 +54,13 @@ export default function App() {
     new URLSearchParams(window.location.search).get('renderMode') === '1';
 
   const [t, setT] = useState(0);
-  const [viewMode, setViewMode] = useState<'player' | 'studio' | 'recorder' | 'research'>(() => {
+  const [viewMode, setViewMode] = useState<'player' | 'studio' | 'recorder' | 'research' | 'publish'>(() => {
     if (typeof window === 'undefined') return 'player';
     const params = new URLSearchParams(window.location.search);
     if (params.get('tab') === 'studio') return 'studio';
     if (params.get('tab') === 'recorder') return 'recorder';
     if (params.get('tab') === 'research') return 'research';
+    if (params.get('tab') === 'publish') return 'publish';
     return 'player';
   });
 
@@ -657,6 +660,26 @@ export default function App() {
               <span className="sm:hidden">Veille</span>
               <span className="hidden sm:inline">Veille &amp; CSV</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="nav-publish-tab"
+              onClick={() => {
+                setIsPlaying(false);
+                void fetchWorkspace();
+                setViewMode('publish');
+              }}
+              aria-pressed={viewMode === 'publish'}
+              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'publish'
+                  ? 'bg-[#059669] text-white shadow-sm'
+                  : 'text-[#5C5F68] hover:text-[#14161B]'
+              }`}
+            >
+              <CalendarClock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
+              <span className="sm:hidden">Publier</span>
+              <span className="hidden sm:inline">Publication</span>
+            </button>
           </nav>
         </div>
       </header>
@@ -670,6 +693,10 @@ export default function App() {
           onActivateProject={handleActivateProject}
           onRefreshWorkspace={fetchWorkspace}
           onRefreshProject={refreshProject}
+          onOpenPublish={() => {
+            setIsPlaying(false);
+            setViewMode('publish');
+          }}
         />
       ) : viewMode === 'recorder' ? (
         <main className="flex-1">
@@ -678,6 +705,10 @@ export default function App() {
       ) : viewMode === 'research' ? (
         <main className="flex-1">
           <TopicResearchView onCreateProjectFromTopic={handleCreateProjectFromTopic} />
+        </main>
+      ) : viewMode === 'publish' ? (
+        <main className="flex-1">
+          <SocialPublishView projects={projects} activeProject={activeProject} />
         </main>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 sm:py-3">
@@ -928,6 +959,18 @@ export default function App() {
               {downloadError && (
                 <p className="text-xs text-[#DC2626] text-center">{downloadError}</p>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPlaying(false);
+                  setViewMode('publish');
+                }}
+                className="w-full py-2.5 px-4 rounded-xl border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-[#14161B] font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <CalendarClock className="w-3.5 h-3.5 text-[#059669]" aria-hidden="true" />
+                Programmer sur YouTube / Reels / TikTok
+              </button>
             </div>
           </main>
         </div>
