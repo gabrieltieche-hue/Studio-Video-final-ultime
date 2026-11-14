@@ -63,13 +63,13 @@ let tickInProgress = false;
 
 export function getPublicAppBaseUrl(requestOrigin?: string): string {
   const candidates = [
-    process.env.APP_URL,
     process.env.PUBLIC_APP_URL,
-    process.env.RENDER_EXTERNAL_URL,
     process.env.RAILWAY_PUBLIC_DOMAIN
       ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
       : '',
+    process.env.RENDER_EXTERNAL_URL,
     process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : '',
+    process.env.APP_URL,
   ];
   for (const raw of candidates) {
     const clean = (raw || '').trim().replace(/\/+$/, '');
@@ -94,14 +94,14 @@ export function getOAuthCallbackUrl(
 export function getHostingDiagnostics(requestOrigin?: string): HostingDiagnostics {
   const appUrl = getPublicAppBaseUrl(requestOrigin);
   let environment: HostingDiagnostics['environment'] = 'custom_server';
-  if (appUrl.includes('ais-dev-') || appUrl.includes('ais-pre-')) {
-    environment = 'ai_studio_preview';
-  } else if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PUBLIC_DOMAIN) {
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PUBLIC_DOMAIN) {
     environment = 'railway';
   } else if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
     environment = 'render';
   } else if (process.env.FLY_APP_NAME) {
     environment = 'fly';
+  } else if (appUrl.includes('ais-dev-') || appUrl.includes('ais-pre-')) {
+    environment = 'ai_studio_preview';
   }
 
   const isAlwaysOn =
