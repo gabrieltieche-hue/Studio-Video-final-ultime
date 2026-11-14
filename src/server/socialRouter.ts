@@ -23,6 +23,7 @@ import {
   buildOAuthAuthorizationUrl,
   executeScheduledJob,
   generateAiSocialCopy,
+  getHostingDiagnostics,
   getOAuthCallbackUrl,
   getPublicAppBaseUrl,
   handleOAuthCallback,
@@ -31,6 +32,18 @@ import {
   runSchedulerTick,
   startSocialScheduler,
 } from './socialPublisher';
+import {
+  clearTregSession,
+  getTregSessionPublic,
+  loginTregWithToken,
+  pollTregBrowserLogin,
+  pollTregProviderOAuth,
+  startTregBrowserLogin,
+  startTregEmailLogin,
+  startTregProviderOAuth,
+  syncTregConnections,
+  verifyTregEmailLogin,
+} from './tregClient';
 import {
   PLATFORM_META,
   buildTemplateSocialCopy,
@@ -44,6 +57,13 @@ import type {
 
 function isValidPlatform(val: string): val is SocialPlatform {
   return val === 'youtube' || val === 'instagram' || val === 'tiktok';
+}
+
+function resolveRequestOrigin(req: Request): string | undefined {
+  const host = (req.get('x-forwarded-host') || req.get('host') || '').trim();
+  if (!host) return undefined;
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  return `${proto}://${host}`;
 }
 
 export async function createScheduledPostsForProject(params: {
@@ -177,8 +197,10 @@ export function createSocialRouter(): express.Router {
   initSocialStorage();
 
   // Status, environment diagnostics, callback URLs, scheduler state
-  router.get('/api/social/status', (_req: Request, res: Response) => {
-    const appUrl = getPublicAppBaseUrl();
+  router.get('/api/social/status', (req: Request, res: Response) => {
+    const reqOrigin = resolveRequestOrigin(req);
+    const appUrl = getPublicAppBaseUrl(reqOrigin);
+    const tregSession = getTregSessionPublic();
     const treg = inspectTregStatus();
     const tregSet = new Set(treg.connectedPlatforms);
     const rawAccounts = getRawSocialAccounts();
@@ -186,10 +208,11 @@ export function createSocialRouter(): express.Router {
       toPublicAccountConfig(rawAccounts[p], tregSet)
     );
     const scheduler = getSchedulerState();
+    const hosting = getHostingDiagnostics(reqOrigin);
     const callbacks = {
-      youtube: getOAuthCallbackUrl('youtube'),
-      instagram: getOAuthCallbackUrl('instagram'),
-      tiktok: getOAuthCallbackUrl('tiktok'),
+      youtube: getOAuthCallbackUrl('youtube', reqOrigin),
+      instagram: getOAuthCallbackUrl('instagram', reqOrigin),
+      tiktok: getOAuthCallbackUrl('tiktok', reqOrigin),
     };
     res.json({
       appUrl,
@@ -200,10 +223,43 @@ export function createSocialRouter(): express.Router {
         tiktok: isPlatformOAuthConfigured('tiktok'),
       },
       treg,
+      tregSession,
+      hosting,
       scheduler,
       accounts,
     });
   });
+
+  // External cron wakeup endpoint (for GitHub Actions / cron-job.org / Cloud Scheduler)
+  const handleCronTick = async (req: Request, res: Response) => {
+    const expectedSecret = (process.env.CRON_SECRET || '').trim();
+    if (expectedSecret) {
+      const authHeader = (req.get('authorization') || '').trim();
+      const bearer = authHeader.toLowerCase().startsWith('bearer ')
+        ? authHeader.slice(7).trim()
+        : '';
+      const querySecret = typeof req.query.secret === 'string' ? req.query.secret.trim() : '';
+      if (bearer !== expectedSecret && querySecret !== expectedSecret) {
+        res.status(401).json({ error: 'CRON_SECRET invalide.' });
+        return;
+      }
+    }
+    try {
+      const summary = await runSchedulerTick({ force: false });
+      res.json({
+        ok: true,
+        summary,
+        scheduler: getSchedulerState(),
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur cron-tick',
+      });
+    }
+  };
+  router.get('/api/social/cron-tick', handleCronTick);
+  router.post('/api/social/cron-tick', handleCronTick);
 
   router.post('/api/social/scheduler/toggle', (req: Request, res: Response) => {
     const body = (req.body || {}) as {
@@ -260,6 +316,8 @@ export function createSocialRouter(): express.Router {
       defaultPrivacy?: 'public' | 'unlisted' | 'private';
       accountName?: string;
       accountHandle?: string;
+      clientId?: string;
+      clientSecret?: string;
       accessToken?: string;
       igUserId?: string;
       connected?: boolean;
@@ -286,6 +344,14 @@ export function createSocialRouter(): express.Router {
     }
     if (typeof body.igUserId === 'string') {
       patch.igUserId = body.igUserId.trim();
+    }
+    if (typeof body.clientId === 'string' && body.clientId.trim()) {
+      patch.clientId = body.clientId.trim();
+      if (!body.route) patch.route = 'oauth';
+    }
+    if (typeof body.clientSecret === 'string' && body.clientSecret.trim()) {
+      patch.clientSecret = body.clientSecret.trim();
+      if (!body.route) patch.route = 'oauth';
     }
     if (typeof body.accessToken === 'string' && body.accessToken.trim()) {
       patch.accessToken = body.accessToken.trim();
@@ -327,6 +393,8 @@ export function createSocialRouter(): express.Router {
         avatarUrl: undefined,
         igUserId: undefined,
         igPageId: undefined,
+        tregConnectionId: undefined,
+        tregResourceRef: undefined,
         lastError: undefined,
       });
       res.json({ success: true, account: toPublicAccountConfig(updated) });
@@ -340,13 +408,14 @@ export function createSocialRouter(): express.Router {
       res.status(400).json({ error: 'Plateforme invalide.' });
       return;
     }
+    const reqOrigin = resolveRequestOrigin(req);
     try {
-      const result = buildOAuthAuthorizationUrl(platform);
+      const result = buildOAuthAuthorizationUrl(platform, reqOrigin);
       res.json(result);
     } catch (err) {
       res.status(400).json({
         error: err instanceof Error ? err.message : 'OAuth non configuré',
-        callbackUrl: getOAuthCallbackUrl(platform),
+        callbackUrl: getOAuthCallbackUrl(platform, reqOrigin),
       });
     }
   });
@@ -417,7 +486,126 @@ export function createSocialRouter(): express.Router {
   );
 
   router.get('/api/social/treg/status', (_req: Request, res: Response) => {
-    res.json(inspectTregStatus());
+    res.json({
+      ...inspectTregStatus(),
+      session: getTregSessionPublic(),
+    });
+  });
+
+  router.post('/api/social/treg/login/start', async (_req: Request, res: Response) => {
+    try {
+      const started = await startTregBrowserLogin();
+      res.json(started);
+    } catch (err) {
+      res.status(502).json({
+        error: err instanceof Error ? err.message : 'Impossible de joindre treg.to',
+      });
+    }
+  });
+
+  router.get('/api/social/treg/login/poll', async (req: Request, res: Response) => {
+    const loginId = typeof req.query.login_id === 'string' ? req.query.login_id.trim() : '';
+    if (!loginId) {
+      res.status(400).json({ error: 'login_id requis.' });
+      return;
+    }
+    try {
+      const result = await pollTregBrowserLogin(loginId);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur polling login Treg',
+      });
+    }
+  });
+
+  router.post('/api/social/treg/login/token', async (req: Request, res: Response) => {
+    const { token } = (req.body || {}) as { token?: string };
+    try {
+      const session = await loginTregWithToken(String(token || ''));
+      res.json({ success: true, session });
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Token Treg invalide',
+      });
+    }
+  });
+
+  router.post('/api/social/treg/login/email', async (req: Request, res: Response) => {
+    const { email } = (req.body || {}) as { email?: string };
+    try {
+      const result = await startTregEmailLogin(String(email || ''));
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Erreur envoi code Treg',
+      });
+    }
+  });
+
+  router.post(
+    '/api/social/treg/login/email/verify',
+    async (req: Request, res: Response) => {
+      const { email, code } = (req.body || {}) as { email?: string; code?: string };
+      try {
+        const session = await verifyTregEmailLogin(String(email || ''), String(code || ''));
+        res.json({ success: true, session });
+      } catch (err) {
+        res.status(400).json({
+          error: err instanceof Error ? err.message : 'Code invalide',
+        });
+      }
+    }
+  );
+
+  router.post('/api/social/treg/logout', (_req: Request, res: Response) => {
+    clearTregSession();
+    res.json({ success: true, session: getTregSessionPublic() });
+  });
+
+  router.post('/api/social/treg/sync', async (_req: Request, res: Response) => {
+    try {
+      await syncTregConnections();
+      res.json({ success: true, session: getTregSessionPublic() });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur synchronisation Treg',
+      });
+    }
+  });
+
+  router.post('/api/social/treg/connect/:platform', async (req: Request, res: Response) => {
+    const platform = req.params.platform;
+    if (!isValidPlatform(platform)) {
+      res.status(400).json({ error: 'Plateforme invalide.' });
+      return;
+    }
+    try {
+      const started = await startTregProviderOAuth(platform);
+      res.json(started);
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Erreur connexion Treg',
+      });
+    }
+  });
+
+  router.get('/api/social/treg/connect/poll', async (req: Request, res: Response) => {
+    const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
+    const platform = typeof req.query.platform === 'string' ? req.query.platform.trim() : '';
+    if (!state || !isValidPlatform(platform)) {
+      res.status(400).json({ error: 'Paramètres state/platform invalides.' });
+      return;
+    }
+    try {
+      const result = await pollTregProviderOAuth(state, platform);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({
+        status: 'error',
+        detail: err instanceof Error ? err.message : 'Erreur polling Treg OAuth',
+      });
+    }
   });
 
   // Copy & Media Pack Preparation

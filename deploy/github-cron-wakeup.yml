@@ -1,0 +1,28 @@
+# Copiez ce fichier vers .github/workflows/social-cron-wakeup.yml sur GitHub
+# si vous souhaitez réveiller /api/social/cron-tick toutes les 5 minutes via GitHub Actions.
+name: Social Scheduler Cron Wakeup
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  cron-tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger social scheduler tick
+        env:
+          STUDIO_APP_URL: ${{ secrets.STUDIO_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$STUDIO_APP_URL" ]; then
+            echo "STUDIO_APP_URL secret is not configured — skipping wakeup."
+            exit 0
+          fi
+          TARGET="${STUDIO_APP_URL%/}/api/social/cron-tick"
+          if [ -n "$CRON_SECRET" ]; then
+            curl -fsSL -X POST "$TARGET" -H "Authorization: Bearer $CRON_SECRET"
+          else
+            curl -fsSL -X POST "$TARGET"
+          fi

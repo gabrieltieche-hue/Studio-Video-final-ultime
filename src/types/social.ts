@@ -23,7 +23,10 @@ export interface SocialAccountConfig {
   avatarUrl?: string;
   scopes?: string[];
   oauthConfigured: boolean;
+  hasCustomClientCredentials?: boolean;
   tregConnected?: boolean;
+  tregConnectionId?: string;
+  igUserId?: string;
   tokenExpiresAt?: string;
   connectedAt?: string;
   lastError?: string;
@@ -40,14 +43,46 @@ export interface SocialAccountSecretRecord {
   accountId?: string;
   avatarUrl?: string;
   scopes?: string[];
+  clientId?: string;
+  clientSecret?: string;
   accessToken?: string;
   refreshToken?: string;
   tokenExpiresAt?: string;
   igPageId?: string;
   igUserId?: string;
+  tregConnectionId?: string;
+  tregResourceRef?: string;
   connectedAt?: string;
   lastError?: string;
   defaultPrivacy: 'public' | 'unlisted' | 'private';
+}
+
+export interface TregConnectionSummary {
+  id: string;
+  provider: string;
+  platform?: SocialPlatform;
+  name?: string;
+  status?: string;
+  resourceRef?: string;
+}
+
+export interface TregSessionPublic {
+  loggedIn: boolean;
+  email?: string;
+  activeOrg?: string;
+  cliInstalled: boolean;
+  cliVersion?: string;
+  connectedPlatforms: SocialPlatform[];
+  connections: TregConnectionSummary[];
+}
+
+export interface HostingDiagnostics {
+  environment: 'ai_studio_preview' | 'railway' | 'render' | 'fly' | 'custom_server';
+  isAlwaysOn: boolean;
+  appUrl: string;
+  storageDir: string;
+  elevenLabsConfigured: boolean;
+  cronEndpoint: string;
 }
 
 export interface SocialCopyPack {

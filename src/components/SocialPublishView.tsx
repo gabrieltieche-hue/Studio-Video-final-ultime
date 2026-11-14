@@ -1,19 +1,25 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   CalendarClock,
+  ChevronDown,
+  ChevronUp,
+  Cloud,
   Loader2,
   Pause,
   Play,
   RefreshCw,
+  Server,
 } from 'lucide-react';
 import type { ShortProject } from '../types/studio';
 import type {
+  HostingDiagnostics,
   PublishLogEntry,
   PublishRoute,
   ScheduledPostItem,
   SchedulerState,
   SocialAccountConfig,
   SocialPlatform,
+  TregSessionPublic,
 } from '../types/social';
 import { SocialAccountsPanel } from './social/SocialAccountsPanel';
 import { ScheduleComposer } from './social/ScheduleComposer';
@@ -35,11 +41,14 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
     instagram: '',
     tiktok: '',
   });
-  const [treg, setTreg] = useState<{
-    installed: boolean;
-    version?: string;
-    connectedPlatforms: SocialPlatform[];
-  }>({ installed: false, connectedPlatforms: [] });
+  const [tregSession, setTregSession] = useState<TregSessionPublic>({
+    loggedIn: false,
+    cliInstalled: false,
+    connectedPlatforms: [],
+    connections: [],
+  });
+  const [hosting, setHosting] = useState<HostingDiagnostics | null>(null);
+  const [showDeployGuide, setShowDeployGuide] = useState(false);
   const [scheduler, setScheduler] = useState<SchedulerState>({
     enabled: true,
     intervalSeconds: 15,
@@ -54,6 +63,10 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
   const [banner, setBanner] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [kitJob, setKitJob] = useState<ScheduledPostItem | null>(null);
+  const [pendingOAuthFlow, setPendingOAuthFlow] = useState<{
+    platform: SocialPlatform;
+    url: string;
+  } | null>(null);
 
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -66,16 +79,14 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         const sData = (await statusRes.json()) as {
           accounts?: SocialAccountConfig[];
           callbacks?: Record<SocialPlatform, string>;
-          treg?: {
-            installed: boolean;
-            version?: string;
-            connectedPlatforms: SocialPlatform[];
-          };
+          tregSession?: TregSessionPublic;
+          hosting?: HostingDiagnostics;
           scheduler?: SchedulerState;
         };
         if (sData.accounts) setAccounts(sData.accounts);
         if (sData.callbacks) setCallbacks(sData.callbacks);
-        if (sData.treg) setTreg(sData.treg);
+        if (sData.tregSession) setTregSession(sData.tregSession);
+        if (sData.hosting) setHosting(sData.hosting);
         if (sData.scheduler) setScheduler(sData.scheduler);
       }
       if (queueRes.ok) {
@@ -120,11 +131,13 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         return;
       }
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        setPendingOAuthFlow(null);
         setBanner(`Compte ${event.data.platform || ''} connecté via OAuth.`);
         setErrorBanner(null);
         void loadAll(true);
         setTimeout(() => setBanner(null), 4000);
       } else if (event.data?.type === 'OAUTH_AUTH_ERROR') {
+        setPendingOAuthFlow(null);
         setErrorBanner(event.data.error || 'Échec connexion OAuth.');
       }
     };
@@ -191,6 +204,8 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       defaultPrivacy?: 'public' | 'unlisted' | 'private';
       accountName?: string;
       accountHandle?: string;
+      clientId?: string;
+      clientSecret?: string;
       accessToken?: string;
       igUserId?: string;
       connected?: boolean;
@@ -214,6 +229,17 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
     }
   };
 
+  const handleNotify = (msg: string, isError = false) => {
+    if (isError) {
+      setErrorBanner(msg);
+      setBanner(null);
+    } else {
+      setBanner(msg);
+      setErrorBanner(null);
+      setTimeout(() => setBanner(null), 4500);
+    }
+  };
+
   const handleStartOAuth = async (platform: SocialPlatform) => {
     setErrorBanner(null);
     const res = await fetch(`/api/social/oauth/${encodeURIComponent(platform)}/url`, {
@@ -224,13 +250,22 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       setErrorBanner(data.error || 'Impossible de générer l’URL OAuth.');
       return;
     }
-    const popup = window.open(data.url, `oauth_${platform}`, 'width=600,height=720');
-    if (!popup) {
-      setErrorBanner(
-        'Popup bloquée par le navigateur : autorisez les fenêtres contextuelles pour finaliser OAuth.'
-      );
-    }
+    setPendingOAuthFlow({ platform, url: data.url });
   };
+
+  useEffect(() => {
+    if (!pendingOAuthFlow) return;
+    const match = accounts.find((a) => a.platform === pendingOAuthFlow.platform);
+    if (match?.connected) {
+      setBanner(`Compte ${match.label} connecté via OAuth.`);
+      setPendingOAuthFlow(null);
+      return;
+    }
+    const timer = setInterval(() => {
+      void loadAll(true);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [pendingOAuthFlow, accounts, loadAll]);
 
   const handleDisconnect = async (platform: SocialPlatform) => {
     await fetch(`/api/social/accounts/${encodeURIComponent(platform)}/disconnect`, {
@@ -389,6 +424,83 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         </div>
       </div>
 
+      {/* 24/7 Hosting & Environment Diagnostics Strip */}
+      {hosting && (
+        <div
+          className={`rounded-2xl border p-3.5 space-y-2.5 text-xs ${
+            hosting.isAlwaysOn
+              ? 'bg-[#059669]/[0.06] border-[#059669]/25'
+              : 'bg-[#D97706]/[0.06] border-[#D97706]/25'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-start sm:items-center gap-2.5">
+              {hosting.isAlwaysOn ? (
+                <Server className="w-4 h-4 text-[#059669] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
+              ) : (
+                <Cloud className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
+              )}
+              <div>
+                <div className="font-bold text-[#14161B]">
+                  {hosting.isAlwaysOn
+                    ? `Serveur 24h/24 actif (${hosting.environment}) · Publication autonome même tablette éteinte`
+                    : 'Aperçu Google AI Studio (mise en veille si tablette éteinte)'}
+                </div>
+                <p className="text-[11px] text-[#5C5F68]">
+                  {hosting.isAlwaysOn
+                    ? `Volume persistant : ${hosting.storageDir} · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé absente'}`
+                    : `Pour publier 24h/24 tablette éteinte, déployez ce repo sur Railway, Render ou Fly.io (configs prêtes dans le dépôt) · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé ELEVENLABS_API_KEY absente dans ce conteneur'}.`}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowDeployGuide((v) => !v)}
+              aria-expanded={showDeployGuide}
+              className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 self-start sm:self-auto"
+            >
+              Déploiement 24/7
+              {showDeployGuide ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+
+          {showDeployGuide && (
+            <div className="pt-2.5 border-t border-[#E3DED3] grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-[#14161B]">
+              <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
+                <div className="font-bold">1. Railway / Render / Fly.io</div>
+                <p className="text-[#5C5F68]">
+                  Connectez votre dépôt GitHub <span className="font-mono">Studio-Video-final-ultime</span>.
+                  Les fichiers <span className="font-mono">Dockerfile</span>,{' '}
+                  <span className="font-mono">render.yaml</span>,{' '}
+                  <span className="font-mono">railway.json</span> et{' '}
+                  <span className="font-mono">fly.toml</span> sont déjà inclus avec FFmpeg.
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
+                <div className="font-bold">2. Volume persistant /app/storage</div>
+                <p className="text-[#5C5F68]">
+                  Montez un volume persistant sur <span className="font-mono">/app/storage</span>{' '}
+                  (<span className="font-mono">STORAGE_DIR=/app/storage</span>) pour conserver vos
+                  sessions Treg, tokens OAuth, vidéos et file cron après redémarrage.
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
+                <div className="font-bold">3. Endpoint Cron externe</div>
+                <p className="text-[#5C5F68] break-all">
+                  Template GitHub Actions inclus (<span className="font-mono">deploy/github-cron-wakeup.yml</span>) ou ping toutes les 5 min sur{' '}
+                  <span className="font-mono">{hosting.cronEndpoint}</span>.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {(banner || errorBanner) && (
         <div
           role="status"
@@ -401,6 +513,20 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
           {errorBanner || banner}
         </div>
       )}
+
+      {/* Social Connections */}
+      <SocialAccountsPanel
+        accounts={accounts}
+        callbacks={callbacks}
+        tregSession={tregSession}
+        onUpdateAccount={handleUpdateAccount}
+        onStartOAuth={handleStartOAuth}
+        onDisconnect={handleDisconnect}
+        onRefreshStatus={() => loadAll(true)}
+        onNotify={handleNotify}
+        pendingOAuthFlow={pendingOAuthFlow}
+        onClearPendingOAuth={() => setPendingOAuthFlow(null)}
+      />
 
       {/* Composer + Queue */}
       <ScheduleComposer
@@ -416,17 +542,6 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         onPublishNow={handlePublishJobNow}
         onCancelJob={handleCancelJob}
         onOpenManualKit={(job) => setKitJob(job)}
-      />
-
-      {/* Social Connections */}
-      <SocialAccountsPanel
-        accounts={accounts}
-        callbacks={callbacks}
-        treg={treg}
-        onUpdateAccount={handleUpdateAccount}
-        onStartOAuth={handleStartOAuth}
-        onDisconnect={handleDisconnect}
-        onRefreshStatus={() => loadAll(true)}
       />
 
       <ManualKitModal

@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Check,
   ChevronDown,
   ChevronUp,
   Copy,
+  ExternalLink,
   Instagram,
   KeyRound,
   Link2,
-  Power,
+  Loader2,
+  LogOut,
   RefreshCw,
   ShieldCheck,
-  Terminal,
+  Sparkles,
   Video,
   Youtube,
 } from 'lucide-react';
@@ -18,16 +20,13 @@ import type {
   PublishRoute,
   SocialAccountConfig,
   SocialPlatform,
+  TregSessionPublic,
 } from '../../types/social';
 
 interface SocialAccountsPanelProps {
   accounts: SocialAccountConfig[];
   callbacks: Record<SocialPlatform, string>;
-  treg: {
-    installed: boolean;
-    version?: string;
-    connectedPlatforms: SocialPlatform[];
-  };
+  tregSession: TregSessionPublic;
   onUpdateAccount: (
     platform: SocialPlatform,
     patch: {
@@ -36,6 +35,8 @@ interface SocialAccountsPanelProps {
       defaultPrivacy?: 'public' | 'unlisted' | 'private';
       accountName?: string;
       accountHandle?: string;
+      clientId?: string;
+      clientSecret?: string;
       accessToken?: string;
       igUserId?: string;
       connected?: boolean;
@@ -44,6 +45,9 @@ interface SocialAccountsPanelProps {
   onStartOAuth: (platform: SocialPlatform) => Promise<void>;
   onDisconnect: (platform: SocialPlatform) => Promise<void>;
   onRefreshStatus: () => Promise<void>;
+  onNotify?: (msg: string, isError?: boolean) => void;
+  pendingOAuthFlow?: { platform: SocialPlatform; url: string } | null;
+  onClearPendingOAuth?: () => void;
 }
 
 const PLATFORM_ICON: Record<SocialPlatform, React.ReactNode> = {
@@ -61,18 +65,56 @@ const ENV_HINT: Record<SocialPlatform, string> = {
 export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
   accounts,
   callbacks,
-  treg,
+  tregSession,
   onUpdateAccount,
   onStartOAuth,
   onDisconnect,
   onRefreshStatus,
+  onNotify,
+  pendingOAuthFlow,
+  onClearPendingOAuth,
 }) => {
   const [expandedPlatform, setExpandedPlatform] = useState<SocialPlatform | null>(null);
   const [copiedPlatform, setCopiedPlatform] = useState<SocialPlatform | null>(null);
+  const [clientIdInputs, setClientIdInputs] = useState<Record<string, string>>({});
+  const [clientSecretInputs, setClientSecretInputs] = useState<Record<string, string>>({});
   const [tokenInputs, setTokenInputs] = useState<Record<string, string>>({});
   const [handleInputs, setHandleInputs] = useState<Record<string, string>>({});
   const [igIdInput, setIgIdInput] = useState('');
   const [savingPlatform, setSavingPlatform] = useState<SocialPlatform | null>(null);
+
+  // Treg 1-click login state
+  const [tregLoginFlow, setTregLoginFlow] = useState<{
+    loginId: string;
+    loginUrl: string;
+    pairingCode?: string;
+  } | null>(null);
+  const [startingTregLogin, setStartingTregLogin] = useState(false);
+  const [showTregAlt, setShowTregAlt] = useState(false);
+  const [tregTokenInput, setTregTokenInput] = useState('');
+  const [tregEmailInput, setTregEmailInput] = useState('');
+  const [tregEmailCodeInput, setTregEmailCodeInput] = useState('');
+  const [tregAwaitingEmailCode, setTregAwaitingEmailCode] = useState(false);
+  const [tregBusy, setTregBusy] = useState(false);
+
+  // Treg 1-click provider OAuth state
+  const [pendingProviderAuth, setPendingProviderAuth] = useState<{
+    platform: SocialPlatform;
+    state: string;
+    consentUrl: string;
+    consentNotice?: string;
+  } | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState<SocialPlatform | null>(null);
+
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const providerPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      if (providerPollRef.current) clearInterval(providerPollRef.current);
+    };
+  }, []);
 
   const handleCopyCallback = async (platform: SocialPlatform, url: string) => {
     try {
@@ -84,12 +126,217 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
     }
   };
 
-  const handleSaveManualToken = async (platform: SocialPlatform) => {
+  const handleStartTregLogin = async () => {
+    if (startingTregLogin) return;
+    setStartingTregLogin(true);
+    try {
+      const res = await fetch('/api/social/treg/login/start', { method: 'POST' });
+      const data = (await res.json()) as {
+        loginId?: string;
+        loginUrl?: string;
+        pairingCode?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.loginId || !data.loginUrl) {
+        throw new Error(data.error || 'Impossible de générer le lien de connexion Treg.');
+      }
+      setTregLoginFlow({
+        loginId: data.loginId,
+        loginUrl: data.loginUrl,
+        pairingCode: data.pairingCode,
+      });
+
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      let checks = 0;
+      pollTimerRef.current = setInterval(async () => {
+        checks += 1;
+        if (checks > 90) {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          return;
+        }
+        try {
+          const pRes = await fetch(
+            `/api/social/treg/login/poll?login_id=${encodeURIComponent(data.loginId!)}`
+          );
+          const pData = (await pRes.json()) as { status?: string };
+          if (pData.status === 'done') {
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+            setTregLoginFlow(null);
+            onNotify?.('Session Treg connectée ! Cliquez maintenant sur un réseau pour le lier en 1 clic.');
+            await onRefreshStatus();
+          }
+        } catch {
+          // continue polling
+        }
+      }, 2000);
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Erreur connexion Treg', true);
+    } finally {
+      setStartingTregLogin(false);
+    }
+  };
+
+  const handleTregTokenSubmit = async () => {
+    if (!tregTokenInput.trim() || tregBusy) return;
+    setTregBusy(true);
+    try {
+      const res = await fetch('/api/social/treg/login/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: tregTokenInput.trim() }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error || 'Token Treg invalide');
+      setTregTokenInput('');
+      setShowTregAlt(false);
+      onNotify?.('Token Treg enregistré et vérifié.');
+      await onRefreshStatus();
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Erreur token Treg', true);
+    } finally {
+      setTregBusy(false);
+    }
+  };
+
+  const handleTregEmailStart = async () => {
+    if (!tregEmailInput.trim() || tregBusy) return;
+    setTregBusy(true);
+    try {
+      const res = await fetch('/api/social/treg/login/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: tregEmailInput.trim() }),
+      });
+      const data = (await res.json()) as {
+        requiresBrowser?: boolean;
+        loginId?: string;
+        loginUrl?: string;
+        pairingCode?: string;
+        message?: string;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error || 'Erreur email Treg');
+      if (data.requiresBrowser && data.loginUrl && data.loginId) {
+        setTregLoginFlow({
+          loginId: data.loginId,
+          loginUrl: data.loginUrl,
+          pairingCode: data.pairingCode,
+        });
+      } else {
+        setTregAwaitingEmailCode(true);
+        onNotify?.(data.message || 'Code envoyé par email.');
+      }
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Erreur email Treg', true);
+    } finally {
+      setTregBusy(false);
+    }
+  };
+
+  const handleTregEmailVerify = async () => {
+    if (!tregEmailInput.trim() || !tregEmailCodeInput.trim() || tregBusy) return;
+    setTregBusy(true);
+    try {
+      const res = await fetch('/api/social/treg/login/email/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: tregEmailInput.trim(),
+          code: tregEmailCodeInput.trim(),
+        }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error || 'Code incorrect');
+      setTregAwaitingEmailCode(false);
+      setTregEmailCodeInput('');
+      setShowTregAlt(false);
+      onNotify?.('Session Treg connectée par email.');
+      await onRefreshStatus();
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Erreur validation code', true);
+    } finally {
+      setTregBusy(false);
+    }
+  };
+
+  const handleTregLogout = async () => {
+    await fetch('/api/social/treg/logout', { method: 'POST' });
+    setTregLoginFlow(null);
+    setPendingProviderAuth(null);
+    await onRefreshStatus();
+  };
+
+  const handleStartTregProvider = async (platform: SocialPlatform) => {
+    if (!tregSession.loggedIn) {
+      onNotify?.('Connectez d’abord Treg en 1 clic ci-dessus, puis liez votre réseau.');
+      await handleStartTregLogin();
+      return;
+    }
+    setConnectingProvider(platform);
+    try {
+      const res = await fetch(`/api/social/treg/connect/${encodeURIComponent(platform)}`, {
+        method: 'POST',
+      });
+      const data = (await res.json()) as {
+        state?: string;
+        consentUrl?: string;
+        consentNotice?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.state || !data.consentUrl) {
+        throw new Error(data.error || `Impossible de connecter ${platform} via Treg.`);
+      }
+      setPendingProviderAuth({
+        platform,
+        state: data.state,
+        consentUrl: data.consentUrl,
+        consentNotice: data.consentNotice,
+      });
+
+      if (providerPollRef.current) clearInterval(providerPollRef.current);
+      let tries = 0;
+      providerPollRef.current = setInterval(async () => {
+        tries += 1;
+        if (tries > 120) {
+          if (providerPollRef.current) clearInterval(providerPollRef.current);
+          return;
+        }
+        try {
+          const pRes = await fetch(
+            `/api/social/treg/connect/poll?state=${encodeURIComponent(data.state!)}&platform=${encodeURIComponent(platform)}`
+          );
+          const pData = (await pRes.json()) as { status?: string; detail?: string };
+          if (pData.status === 'done') {
+            if (providerPollRef.current) clearInterval(providerPollRef.current);
+            setPendingProviderAuth(null);
+            onNotify?.(`Compte ${platform} connecté automatiquement via Treg !`);
+            await onRefreshStatus();
+          } else if (pData.status === 'error') {
+            if (providerPollRef.current) clearInterval(providerPollRef.current);
+            setPendingProviderAuth(null);
+            onNotify?.(pData.detail || `Connexion ${platform} interrompue.`, true);
+          }
+        } catch {
+          // continue polling
+        }
+      }, 2000);
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Erreur connexion Treg', true);
+    } finally {
+      setConnectingProvider(null);
+    }
+  };
+
+  const handleSaveManualConfig = async (platform: SocialPlatform) => {
     setSavingPlatform(platform);
     try {
+      const clientId = (clientIdInputs[platform] || '').trim();
+      const clientSecret = (clientSecretInputs[platform] || '').trim();
       const token = (tokenInputs[platform] || '').trim();
       const handle = (handleInputs[platform] || '').trim();
       await onUpdateAccount(platform, {
+        ...(clientId ? { clientId } : {}),
+        ...(clientSecret ? { clientSecret } : {}),
         ...(token ? { accessToken: token, route: 'oauth', connected: true } : {}),
         ...(handle ? { accountHandle: handle, accountName: handle } : {}),
         ...(platform === 'instagram' && igIdInput.trim()
@@ -97,6 +344,8 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
           : {}),
       });
       setTokenInputs((prev) => ({ ...prev, [platform]: '' }));
+      setClientSecretInputs((prev) => ({ ...prev, [platform]: '' }));
+      onNotify?.(`Configuration ${platform} enregistrée.`);
     } finally {
       setSavingPlatform(null);
     }
@@ -113,35 +362,248 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
             className="text-base font-extrabold tracking-tight text-[#14161B]"
             style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
           >
-            Comptes connectés &amp; Routes de publication
+            Comptes connectés &amp; Connexion Express 1-Clic
           </h2>
           <p className="text-xs text-[#5C5F68]">
-            OAuth direct par réseau avec bascule automatique vers Treg CLI ou Kit Manuel.
+            Connectez YouTube, Instagram et TikTok en un seul lien via Treg (zéro app Meta/TikTok à configurer) ou par OAuth direct.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-[#5C5F68] shrink-0">
-          <Terminal className="w-3.5 h-3.5 text-[#14161B]" aria-hidden="true" />
-          <span>
-            {treg.installed
-              ? `Treg ${treg.version || 'actif'} · ${treg.connectedPlatforms.length} connecté(s)`
-              : 'Treg CLI absent · Fallback Kit Manuel prêt'}
-          </span>
-          <button
-            type="button"
-            onClick={() => void onRefreshStatus()}
-            aria-label="Actualiser l'état des connexions"
-            className="p-1.5 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[#14161B] cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => void onRefreshStatus()}
+          aria-label="Actualiser l'état des connexions"
+          className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-xs font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap self-start sm:self-auto"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Actualiser
+        </button>
       </div>
 
+      {/* Treg 1-Link Express Banner */}
+      <div className="rounded-xl border border-[#258EFF]/25 bg-[#258EFF]/[0.04] p-3.5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#14161B]">
+              <Sparkles className="w-4 h-4 text-[#258EFF]" aria-hidden="true" />
+              <span>Passerelle Treg 1-Clic (YouTube · Instagram · TikTok)</span>
+            </div>
+            <p className="text-[11px] text-[#5C5F68]">
+              {tregSession.loggedIn
+                ? `Session Treg active${tregSession.email ? ` (${tregSession.email})` : ''}${tregSession.activeOrg ? ` · Équipe ${tregSession.activeOrg}` : ''} — vous pouvez lier chaque réseau ci-dessous en 1 clic.`
+                : 'Un seul lien pour vous connecter avec Google, GitHub ou email — ensuite vous connectez Instagram, TikTok et YouTube sans portail développeur.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {tregSession.loggedIn ? (
+              <button
+                type="button"
+                onClick={() => void handleTregLogout()}
+                className="h-9 px-3 rounded-xl border border-[#E3DED3] bg-white hover:border-[#DC2626] hover:text-[#DC2626] text-xs font-semibold text-[#5C5F68] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                Déconnecter Treg
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleStartTregLogin()}
+                  disabled={startingTregLogin}
+                  data-testid="treg-oneclick-login-btn"
+                  className="h-9 px-3.5 rounded-xl bg-[#258EFF] hover:bg-[#14161B] disabled:opacity-60 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors"
+                >
+                  {startingTregLogin ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  )}
+                  Se connecter à Treg en 1 lien
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTregAlt((v) => !v)}
+                  className="h-9 px-3 rounded-xl border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-xs font-semibold text-[#14161B] cursor-pointer whitespace-nowrap"
+                >
+                  Email / Token
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Direct clickable link if popup blocked or on tablet */}
+        {tregLoginFlow && (
+          <div className="p-3 rounded-xl border border-[#E3DED3] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="space-y-1 min-w-0">
+              <div className="font-bold text-[#14161B] flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#258EFF] shrink-0" />
+                <span>En attente de votre connexion dans l’onglet Treg…</span>
+              </div>
+              {tregLoginFlow.pairingCode && (
+                <p className="text-[11px] text-[#5C5F68]">
+                  Code de vérification affiché sur la page :{' '}
+                  <span className="font-mono font-bold text-[#14161B]">
+                    {tregLoginFlow.pairingCode}
+                  </span>
+                </p>
+              )}
+            </div>
+            <a
+              href={tregLoginFlow.loginUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="h-8 px-3 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+            >
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+              Ouvrir le lien Treg
+            </a>
+          </div>
+        )}
+
+        {/* Email OTP or Token fallback */}
+        {showTregAlt && !tregSession.loggedIn && (
+          <div className="p-3 rounded-xl border border-[#E3DED3] bg-white grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="space-y-2">
+              <label htmlFor="treg-email-input" className="block font-semibold text-[#5C5F68]">
+                Connexion Treg par email (code à 6 chiffres)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="treg-email-input"
+                  type="email"
+                  value={tregEmailInput}
+                  onChange={(e) => setTregEmailInput(e.target.value)}
+                  placeholder="vous@gmail.com"
+                  className="flex-1 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-xs"
+                />
+                <button
+                  type="button"
+                  disabled={tregBusy}
+                  onClick={() => void handleTregEmailStart()}
+                  className="h-8 px-3 rounded-lg bg-[#14161B] text-white font-semibold cursor-pointer whitespace-nowrap"
+                >
+                  Envoyer code
+                </button>
+              </div>
+              {tregAwaitingEmailCode && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tregEmailCodeInput}
+                    onChange={(e) => setTregEmailCodeInput(e.target.value)}
+                    placeholder="Code 6 chiffres"
+                    className="flex-1 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    disabled={tregBusy}
+                    onClick={() => void handleTregEmailVerify()}
+                    className="h-8 px-3 rounded-lg bg-[#059669] text-white font-semibold cursor-pointer whitespace-nowrap"
+                  >
+                    Valider
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="treg-token-input" className="block font-semibold text-[#5C5F68]">
+                Ou coller votre clé API Treg (TREG_TOKEN)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="treg-token-input"
+                  type="password"
+                  value={tregTokenInput}
+                  onChange={(e) => setTregTokenInput(e.target.value)}
+                  placeholder="treg_..."
+                  className="flex-1 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] font-mono text-xs"
+                />
+                <button
+                  type="button"
+                  disabled={tregBusy}
+                  onClick={() => void handleTregTokenSubmit()}
+                  className="h-8 px-3 rounded-lg bg-[#258EFF] text-white font-semibold cursor-pointer whitespace-nowrap"
+                >
+                  Connecter
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Pending provider consent banner */}
+      {pendingProviderAuth && (
+        <div className="p-3 rounded-xl border border-[#258EFF]/30 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="space-y-0.5 min-w-0">
+            <div className="font-bold text-[#14161B] flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#258EFF] shrink-0" />
+              <span>
+                Finalisez l’autorisation {pendingProviderAuth.platform} dans la fenêtre ouverte…
+              </span>
+            </div>
+            {pendingProviderAuth.consentNotice && (
+              <p className="text-[11px] text-[#5C5F68]">{pendingProviderAuth.consentNotice}</p>
+            )}
+          </div>
+          <a
+            href={pendingProviderAuth.consentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-8 px-3 rounded-lg bg-[#258EFF] text-white font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+          >
+            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+            Ouvrir le lien de connexion
+          </a>
+        </div>
+      )}
+
+      {/* Pending Direct OAuth banner */}
+      {pendingOAuthFlow && (
+        <div className="p-3 rounded-xl border border-[#14161B]/25 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="space-y-0.5 min-w-0">
+            <div className="font-bold text-[#14161B] flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#258EFF] shrink-0" />
+              <span>
+                Lien OAuth {pendingOAuthFlow.platform} prêt — ouvrez-le pour autoriser le compte :
+              </span>
+            </div>
+            <p className="text-[11px] text-[#5C5F68] font-mono truncate">
+              {pendingOAuthFlow.url}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={pendingOAuthFlow.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8 px-3 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white font-semibold inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+              Autoriser dans un nouvel onglet
+            </a>
+            {onClearPendingOAuth && (
+              <button
+                type="button"
+                onClick={onClearPendingOAuth}
+                className="h-8 px-2.5 rounded-lg border border-[#E3DED3] text-[#5C5F68] hover:text-[#14161B] font-semibold cursor-pointer"
+              >
+                Fermer
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3 Network Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
         {accounts.map((acc) => {
           const isExpanded = expandedPlatform === acc.platform;
           const callbackUrl = callbacks[acc.platform] || '';
+          const isTregReady = Boolean(acc.tregConnected);
 
           return (
             <article
@@ -159,12 +621,20 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                     <h3 className="text-sm font-bold text-[#14161B] truncate">
                       {acc.label}
                     </h3>
-                    <p className="text-[11px] text-[#5C5F68] truncate">
+                    <p
+                      className={`text-[11px] truncate ${
+                        acc.connected ? 'text-[#059669] font-semibold' : 'text-[#5C5F68]'
+                      }`}
+                    >
                       {acc.connected
                         ? `${acc.accountHandle || acc.accountName || 'Connecté'} · Actif`
                         : acc.route === 'manual'
                           ? 'Mode Kit Manuel prêt'
-                          : 'Non connecté'}
+                          : acc.route === 'treg'
+                            ? 'Prêt pour connexion 1-clic Treg'
+                            : acc.oauthConfigured
+                              ? 'OAuth configuré · À connecter'
+                              : 'Clés OAuth à renseigner (ou Treg)'}
                     </p>
                   </div>
                 </div>
@@ -183,17 +653,14 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
 
               {/* Route selector */}
               <div className="space-y-1.5">
-                <label
-                  htmlFor={`route-${acc.platform}`}
-                  className="block text-[11px] font-semibold text-[#5C5F68]"
-                >
+                <span className="block text-[11px] font-semibold text-[#5C5F68]">
                   Mécanisme de publication
-                </label>
+                </span>
                 <div className="grid grid-cols-3 gap-1 p-0.5 bg-[#EAE7DF] rounded-lg">
                   {(
                     [
-                      { id: 'oauth', label: 'OAuth' },
-                      { id: 'treg', label: 'Treg' },
+                      { id: 'treg', label: 'Treg 1-Clic' },
+                      { id: 'oauth', label: 'OAuth Direct' },
                       { id: 'manual', label: 'Manuel' },
                     ] as const
                   ).map((opt) => (
@@ -204,7 +671,7 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                         void onUpdateAccount(acc.platform, { route: opt.id })
                       }
                       aria-pressed={acc.route === opt.id}
-                      className={`py-1 px-2 rounded-md text-[11px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${
+                      className={`py-1 px-1.5 rounded-md text-[11px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${
                         acc.route === opt.id
                           ? 'bg-[#FCFBF8] text-[#14161B] shadow-xs'
                           : 'text-[#5C5F68] hover:text-[#14161B]'
@@ -239,36 +706,59 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
 
               {/* Primary Connection / Config Buttons */}
               <div className="flex items-center gap-2 pt-1 mt-auto">
-                {acc.route === 'oauth' && (
+                {acc.route === 'treg' && (
                   <button
                     type="button"
-                    onClick={() => void onStartOAuth(acc.platform)}
-                    disabled={!acc.oauthConfigured}
-                    className="flex-1 h-9 px-3 rounded-xl bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-45 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                    disabled={connectingProvider === acc.platform}
+                    onClick={() => void handleStartTregProvider(acc.platform)}
+                    className={`flex-1 h-9 px-3 rounded-xl text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap ${
+                      isTregReady
+                        ? 'bg-[#059669] hover:bg-[#14161B]'
+                        : 'bg-[#258EFF] hover:bg-[#14161B]'
+                    }`}
                   >
-                    <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
-                    {acc.connected ? 'Reconnecter OAuth' : 'Connecter OAuth'}
+                    {connectingProvider === acc.platform ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    )}
+                    {isTregReady ? 'Reconnecter (Treg)' : 'Connecter en 1 clic'}
                   </button>
                 )}
 
-                {acc.route === 'treg' && (
-                  <div className="flex-1 text-[11px] font-medium text-[#5C5F68] flex items-center gap-1.5">
-                    <Power
-                      className={`w-3.5 h-3.5 ${
-                        acc.tregConnected ? 'text-[#059669]' : 'text-[#D97706]'
-                      }`}
-                      aria-hidden="true"
-                    />
-                    {acc.tregConnected
-                      ? 'Connecté via Treg'
-                      : 'Exécutez treg connections connect'}
-                  </div>
+                {acc.route === 'oauth' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!acc.oauthConfigured) {
+                        setExpandedPlatform(acc.platform);
+                        onNotify?.(
+                          `Renseignez votre Client ID + Secret ${acc.label} ci-dessous (ou basculez sur « Treg 1-Clic »).`,
+                          true
+                        );
+                        return;
+                      }
+                      void onStartOAuth(acc.platform);
+                    }}
+                    className={`flex-1 h-9 px-3 rounded-xl text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap ${
+                      acc.oauthConfigured
+                        ? 'bg-[#14161B] hover:bg-[#258EFF]'
+                        : 'bg-[#5C5F68] hover:bg-[#14161B]'
+                    }`}
+                  >
+                    <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    {acc.connected
+                      ? 'Reconnecter OAuth'
+                      : acc.oauthConfigured
+                        ? 'Connecter OAuth'
+                        : 'Configurer OAuth'}
+                  </button>
                 )}
 
                 {acc.route === 'manual' && (
                   <div className="flex-1 text-[11px] font-medium text-[#059669] flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-                    Kit MP4 + Cover + Texte prêt
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    Kit MP4 + Cover prêt
                   </div>
                 )}
 
@@ -295,7 +785,9 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                 <div className="pt-2.5 border-t border-[#E3DED3] space-y-2.5 text-[11px]">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[#5C5F68] font-semibold">
-                      <span>URL Callback OAuth ({acc.oauthConfigured ? 'Clés détectées' : 'Clés à définir'})</span>
+                      <span>
+                        URL Callback OAuth ({acc.oauthConfigured ? 'Clés prêtes' : 'Clés à saisir'})
+                      </span>
                       <button
                         type="button"
                         onClick={() => void handleCopyCallback(acc.platform, callbackUrl)}
@@ -316,14 +808,49 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                       {callbackUrl}
                     </code>
                     <p className="text-[10px] text-[#5C5F68]">
-                      Secrets requis : <span className="font-mono">{ENV_HINT[acc.platform]}</span>
+                      Variables env : <span className="font-mono">{ENV_HINT[acc.platform]}</span>
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
+                    <div className="font-semibold text-[#5C5F68]">
+                      Identifiants OAuth directs (sauvegardés sur le serveur)
+                    </div>
+                    <input
+                      type="text"
+                      aria-label={`Client ID ${acc.label}`}
+                      value={clientIdInputs[acc.platform] ?? ''}
+                      onChange={(e) =>
+                        setClientIdInputs((p) => ({ ...p, [acc.platform]: e.target.value }))
+                      }
+                      placeholder={
+                        acc.hasCustomClientCredentials
+                          ? 'Client ID enregistré (saisir pour remplacer)'
+                          : 'Client ID / Client Key OAuth'
+                      }
+                      className="w-full h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-xs text-[#14161B] font-mono"
+                    />
+                    <input
+                      type="password"
+                      aria-label={`Client Secret ${acc.label}`}
+                      value={clientSecretInputs[acc.platform] ?? ''}
+                      onChange={(e) =>
+                        setClientSecretInputs((p) => ({
+                          ...p,
+                          [acc.platform]: e.target.value,
+                        }))
+                      }
+                      placeholder={
+                        acc.hasCustomClientCredentials
+                          ? 'Client Secret enregistré (saisir pour remplacer)'
+                          : 'Client Secret OAuth'
+                      }
+                      className="w-full h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-xs text-[#14161B] font-mono"
+                    />
+
                     <label
                       htmlFor={`handle-${acc.platform}`}
-                      className="block font-semibold text-[#5C5F68]"
+                      className="block font-semibold text-[#5C5F68] pt-1"
                     >
                       Nom / Handle du compte (optionnel)
                     </label>
@@ -342,7 +869,7 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                       <input
                         type="text"
                         aria-label="Instagram Business User ID"
-                        value={igIdInput}
+                        value={igIdInput || acc.igUserId || ''}
                         onChange={(e) => setIgIdInput(e.target.value)}
                         placeholder="IG User ID (ex: 178414...)"
                         className="w-full h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-xs text-[#14161B] font-mono"
@@ -356,14 +883,14 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                       onChange={(e) =>
                         setTokenInputs((p) => ({ ...p, [acc.platform]: e.target.value }))
                       }
-                      placeholder="Coller un Access Token OAuth (optionnel)"
+                      placeholder="Access Token direct (optionnel)"
                       className="w-full h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-xs text-[#14161B] font-mono"
                     />
 
                     <button
                       type="button"
                       disabled={savingPlatform === acc.platform}
-                      onClick={() => void handleSaveManualToken(acc.platform)}
+                      onClick={() => void handleSaveManualConfig(acc.platform)}
                       className="w-full h-8 rounded-lg bg-[#258EFF] hover:opacity-90 text-white font-semibold text-xs cursor-pointer"
                     >
                       {savingPlatform === acc.platform

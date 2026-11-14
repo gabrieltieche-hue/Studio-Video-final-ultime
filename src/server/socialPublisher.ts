@@ -6,12 +6,14 @@ import { GoogleGenAI, Type } from '@google/genai';
 import {
   RENDERS_DIR,
   ROOT_DIR,
+  STORAGE_DIR,
   TAKES_DIR,
   getProject,
 } from './storageManager';
 import {
   SOCIAL_PACKS_DIR,
   appendPublishLog,
+  getOAuthClientCredentials,
   getRawSocialAccounts,
   getScheduledPost,
   getScheduledQueue,
@@ -24,6 +26,11 @@ import {
   upsertScheduledPost,
 } from './socialStorage';
 import {
+  getTregSessionPublic,
+  publishViaTregHttp,
+  readTregSession,
+} from './tregClient';
+import {
   PLATFORM_META,
   buildTemplateSocialCopy,
   formatPublishedMarkdownLine,
@@ -33,6 +40,7 @@ import {
 } from '../engine/socialCopy';
 import type { ShortProject } from '../types/studio';
 import type {
+  HostingDiagnostics,
   PreparedMediaAssets,
   PublishRoute,
   ScheduledPostItem,
@@ -53,17 +61,64 @@ const pendingOAuthStates = new Map<string, PendingOAuthState>();
 let schedulerTimer: NodeJS.Timeout | null = null;
 let tickInProgress = false;
 
-export function getPublicAppBaseUrl(): string {
-  const raw = (process.env.APP_URL || '').trim().replace(/\/+$/, '');
-  if (raw && !raw.includes('MY_APP_URL')) {
-    return raw;
+export function getPublicAppBaseUrl(requestOrigin?: string): string {
+  const candidates = [
+    process.env.APP_URL,
+    process.env.PUBLIC_APP_URL,
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : '',
+    process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : '',
+  ];
+  for (const raw of candidates) {
+    const clean = (raw || '').trim().replace(/\/+$/, '');
+    if (clean && !clean.includes('MY_APP_URL')) {
+      return clean;
+    }
+  }
+  if (requestOrigin && /^https?:\/\//i.test(requestOrigin)) {
+    return requestOrigin.replace(/\/+$/, '');
   }
   const port = Number(process.env.PORT) || 3000;
   return `http://localhost:${port}`;
 }
 
-export function getOAuthCallbackUrl(platform: SocialPlatform): string {
-  return `${getPublicAppBaseUrl()}/api/social/oauth/${platform}/callback`;
+export function getOAuthCallbackUrl(
+  platform: SocialPlatform,
+  requestOrigin?: string
+): string {
+  return `${getPublicAppBaseUrl(requestOrigin)}/api/social/oauth/${platform}/callback`;
+}
+
+export function getHostingDiagnostics(requestOrigin?: string): HostingDiagnostics {
+  const appUrl = getPublicAppBaseUrl(requestOrigin);
+  let environment: HostingDiagnostics['environment'] = 'custom_server';
+  if (appUrl.includes('ais-dev-') || appUrl.includes('ais-pre-')) {
+    environment = 'ai_studio_preview';
+  } else if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PUBLIC_DOMAIN) {
+    environment = 'railway';
+  } else if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+    environment = 'render';
+  } else if (process.env.FLY_APP_NAME) {
+    environment = 'fly';
+  }
+
+  const isAlwaysOn =
+    process.env.ALWAYS_ON_SERVER === 'true' ||
+    environment === 'railway' ||
+    environment === 'render' ||
+    environment === 'fly' ||
+    (environment === 'custom_server' && !appUrl.startsWith('http://localhost'));
+
+  return {
+    environment,
+    isAlwaysOn,
+    appUrl,
+    storageDir: STORAGE_DIR,
+    elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
+    cronEndpoint: `${appUrl}/api/social/cron-tick`,
+  };
 }
 
 export function resolveProjectMasterMp4(
@@ -386,42 +441,30 @@ export function inspectTregStatus(): {
   installed: boolean;
   version?: string;
   connectedPlatforms: SocialPlatform[];
+  loggedIn?: boolean;
+  email?: string;
   rawOutput?: string;
 } {
-  try {
-    const ver = spawnSync('treg', ['--version'], {
-      encoding: 'utf-8',
-      timeout: 5000,
-    });
-    if (ver.status !== 0) {
-      return { installed: false, connectedPlatforms: [] };
-    }
-    const ls = spawnSync('treg', ['connections', 'ls'], {
-      encoding: 'utf-8',
-      timeout: 8000,
-    });
-    const out = `${ls.stdout || ''}\n${ls.stderr || ''}`.toLowerCase();
-    const connectedPlatforms: SocialPlatform[] = [];
-    if (out.includes('youtube')) connectedPlatforms.push('youtube');
-    if (out.includes('instagram')) connectedPlatforms.push('instagram');
-    if (out.includes('tiktok')) connectedPlatforms.push('tiktok');
-    return {
-      installed: true,
-      version: (ver.stdout || '').trim(),
-      connectedPlatforms,
-      rawOutput: (ls.stdout || ls.stderr || '').trim(),
-    };
-  } catch {
-    return { installed: false, connectedPlatforms: [] };
-  }
+  const pub = getTregSessionPublic();
+  return {
+    installed: pub.cliInstalled || pub.loggedIn,
+    version: pub.cliVersion || (pub.loggedIn ? 'Cloud API' : undefined),
+    connectedPlatforms: pub.connectedPlatforms,
+    loggedIn: pub.loggedIn,
+    email: pub.email,
+  };
 }
 
-export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
+export function buildOAuthAuthorizationUrl(
+  platform: SocialPlatform,
+  requestOrigin?: string
+): {
   url: string;
   callbackUrl: string;
 } {
-  const callbackUrl = getOAuthCallbackUrl(platform);
+  const callbackUrl = getOAuthCallbackUrl(platform, requestOrigin);
   const state = crypto.randomBytes(16).toString('hex');
+  const creds = getOAuthClientCredentials(platform);
 
   // Cleanup expired states (> 15m)
   const now = Date.now();
@@ -430,11 +473,9 @@ export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
   }
 
   if (platform === 'youtube') {
-    const clientId =
-      process.env.YOUTUBE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
-    if (!clientId) {
+    if (!creds.clientId) {
       throw new Error(
-        'YOUTUBE_CLIENT_ID (ou GOOGLE_CLIENT_ID) manquant dans les variables environnement.'
+        'YOUTUBE_CLIENT_ID (ou Client ID dans Config) manquant — ou utilisez la connexion 1-clic Treg.'
       );
     }
     pendingOAuthStates.set(state, {
@@ -443,7 +484,7 @@ export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
       createdAt: now,
     });
     const params = new URLSearchParams({
-      client_id: clientId,
+      client_id: creds.clientId,
       redirect_uri: callbackUrl,
       response_type: 'code',
       scope:
@@ -459,11 +500,9 @@ export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
   }
 
   if (platform === 'instagram') {
-    const clientId =
-      process.env.INSTAGRAM_CLIENT_ID || process.env.META_APP_ID || '';
-    if (!clientId) {
+    if (!creds.clientId) {
       throw new Error(
-        'INSTAGRAM_CLIENT_ID (ou META_APP_ID) manquant dans les variables environnement.'
+        'INSTAGRAM_CLIENT_ID (ou Client ID dans Config) manquant — ou utilisez la connexion 1-clic Treg.'
       );
     }
     pendingOAuthStates.set(state, {
@@ -472,7 +511,7 @@ export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
       createdAt: now,
     });
     const params = new URLSearchParams({
-      client_id: clientId,
+      client_id: creds.clientId,
       redirect_uri: callbackUrl,
       response_type: 'code',
       scope:
@@ -485,10 +524,9 @@ export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
     };
   }
 
-  const clientKey = process.env.TIKTOK_CLIENT_KEY || '';
-  if (!clientKey) {
+  if (!creds.clientId) {
     throw new Error(
-      'TIKTOK_CLIENT_KEY manquant dans les variables environnement.'
+      'TIKTOK_CLIENT_KEY (ou Client Key dans Config) manquant — ou utilisez la connexion 1-clic Treg.'
     );
   }
   const codeVerifier = crypto.randomBytes(32).toString('base64url');
@@ -503,7 +541,7 @@ export function buildOAuthAuthorizationUrl(platform: SocialPlatform): {
     createdAt: now,
   });
   const params = new URLSearchParams({
-    client_key: clientKey,
+    client_key: creds.clientId,
     response_type: 'code',
     scope: 'user.info.basic,video.publish,video.upload',
     redirect_uri: callbackUrl,
@@ -526,11 +564,10 @@ export async function handleOAuthCallback(
   if (state) pendingOAuthStates.delete(state);
   const redirectUri = pending?.redirectUri || getOAuthCallbackUrl(platform);
 
+  const creds = getOAuthClientCredentials(platform);
+
   if (platform === 'youtube') {
-    const clientId =
-      process.env.YOUTUBE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret =
-      process.env.YOUTUBE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
+    const { clientId, clientSecret } = creds;
     if (!clientId || !clientSecret) {
       throw new Error('Identifiants OAuth YouTube non configurés sur le serveur.');
     }
@@ -611,10 +648,7 @@ export async function handleOAuthCallback(
   }
 
   if (platform === 'instagram') {
-    const clientId =
-      process.env.INSTAGRAM_CLIENT_ID || process.env.META_APP_ID || '';
-    const clientSecret =
-      process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET || '';
+    const { clientId, clientSecret } = creds;
     if (!clientId || !clientSecret) {
       throw new Error('Identifiants OAuth Instagram/Meta non configurés.');
     }
@@ -723,8 +757,7 @@ export async function handleOAuthCallback(
   }
 
   // TikTok
-  const clientKey = process.env.TIKTOK_CLIENT_KEY || '';
-  const clientSecret = process.env.TIKTOK_CLIENT_SECRET || '';
+  const { clientId: clientKey, clientSecret } = creds;
   if (!clientKey || !clientSecret) {
     throw new Error('Identifiants OAuth TikTok non configurés.');
   }
@@ -816,10 +849,7 @@ async function refreshOAuthTokenIfNeeded(
   if (!account.refreshToken) return account;
 
   if (account.platform === 'youtube') {
-    const clientId =
-      process.env.YOUTUBE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret =
-      process.env.YOUTUBE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
+    const { clientId, clientSecret } = getOAuthClientCredentials('youtube');
     if (!clientId || !clientSecret) return account;
 
     const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -849,8 +879,7 @@ async function refreshOAuthTokenIfNeeded(
   }
 
   if (account.platform === 'tiktok') {
-    const clientKey = process.env.TIKTOK_CLIENT_KEY || '';
-    const clientSecret = process.env.TIKTOK_CLIENT_SECRET || '';
+    const { clientId: clientKey, clientSecret } = getOAuthClientCredentials('tiktok');
     if (!clientKey || !clientSecret) return account;
 
     const res = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
@@ -1347,13 +1376,23 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
 
   if (effectiveRoute === 'treg') {
     try {
-      const result = await publishViaTregCli(current, pack);
+      const tregSession = readTregSession();
+      const result = tregSession?.token
+        ? await publishViaTregHttp(current, account, pack, getPublicAppBaseUrl())
+        : await publishViaTregCli(current, pack);
+
+      const inboxNote =
+        'inboxOnly' in result && result.inboxOnly
+          ? 'Envoyé dans votre boîte de réception TikTok via Treg (prêt à publier en 1 tap).'
+          : current.notes;
+
       const published = upsertScheduledPost({
         ...current,
         status: 'published',
         publishedAt: new Date().toISOString(),
         publishedUrl: result.publishedUrl,
         externalPostId: result.externalPostId,
+        notes: inboxNote,
         errorMessage: undefined,
       });
       recordPublishedMarkdown(published);
@@ -1391,9 +1430,15 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
   // OAuth Direct Route
   try {
     if (!account.connected || !account.accessToken) {
+      const tregSession = readTregSession();
       const treg = inspectTregStatus();
-      if (treg.installed && treg.connectedPlatforms.includes(current.platform)) {
-        const tregResult = await publishViaTregCli(current, pack);
+      if (
+        (tregSession?.token && treg.connectedPlatforms.includes(current.platform)) ||
+        (treg.installed && treg.connectedPlatforms.includes(current.platform))
+      ) {
+        const tregResult = tregSession?.token
+          ? await publishViaTregHttp(current, account, pack, getPublicAppBaseUrl())
+          : await publishViaTregCli(current, pack);
         const published = upsertScheduledPost({
           ...current,
           status: 'published',

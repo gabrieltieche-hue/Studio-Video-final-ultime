@@ -29,22 +29,71 @@ export function initSocialStorage(): void {
   }
 }
 
-export function isPlatformOAuthConfigured(platform: SocialPlatform): boolean {
+export function getOAuthClientCredentials(platform: SocialPlatform): {
+  clientId: string;
+  clientSecret: string;
+  source: 'env' | 'custom' | 'none';
+} {
   if (platform === 'youtube') {
-    return Boolean(
-      (process.env.YOUTUBE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID) &&
-        (process.env.YOUTUBE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET)
-    );
+    const envId = (
+      process.env.YOUTUBE_CLIENT_ID ||
+      process.env.GOOGLE_CLIENT_ID ||
+      ''
+    ).trim();
+    const envSecret = (
+      process.env.YOUTUBE_CLIENT_SECRET ||
+      process.env.GOOGLE_CLIENT_SECRET ||
+      ''
+    ).trim();
+    if (envId && envSecret) {
+      return { clientId: envId, clientSecret: envSecret, source: 'env' };
+    }
+  } else if (platform === 'instagram') {
+    const envId = (
+      process.env.INSTAGRAM_CLIENT_ID ||
+      process.env.META_APP_ID ||
+      ''
+    ).trim();
+    const envSecret = (
+      process.env.INSTAGRAM_CLIENT_SECRET ||
+      process.env.META_APP_SECRET ||
+      ''
+    ).trim();
+    if (envId && envSecret) {
+      return { clientId: envId, clientSecret: envSecret, source: 'env' };
+    }
+  } else {
+    const envId = (process.env.TIKTOK_CLIENT_KEY || '').trim();
+    const envSecret = (process.env.TIKTOK_CLIENT_SECRET || '').trim();
+    if (envId && envSecret) {
+      return { clientId: envId, clientSecret: envSecret, source: 'env' };
+    }
   }
-  if (platform === 'instagram') {
-    return Boolean(
-      (process.env.INSTAGRAM_CLIENT_ID || process.env.META_APP_ID) &&
-        (process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET)
-    );
+
+  if (fs.existsSync(SOCIAL_ACCOUNTS_FILE)) {
+    try {
+      const parsed = JSON.parse(
+        fs.readFileSync(SOCIAL_ACCOUNTS_FILE, 'utf-8')
+      ) as Partial<Record<SocialPlatform, SocialAccountSecretRecord>>;
+      const rec = parsed[platform];
+      if (rec?.clientId?.trim() && rec?.clientSecret?.trim()) {
+        return {
+          clientId: rec.clientId.trim(),
+          clientSecret: rec.clientSecret.trim(),
+          source: 'custom',
+        };
+      }
+    } catch {
+      // ignore malformed accounts file
+    }
   }
-  return Boolean(
-    process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET
-  );
+
+  return { clientId: '', clientSecret: '', source: 'none' };
+}
+
+export function isPlatformOAuthConfigured(platform: SocialPlatform): boolean {
+  const creds = getOAuthClientCredentials(platform);
+  return Boolean(creds.clientId && creds.clientSecret);
 }
 
 function defaultAccountRecord(platform: SocialPlatform): SocialAccountSecretRecord {
@@ -99,10 +148,11 @@ export function toPublicAccountConfig(
   rec: SocialAccountSecretRecord,
   tregConnectedPlatforms: Set<SocialPlatform> = new Set()
 ): SocialAccountConfig {
+  const tregOk = tregConnectedPlatforms.has(rec.platform);
   return {
     platform: rec.platform,
     label: PLATFORM_META[rec.platform].name,
-    connected: Boolean(rec.connected || (rec.route === 'treg' && tregConnectedPlatforms.has(rec.platform))),
+    connected: Boolean(rec.connected || (rec.route === 'treg' && tregOk)),
     route: rec.route,
     fallbackToManual: rec.fallbackToManual,
     accountName: rec.accountName,
@@ -111,7 +161,10 @@ export function toPublicAccountConfig(
     avatarUrl: rec.avatarUrl,
     scopes: rec.scopes,
     oauthConfigured: isPlatformOAuthConfigured(rec.platform),
-    tregConnected: tregConnectedPlatforms.has(rec.platform),
+    hasCustomClientCredentials: Boolean(rec.clientId && rec.clientSecret),
+    tregConnected: tregOk,
+    tregConnectionId: rec.tregConnectionId,
+    igUserId: rec.igUserId,
     tokenExpiresAt: rec.tokenExpiresAt,
     connectedAt: rec.connectedAt,
     lastError: rec.lastError,

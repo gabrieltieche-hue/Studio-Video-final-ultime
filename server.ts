@@ -71,6 +71,17 @@ async function startServer() {
   app.use('/takes', express.static(TAKES_DIR));
   app.use('/renders', express.static(RENDERS_DIR));
   app.use('/storage', express.static(STORAGE_DIR));
+
+  app.get('/api/health', (_req, res) => {
+    res.json({
+      ok: true,
+      uptimeSec: Math.round(process.uptime()),
+      storageDir: STORAGE_DIR,
+      elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   app.use(createStudioRouter());
   app.use(createSocialRouter());
 
