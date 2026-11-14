@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ShortProject } from '../types/studio';
+import type { ShortProject, StudioWorkspaceState } from '../types/studio';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +16,7 @@ export const JOBS_DIR = path.join(STORAGE_DIR, 'jobs');
 export const STYLES_DIR = path.join(STORAGE_DIR, 'styles');
 export const MUSIC_DIR = path.join(STORAGE_DIR, 'music');
 export const SFX_DIR = path.join(STORAGE_DIR, 'sfx');
+export const WORKSPACE_STATE_FILE = path.join(STORAGE_DIR, 'workspace-state.json');
 
 export function initStorage(): void {
   const dirs = [
@@ -120,7 +121,87 @@ export function deleteProject(idOrSlug: string): boolean {
   const projectDir = path.join(PROJECTS_DIR, p.id);
   if (fs.existsSync(projectDir)) {
     fs.rmSync(projectDir, { recursive: true, force: true });
+    const state = getWorkspaceState();
+    if (state.activeProjectId === p.id) {
+      const remaining = getAllProjects();
+      if (remaining[0]) {
+        saveWorkspaceState({
+          activeProjectId: remaining[0].id,
+          activeVersion: remaining[0].currentVersion,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
     return true;
   }
   return false;
+}
+
+export function getWorkspaceState(): StudioWorkspaceState {
+  initStorage();
+  const projects = getAllProjects();
+  const fallbackProject =
+    projects.find((p) => p.id === 'proj-interdiction-15-ans') || projects[0] || null;
+  if (fs.existsSync(WORKSPACE_STATE_FILE)) {
+    try {
+      const parsed = JSON.parse(
+        fs.readFileSync(WORKSPACE_STATE_FILE, 'utf-8')
+      ) as StudioWorkspaceState;
+      const found = projects.find(
+        (p) => p.id === parsed.activeProjectId || p.slug === parsed.activeProjectId
+      );
+      if (found) {
+        return {
+          activeProjectId: found.id,
+          activeVersion: parsed.activeVersion || found.currentVersion,
+          updatedAt: parsed.updatedAt || new Date().toISOString(),
+        };
+      }
+    } catch {
+      // fall through to default
+    }
+  }
+  return {
+    activeProjectId: fallbackProject?.id || 'proj-interdiction-15-ans',
+    activeVersion: fallbackProject?.currentVersion || 'v1',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function saveWorkspaceState(state: StudioWorkspaceState): StudioWorkspaceState {
+  initStorage();
+  const next: StudioWorkspaceState = {
+    activeProjectId: state.activeProjectId,
+    activeVersion: state.activeVersion,
+    updatedAt: state.updatedAt || new Date().toISOString(),
+  };
+  fs.writeFileSync(WORKSPACE_STATE_FILE, JSON.stringify(next, null, 2), 'utf-8');
+  return next;
+}
+
+export function setActiveProjectAndVersion(
+  projectIdOrSlug: string,
+  version?: string
+): { project: ShortProject; state: StudioWorkspaceState } {
+  const proj = getProject(projectIdOrSlug);
+  if (!proj) {
+    throw new Error(`Projet "${projectIdOrSlug}" introuvable.`);
+  }
+  let targetVersion = proj.currentVersion;
+  if (version) {
+    const matched = (proj.versions || []).find((v) => v.version === version);
+    if (!matched) {
+      throw new Error(`Version "${version}" introuvable sur le projet "${proj.title}".`);
+    }
+    proj.currentVersion = matched.version;
+    if (matched.duration > 0) proj.duration = matched.duration;
+    saveProject(proj);
+    targetVersion = matched.version;
+  }
+  const state = saveWorkspaceState({
+    activeProjectId: proj.id,
+    activeVersion: targetVersion,
+    updatedAt: new Date().toISOString(),
+  });
+  return { project: proj, state };
 }

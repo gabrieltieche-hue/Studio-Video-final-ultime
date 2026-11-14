@@ -44,6 +44,14 @@ export interface RenderVersion {
   notes: string;
   platform?: string;
   outputMp4?: string;
+  contactSheetUrl?: string;
+  audioTrackUrl?: string;
+}
+
+export interface StudioWorkspaceState {
+  activeProjectId: string;
+  activeVersion?: string;
+  updatedAt: string;
 }
 
 export interface ContactSheetFrame {
@@ -99,6 +107,9 @@ export interface ShortProject {
   id: string;
   slug: string;
   title: string;
+  topicId?: string;
+  topicCategory?: string;
+  hookText?: string;
   mode: 'faceless_explainer' | 'split_screen_clips';
   platform: 'instagram' | 'tiktok' | 'youtube_shorts';
   status: 'draft' | 'preparing' | 'rendering' | 'ready';

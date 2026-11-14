@@ -19,11 +19,19 @@ interface StudioPlayer916Props {
   isPlaying: boolean;
   isMuted: boolean;
   playbackSpeed: number;
+  timelineOpen?: boolean;
   selectedTargetElement: string | null;
   onSelectTargetElement: (el: string) => void;
   onSaveSnapshot: (dataUrl: string) => void;
   onSyncTimeFromVideo?: (t: number) => void;
 }
+
+const PEN_COLORS = [
+  { id: '#258EFF', label: 'Bleu' },
+  { id: '#DC2626', label: 'Rouge' },
+  { id: '#D97706', label: 'Ambre' },
+  { id: '#14161B', label: 'Encre' },
+];
 
 export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
   project,
@@ -31,12 +39,14 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
   isPlaying,
   isMuted,
   playbackSpeed,
+  timelineOpen = false,
   selectedTargetElement,
   onSelectTargetElement,
   onSaveSnapshot,
   onSyncTimeFromVideo,
 }) => {
   const [tool, setTool] = useState<'normal' | 'inspect' | 'draw'>('normal');
+  const [penColor, setPenColor] = useState('#258EFF');
   const [showSafeZones, setShowSafeZones] = useState(false);
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [hasStroke, setHasStroke] = useState(false);
@@ -46,12 +56,17 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const drawingRef = useRef(false);
 
-  // Determine video source for non-React-stage projects
-  const latestDoneVersion = (project.versions || []).find((v) => v.outputMp4);
+  // Pick MP4 corresponding to active version first, fallback to latest version with MP4 or speakerVideoUrl
+  const activeVersionObj = (project.versions || []).find(
+    (v) => v.version === project.currentVersion
+  );
+  const fallbackVersionWithMp4 = (project.versions || []).find((v) => v.outputMp4);
   const mediaSrc =
-    latestDoneVersion?.outputMp4 || project.speakerVideoUrl || undefined;
+    activeVersionObj?.outputMp4 ||
+    fallbackVersionWithMp4?.outputMp4 ||
+    project.speakerVideoUrl ||
+    undefined;
 
-  // Sync HTML5 video if using file-based project
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || project.isFlagshipReactStage) return;
@@ -62,7 +77,7 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
     } else if (!isPlaying && !vid.paused) {
       vid.pause();
     }
-  }, [isPlaying, isMuted, playbackSpeed, project.isFlagshipReactStage]);
+  }, [isPlaying, isMuted, playbackSpeed, project.isFlagshipReactStage, mediaSrc]);
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -84,11 +99,12 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (tool !== 'draw' || !canvasRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
     const { x, y } = getPointerPos(e);
-    ctx.strokeStyle = '#258EFF';
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -125,13 +141,13 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
     const dataUrl = canvas.toDataURL('image/png');
     onSaveSnapshot(dataUrl);
     setSnapshotSaved(true);
-    setTimeout(() => setSnapshotSaved(false), 2000);
+    setTimeout(() => setSnapshotSaved(false), 2500);
   };
 
   const inspectZones = [
     {
       id: 'Motion Top Card',
-      label: 'Carte Motion Supérieure (Beat Visuel)',
+      label: 'Carte Motion Supérieure',
       cls: 'top-[10%] left-[8%] right-[8%] h-[34%]',
     },
     {
@@ -141,70 +157,101 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
     },
     {
       id: 'B-Roll / Bottom Media',
-      label: 'Zone B-Roll / Preuve Éditoriale',
+      label: 'Zone B-Roll / Preuve',
       cls: 'top-[62%] left-[8%] right-[8%] h-[30%]',
     },
   ];
 
+  // Height-driven responsive sizing so BOTH toolbar and entire 9:16 stage never clip on 1280x720 or 1440x900
+  const stageMaxHeightClass = timelineOpen
+    ? 'h-[310px] sm:h-[min(42vh,360px)]'
+    : 'h-[360px] sm:h-[min(62vh,520px)]';
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-start sm:justify-center p-2.5 sm:p-4 bg-[#F6F5F1] overflow-y-auto min-h-0">
-      {/* Compact Inspection Toolbar */}
-      <div className="mb-2 inline-flex items-center gap-1 p-1 rounded-xl bg-[#FCFBF8] border border-[#E3DED3] shadow-sm flex-wrap justify-center shrink-0">
-        <button
-          type="button"
-          onClick={() => setTool('normal')}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-            tool === 'normal' ? 'bg-[#14161B] text-white' : 'text-[#5C5F68] hover:text-[#14161B]'
-          }`}
-        >
-          <MousePointer className="w-3 h-3" />
-          Normal
-        </button>
+    <div className="flex-1 flex flex-col items-center justify-start px-3 py-2 sm:py-3 bg-[#F6F5F1] overflow-y-auto min-h-0">
+      {/* Compact Inspection & Drawing Toolbar (always visible, never clipped) */}
+      <div className="mb-2 flex flex-col items-center gap-1.5 shrink-0 max-w-full">
+        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#FCFBF8] border border-[#E3DED3] shadow-sm flex-wrap justify-center">
+          <button
+            type="button"
+            onClick={() => setTool('normal')}
+            aria-pressed={tool === 'normal'}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+              tool === 'normal' ? 'bg-[#14161B] text-white' : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <MousePointer className="w-3 h-3" />
+            Normal
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setTool('inspect')}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-            tool === 'inspect' ? 'bg-[#258EFF] text-white' : 'text-[#5C5F68] hover:text-[#14161B]'
-          }`}
-        >
-          <Target className="w-3 h-3" />
-          Inspecter
-        </button>
+          <button
+            type="button"
+            onClick={() => setTool('inspect')}
+            aria-pressed={tool === 'inspect'}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+              tool === 'inspect' ? 'bg-[#258EFF] text-white' : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <Target className="w-3 h-3" />
+            Inspecter
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setTool('draw')}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-            tool === 'draw' ? 'bg-[#258EFF] text-white' : 'text-[#5C5F68] hover:text-[#14161B]'
-          }`}
-        >
-          <PenTool className="w-3 h-3" />
-          Annoter
-        </button>
+          <button
+            type="button"
+            onClick={() => setTool('draw')}
+            aria-pressed={tool === 'draw'}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+              tool === 'draw' ? 'bg-[#258EFF] text-white shadow-sm' : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <PenTool className="w-3 h-3" />
+            Dessiner
+          </button>
 
-        <div className="w-px h-4 bg-[#E3DED3] mx-0.5" />
+          <div className="w-px h-4 bg-[#E3DED3] mx-0.5" />
 
-        <button
-          type="button"
-          onClick={() => setShowSafeZones((s) => !s)}
-          aria-pressed={showSafeZones}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-            showSafeZones
-              ? 'bg-[#059669]/15 text-[#065F46]'
-              : 'text-[#5C5F68] hover:text-[#14161B]'
-          }`}
-        >
-          <Shield className="w-3 h-3" />
-          Safe Zones
-        </button>
+          <button
+            type="button"
+            onClick={() => setShowSafeZones((s) => !s)}
+            aria-pressed={showSafeZones}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+              showSafeZones
+                ? 'bg-[#059669]/15 text-[#065F46]'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <Shield className="w-3 h-3" />
+            Safe Zones
+          </button>
+        </div>
 
-        {tool === 'draw' && hasStroke && (
-          <>
+        {/* Dedicated Drawing Sub-bar (immediately visible as soon as Dessiner is selected) */}
+        {tool === 'draw' && (
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#FCFBF8] border border-[#258EFF]/40 shadow-sm text-[11px] flex-wrap justify-center">
+            <span className="text-[#5C5F68] font-medium hidden sm:inline">
+              Tracez sur la vidéo :
+            </span>
+            <div className="inline-flex items-center gap-1" role="group" aria-label="Couleur du stylo">
+              {PEN_COLORS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  title={c.label}
+                  aria-label={`Couleur ${c.label}`}
+                  onClick={() => setPenColor(c.id)}
+                  className={`w-4 h-4 rounded-full border-2 cursor-pointer transition-transform ${
+                    penColor === c.id ? 'border-[#14161B] scale-115' : 'border-white shadow-sm'
+                  }`}
+                  style={{ backgroundColor: c.id }}
+                />
+              ))}
+            </div>
+            <div className="w-px h-3.5 bg-[#E3DED3]" />
             <button
               type="button"
               onClick={clearDrawing}
-              className="px-2 py-1 rounded-lg text-[11px] font-semibold text-[#5C5F68] hover:text-[#DC2626] inline-flex items-center gap-1 cursor-pointer"
+              disabled={!hasStroke}
+              className="px-2 py-0.5 rounded-lg text-[#5C5F68] hover:text-[#DC2626] disabled:opacity-40 inline-flex items-center gap-1 font-semibold cursor-pointer"
             >
               <Eraser className="w-3 h-3" />
               Effacer
@@ -212,17 +259,20 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
             <button
               type="button"
               onClick={attachDrawingSnapshot}
-              className="px-2.5 py-1 rounded-lg bg-[#059669] text-white text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+              disabled={!hasStroke}
+              className="px-2.5 py-0.5 rounded-lg bg-[#059669] hover:opacity-90 disabled:opacity-40 text-white font-bold inline-flex items-center gap-1 cursor-pointer"
             >
               <Check className="w-3 h-3" />
-              {snapshotSaved ? 'Croquis joint !' : 'Joindre au retour'}
+              {snapshotSaved ? 'Croquis joint !' : 'Joindre au feedback'}
             </button>
-          </>
+          </div>
         )}
       </div>
 
-      {/* 9:16 Stage Frame */}
-      <div className="relative w-[190px] sm:w-[248px] aspect-[9/16] rounded-[20px] sm:rounded-[22px] overflow-hidden border border-[#E3DED3] shadow-lg bg-[#F1EEE6] shrink-0">
+      {/* 9:16 Stage Frame — height-constrained to never clip vertically */}
+      <div
+        className={`relative ${stageMaxHeightClass} aspect-[9/16] rounded-[20px] overflow-hidden border border-[#E3DED3] shadow-lg bg-[#F1EEE6] shrink-0 my-auto`}
+      >
         {project.isFlagshipReactStage ? (
           <ShortStage
             t={currentTime}
@@ -241,8 +291,9 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
           <div className="w-full h-full flex flex-col items-center justify-center p-5 text-center gap-2 text-[#5C5F68]">
             <Film className="w-8 h-8 text-[#258EFF]" />
             <p className="text-xs font-bold text-[#14161B]">{project.title}</p>
-            <p className="text-[11px]">
-              Projet brouillon ({project.mode}). Lancez un rendu FFmpeg ou importez un rush vidéo.
+            <p className="text-[11px] leading-relaxed">
+              Projet {project.currentVersion} ({project.mode === 'faceless_explainer' ? 'Motion Paper' : 'Split-Screen'}).
+              {project.hookText ? ` Hook : « ${project.hookText} »` : ' Prêt pour rendu FFmpeg ou import vidéo.'}
             </p>
           </div>
         )}
@@ -281,7 +332,7 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
           </div>
         )}
 
-        {/* Freehand Annotation Canvas */}
+        {/* Freehand Drawing Overlay Canvas */}
         <canvas
           ref={canvasRef}
           width={540}

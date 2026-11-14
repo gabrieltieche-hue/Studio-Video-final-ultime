@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   FileText,
   Film,
@@ -10,9 +10,15 @@ import {
   Sparkles,
   Trash2,
   Upload,
+  X,
   Youtube,
 } from 'lucide-react';
-import type { ShortProject, SourceVideo } from '../../types/studio';
+import {
+  formatStudioTimecode,
+  type ShortProject,
+  type SourceVideo,
+  type WhisperWord,
+} from '../../types/studio';
 
 interface StudioLeftSidebarProps {
   project: ShortProject;
@@ -30,6 +36,14 @@ interface StudioLeftSidebarProps {
   onAddCommentAtTime: (time: number, quote: string) => void;
   onTranscribeProject: () => void;
   onPrepareSilences: () => void;
+  onClosePanel?: () => void;
+}
+
+interface TranscriptSection {
+  id: string;
+  label: string;
+  start: number;
+  words: WhisperWord[];
 }
 
 export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
@@ -48,18 +62,57 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
   onAddCommentAtTime,
   onTranscribeProject,
   onPrepareSilences,
+  onClosePanel,
 }) => {
   const [activeTab, setActiveTab] = useState<'transcript' | 'library'>('transcript');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedWordId, setSelectedWordId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const activeWordIdx = (project.transcript || []).findIndex(
-    (w) => currentTime >= w.start && currentTime <= w.end
-  );
+  const words = project.transcript || [];
+  const activeWordIdx = words.findIndex((w) => currentTime >= w.start && currentTime <= w.end);
 
-  const filteredWords = (project.transcript || []).filter((w) =>
-    !searchTerm.trim() ? true : w.word.toLowerCase().includes(searchTerm.trim().toLowerCase())
-  );
+  const query = searchTerm.trim().toLowerCase();
+
+  // Group words into flowing editorial paragraphs by Beat / Track segment (or ~24-word paragraphs)
+  const sections: TranscriptSection[] = useMemo(() => {
+    if (words.length === 0) return [];
+    const beats = [...(project.motionTrack || [])].sort((a, b) => a.start - b.start);
+
+    if (beats.length > 0) {
+      const grouped: TranscriptSection[] = beats.map((b, idx) => ({
+        id: b.id,
+        label: b.name || `Séquence ${idx + 1}`,
+        start: b.start,
+        words: [],
+      }));
+      words.forEach((w) => {
+        const matchIdx = beats.findIndex((b) => w.start >= b.start && w.start < b.end);
+        const targetIdx =
+          matchIdx >= 0
+            ? matchIdx
+            : beats.reduce((best, b, i) => (w.start >= b.start ? i : best), 0);
+        grouped[targetIdx]?.words.push(w);
+      });
+      return grouped.filter((g) => g.words.length > 0);
+    }
+
+    const out: TranscriptSection[] = [];
+    for (let i = 0; i < words.length; i += 24) {
+      const slice = words.slice(i, i + 24);
+      out.push({
+        id: `sec-${i}`,
+        label: `Passage ${out.length + 1}`,
+        start: slice[0].start,
+        words: slice,
+      });
+    }
+    return out;
+  }, [words, project.motionTrack]);
+
+  const selectedWord =
+    words.find((w) => w.id === selectedWordId) ||
+    (activeWordIdx >= 0 ? words[activeWordIdx] : null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,33 +121,46 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-[320px] bg-[#FCFBF8] border-r border-[#E3DED3] flex flex-col h-full shrink-0 overflow-hidden">
-      {/* Sub-Tabs: Transcription | Projets & Médias */}
-      <div className="p-2 border-b border-[#E3DED3] bg-[#F6F5F1] flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('transcript')}
-          className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'transcript'
-              ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm border border-[#E3DED3]'
-              : 'text-[#5C5F68] hover:text-[#14161B]'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 text-[#258EFF]" />
-          Script ({(project.transcript || []).length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('library')}
-          className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'library'
-              ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm border border-[#E3DED3]'
-              : 'text-[#5C5F68] hover:text-[#14161B]'
-          }`}
-        >
-          <Film className="w-3.5 h-3.5 text-[#059669]" />
-          Projets ({projects.length})
-        </button>
+    <aside className="w-full lg:w-[290px] xl:w-[310px] bg-[#FCFBF8] border-r border-[#E3DED3] flex flex-col h-full shrink-0 overflow-hidden">
+      {/* Sub-Tabs + Collapse Icon */}
+      <div className="p-2 border-b border-[#E3DED3] bg-[#F6F5F1] flex items-center gap-1.5">
+        <div className="flex-1 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('transcript')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'transcript'
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm border border-[#E3DED3]'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-[#258EFF]" />
+            Script ({words.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('library')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'library'
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm border border-[#E3DED3]'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <Film className="w-3.5 h-3.5 text-[#059669]" />
+            Projets ({projects.length})
+          </button>
+        </div>
+        {onClosePanel && (
+          <button
+            type="button"
+            onClick={onClosePanel}
+            title="Replier le panneau Script / Projets"
+            aria-label="Replier le panneau Script"
+            className="hidden lg:flex p-1.5 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] cursor-pointer shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {activeTab === 'library' ? (
@@ -141,7 +207,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
                       <div className="min-w-0">
                         <p className="text-xs font-bold truncate">{p.title}</p>
                         <p className="text-[10px] text-[#5C5F68] font-mono">
-                          {p.currentVersion} · {p.duration.toFixed(1)}s · {(p.feedbacks || []).length} retours
+                          {p.currentVersion} ({(p.versions || []).length} ver.) · {p.duration.toFixed(1)}s
                         </p>
                       </div>
                     </div>
@@ -255,7 +321,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Transcript Toolbar */}
+          {/* Transcript Search & Audio Prep */}
           <div className="p-2.5 border-b border-[#E3DED3] space-y-2 bg-[#FCFBF8]">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-[#5C5F68] absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -263,7 +329,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher un mot du script…"
+                placeholder="Rechercher dans le script…"
                 className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[#F6F5F1] border border-[#E3DED3] text-xs text-[#14161B] placeholder:text-[#A19F98] focus:outline-none focus:border-[#258EFF]"
               />
             </div>
@@ -290,58 +356,102 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
             )}
           </div>
 
-          {/* Interactive Word Chips */}
-          <div className="flex-1 overflow-y-auto p-3">
-            {filteredWords.length === 0 ? (
+          {/* Flowing Editorial Script grouped cleanly by Sequence/Beat (zero per-word tiles) */}
+          <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4">
+            {sections.length === 0 ? (
               <p className="text-xs text-[#5C5F68] text-center py-8">
-                Aucun mot disponible pour ce projet.
+                Aucun script disponible pour ce projet.
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5 leading-relaxed">
-                {filteredWords.map((word) => {
-                  const idx = (project.transcript || []).findIndex((w) => w.id === word.id);
-                  const isActive = idx === activeWordIdx;
-                  return (
-                    <span
-                      key={word.id}
-                      className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs transition-all border ${
-                        word.isCut
-                          ? 'bg-[#DC2626]/10 border-[#DC2626]/30 text-[#DC2626] line-through opacity-65'
-                          : isActive
-                            ? 'bg-[#258EFF] border-[#258EFF] text-white font-bold shadow-sm'
-                            : 'bg-white border-[#E3DED3] text-[#14161B] hover:border-[#258EFF]'
-                      }`}
+              sections.map((section) => {
+                const visibleWords = query
+                  ? section.words.filter((w) => w.word.toLowerCase().includes(query))
+                  : section.words;
+                if (query && visibleWords.length === 0) return null;
+
+                return (
+                  <div key={section.id} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => onSeek(section.start)}
+                      className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#258EFF] hover:underline cursor-pointer"
                     >
-                      <button
-                        type="button"
-                        onClick={() => onSeek(word.start)}
-                        title={`Aller à ${word.start.toFixed(2)}s`}
-                        className="cursor-pointer"
-                      >
-                        {word.word}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onAddCommentAtTime(word.start, word.word)}
-                        title="Annoter ce mot"
-                        className="opacity-0 group-hover:opacity-100 text-[10px] hover:scale-110 transition-opacity cursor-pointer"
-                      >
-                        <MessageSquarePlus className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onToggleCutWord(word.id)}
-                        title={word.isCut ? 'Rétablir ce mot' : 'Couper ce mot au montage'}
-                        className="opacity-0 group-hover:opacity-100 text-[10px] hover:scale-110 transition-opacity cursor-pointer"
-                      >
-                        <Scissors className="w-3 h-3" />
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
+                      <span>{formatStudioTimecode(section.start)}</span>
+                      <span className="text-[#5C5F68]">· {section.label}</span>
+                    </button>
+
+                    <p className="text-[13px] leading-[1.85] text-[#14161B] font-normal">
+                      {section.words.map((word) => {
+                        const globalIdx = words.findIndex((w) => w.id === word.id);
+                        const isActive = globalIdx === activeWordIdx;
+                        const isSelected = word.id === selectedWordId;
+                        const isMatch = query && word.word.toLowerCase().includes(query);
+
+                        return (
+                          <React.Fragment key={word.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedWordId(word.id);
+                                onSeek(word.start);
+                              }}
+                              className={`inline text-left rounded px-0.5 py-0 transition-colors cursor-pointer ${
+                                word.isCut
+                                  ? 'line-through text-[#DC2626] opacity-60 bg-[#DC2626]/8'
+                                  : isActive
+                                    ? 'bg-[#258EFF] text-white font-semibold'
+                                    : isSelected
+                                      ? 'bg-[#258EFF]/15 text-[#14161B] font-semibold underline decoration-[#258EFF]'
+                                      : isMatch
+                                        ? 'bg-[#F59E0B]/25 text-[#14161B] font-semibold'
+                                        : 'hover:bg-[#EAE7DF]'
+                              }`}
+                            >
+                              {word.word}
+                            </button>{' '}
+                          </React.Fragment>
+                        );
+                      })}
+                    </p>
+                  </div>
+                );
+              })
             )}
           </div>
+
+          {/* Sticky Contextual Word Action Bar (keeps text clean while giving instant Annotate & Cut) */}
+          {selectedWord && (
+            <div className="px-3 py-2 border-t border-[#E3DED3] bg-[#F6F5F1] flex items-center justify-between gap-2 text-[11px] shrink-0">
+              <div className="min-w-0 truncate">
+                <span className="font-mono text-[10px] text-[#5C5F68]">
+                  {formatStudioTimecode(selectedWord.start)}
+                </span>{' '}
+                <span className="font-bold text-[#14161B]">« {selectedWord.word} »</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onAddCommentAtTime(selectedWord.start, selectedWord.word)}
+                  className="px-2 py-1 rounded-lg bg-[#258EFF] text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <MessageSquarePlus className="w-3 h-3" />
+                  Annoter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToggleCutWord(selectedWord.id)}
+                  className={`px-2 py-1 rounded-lg border font-semibold inline-flex items-center gap-1 cursor-pointer ${
+                    selectedWord.isCut
+                      ? 'bg-[#DC2626]/10 border-[#DC2626]/30 text-[#DC2626]'
+                      : 'bg-white border-[#E3DED3] text-[#14161B]'
+                  }`}
+                >
+                  <Scissors className="w-3 h-3" />
+                  {selectedWord.isCut ? 'Rétablir' : 'Couper'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </aside>

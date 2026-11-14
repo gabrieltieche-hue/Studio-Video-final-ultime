@@ -14,9 +14,12 @@ import {
   deleteProject,
   getAllProjects,
   getProject,
+  getWorkspaceState,
   initStorage,
   saveProject,
+  setActiveProjectAndVersion,
 } from './storageManager';
+import { readTopicsCsv } from '../engine/topicResearchService';
 import {
   captureMotionComponentAsset,
   downloadRemoteVideo,
@@ -296,6 +299,36 @@ export const MCP_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: { project_id: { type: 'string' } },
+      required: ['project_id'],
+    },
+  },
+  {
+    name: 'create_project_from_topic',
+    description: 'Créer un projet Studio complet depuis un sujet du tableau Veille & CSV et l’activer dans le Studio et le Lecteur',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        topic_id: { type: 'string' },
+        slug: { type: 'string' },
+        title: { type: 'string' },
+        hook_text: { type: 'string' },
+        category: { type: 'string' },
+        mode: { type: 'string', enum: ['faceless_explainer', 'split_screen_clips'], default: 'faceless_explainer' },
+        platform: { type: 'string', enum: ['instagram', 'tiktok', 'youtube_shorts'], default: 'youtube_shorts' },
+        duration: { type: 'number', default: 50 },
+        set_active: { type: 'boolean', default: true },
+      },
+    },
+  },
+  {
+    name: 'activate_project',
+    description: 'Définir le projet et la version actifs dans le Lecteur Short et le Studio Feedback',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string' },
+        version: { type: 'string' },
+      },
       required: ['project_id'],
     },
   },
@@ -846,15 +879,23 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
       const newVersion = {
         version: versionStr,
         createdAt: new Date().toISOString(),
-        status: 'draft' as const,
+        status: args.outputMp4 ? ('done' as const) : ('draft' as const),
         duration: Number(args.duration) || proj.duration,
         fps: Number(args.fps) || proj.fps,
         notes: String(args.notes || `Itération ${versionStr} créée depuis le Studio.`),
+        ...(typeof args.outputMp4 === 'string' && args.outputMp4 ? { outputMp4: args.outputMp4 } : {}),
+        ...(typeof args.contactSheetUrl === 'string' && args.contactSheetUrl
+          ? { contactSheetUrl: args.contactSheetUrl }
+          : {}),
       };
       proj.versions.unshift(newVersion);
       proj.currentVersion = versionStr;
-      proj.status = 'draft';
+      if (newVersion.duration > 0) proj.duration = newVersion.duration;
+      proj.status = args.outputMp4 ? 'ready' : 'draft';
       saveProject(proj);
+      if (args.setActive !== false) {
+        setActiveProjectAndVersion(proj.id, versionStr);
+      }
       return {
         success: true,
         projectId: proj.id,
@@ -871,6 +912,136 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         slug: proj.slug,
         currentVersion: proj.currentVersion,
         versions: proj.versions,
+      };
+    }
+
+    case 'create_project_from_topic': {
+      const topicId = args.topic_id ? String(args.topic_id) : undefined;
+      let topicRow: ReturnType<typeof readTopicsCsv>['rows'][number] | undefined;
+      if (topicId) {
+        const { rows } = readTopicsCsv(ROOT_DIR);
+        topicRow = rows.find((r) => r.id === topicId);
+        if (!topicRow) throw new Error(`Sujet CSV "${topicId}" introuvable.`);
+      }
+      const rawTitle = String(args.title || topicRow?.theme || 'Nouveau Short');
+      const baseSlug = String(
+        args.slug ||
+          topicRow?.slug_short ||
+          rawTitle
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '')
+      )
+        .replace(/[^a-z0-9-]/g, '-')
+        .slice(0, 44);
+      let slug = baseSlug || `short-${Date.now().toString().slice(-4)}`;
+      if (getProject(slug)) {
+        slug = `${slug.slice(0, 38)}-${Date.now().toString().slice(-4)}`;
+      }
+      const mode = (args.mode as ShortProject['mode']) || 'faceless_explainer';
+      const duration = Math.max(10, Math.min(180, Number(args.duration) || 50));
+      const hookText = String(args.hook_text || topicRow?.hook_propose || '');
+      const hookWords = hookText
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((w, idx) => ({
+          id: `w-hook-${idx}`,
+          word: w,
+          start: Number((idx * 0.34).toFixed(2)),
+          end: Number(((idx + 1) * 0.34).toFixed(2)),
+          confidence: 0.99,
+        }));
+      const now = new Date().toISOString();
+      const newProj: ShortProject = {
+        id: `proj-${slug}`,
+        slug,
+        title: rawTitle.slice(0, 160),
+        ...(topicRow?.id || topicId ? { topicId: topicRow?.id || topicId } : {}),
+        ...(topicRow?.categorie || args.category
+          ? { topicCategory: String(args.category || topicRow?.categorie) }
+          : {}),
+        ...(hookText ? { hookText } : {}),
+        mode,
+        platform: (args.platform as ShortProject['platform']) || 'youtube_shorts',
+        status: 'draft',
+        duration,
+        fps: 25,
+        resolution: { width: 1080, height: 1920 },
+        currentVersion: 'v1',
+        versions: [
+          {
+            version: 'v1',
+            createdAt: now,
+            status: 'draft',
+            duration,
+            fps: 25,
+            notes: topicRow
+              ? `Créé depuis la veille CSV (${topicRow.id} · ${topicRow.categorie}).`
+              : 'Projet créé depuis le Studio.',
+          },
+        ],
+        transcript: hookWords,
+        motionTrack: [
+          {
+            id: 'mot-hook',
+            componentId: 'comp-hook-shatter',
+            name: 'Hook Principal',
+            start: 0,
+            end: Math.min(5, duration),
+            type: 'typography',
+          },
+        ],
+        layoutTrack: [
+          {
+            id: 'layout-main',
+            layout: mode === 'split_screen_clips' ? 'split' : 'fullscreen',
+            start: 0,
+            end: duration,
+          },
+        ],
+        sfxTrack: [],
+        musicTrack: {
+          trackName: 'Bright_Corporate_Groove_8c962467.mp3',
+          volume: 0.24,
+          ducking: true,
+        },
+        feedbacks: [],
+        motionComponents: {},
+        contactSheet: [],
+        styleProfile: {
+          name: 'Papier signature',
+          fontFamily: '"Bricolage Grotesque", sans-serif',
+          accentColor: '#258EFF',
+          textColor: '#14161B',
+          cardBg: '#FCFBF8',
+          captionsPosition: 'bottom',
+          visualBeatsTarget: 8,
+        },
+      };
+      saveProject(newProj);
+      if (args.set_active !== false) {
+        setActiveProjectAndVersion(newProj.id, 'v1');
+      }
+      return {
+        success: true,
+        projectId: newProj.id,
+        project: newProj,
+        message: `Projet "${newProj.title}" créé et activé (${newProj.currentVersion}).`,
+      };
+    }
+
+    case 'activate_project': {
+      const { project, state } = setActiveProjectAndVersion(
+        String(args.project_id || ''),
+        args.version ? String(args.version) : undefined
+      );
+      return {
+        success: true,
+        projectId: project.id,
+        activeVersion: state.activeVersion,
+        project,
       };
     }
 
@@ -932,8 +1103,47 @@ export function createStudioRouter(): express.Router {
     }
   );
 
+  router.get('/api/studio/workspace', (_req: Request, res: Response) => {
+    const state = getWorkspaceState();
+    const projects = getAllProjects();
+    res.json({
+      activeProjectId: state.activeProjectId,
+      activeVersion: state.activeVersion,
+      updatedAt: state.updatedAt,
+      projects,
+    });
+  });
+
+  router.post('/api/studio/workspace/active', async (req: Request, res: Response) => {
+    try {
+      const { projectId, version } = (req.body || {}) as {
+        projectId?: string;
+        version?: string;
+      };
+      res.json(
+        await executeToolCall('activate_project', {
+          project_id: projectId,
+          version,
+        })
+      );
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Activation impossible' });
+    }
+  });
+
   router.get('/api/studio/projects', (_req: Request, res: Response) => {
     res.json({ projects: getAllProjects() });
+  });
+
+  router.post('/api/studio/projects/from-topic', async (req: Request, res: Response) => {
+    try {
+      const result = await executeToolCall('create_project_from_topic', req.body || {});
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Erreur création projet depuis veille',
+      });
+    }
   });
 
   router.post('/api/studio/projects', async (req: Request, res: Response) => {
@@ -1118,6 +1328,90 @@ export function createStudioRouter(): express.Router {
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : 'Erreur création version' });
     }
+  });
+
+  router.patch('/api/studio/projects/:id/versions/:version', (req: Request, res: Response) => {
+    const proj = getProject(req.params.id);
+    if (!proj) {
+      res.status(404).json({ error: 'Projet introuvable' });
+      return;
+    }
+    const ver = (proj.versions || []).find((v) => v.version === req.params.version);
+    if (!ver) {
+      res.status(404).json({ error: `Version ${req.params.version} introuvable` });
+      return;
+    }
+    const body = (req.body || {}) as {
+      activate?: boolean;
+      notes?: string;
+      status?: 'draft' | 'done' | 'current' | 'failed' | 'rendering';
+      outputMp4?: string;
+      contactSheetUrl?: string;
+      duration?: number;
+    };
+    if (typeof body.notes === 'string') ver.notes = body.notes;
+    if (body.status) ver.status = body.status;
+    if (typeof body.outputMp4 === 'string') ver.outputMp4 = body.outputMp4;
+    if (typeof body.contactSheetUrl === 'string') ver.contactSheetUrl = body.contactSheetUrl;
+    if (typeof body.duration === 'number' && body.duration > 0) ver.duration = body.duration;
+    if (body.activate !== false) {
+      proj.currentVersion = ver.version;
+      if (ver.duration > 0) proj.duration = ver.duration;
+      saveProject(proj);
+      setActiveProjectAndVersion(proj.id, ver.version);
+    } else {
+      saveProject(proj);
+    }
+    res.json({ success: true, project: proj, version: ver });
+  });
+
+  router.get('/api/studio/projects/:id/download', (req: Request, res: Response) => {
+    const proj = getProject(req.params.id);
+    if (!proj) {
+      res.status(404).json({ error: 'Projet introuvable' });
+      return;
+    }
+    const targetVersion =
+      typeof req.query.version === 'string' && req.query.version
+        ? req.query.version
+        : proj.currentVersion;
+    const versionObj = (proj.versions || []).find((v) => v.version === targetVersion);
+    const candidateRel = versionObj?.outputMp4;
+
+    const candidates: string[] = [];
+    if (candidateRel) {
+      if (candidateRel.startsWith('/video/')) {
+        candidates.push(path.join(ROOT_DIR, 'public', candidateRel));
+      } else if (candidateRel.startsWith('/renders/')) {
+        candidates.push(path.join(RENDERS_DIR, path.basename(candidateRel)));
+      } else if (candidateRel.startsWith('/takes/')) {
+        candidates.push(path.join(TAKES_DIR, path.basename(candidateRel)));
+      }
+    }
+    candidates.push(path.join(RENDERS_DIR, `${proj.slug}_${targetVersion}.mp4`));
+    candidates.push(path.join(RENDERS_DIR, `${proj.slug}_${targetVersion}_draft.mp4`));
+    if (proj.isFlagshipReactStage) {
+      candidates.push(path.join(ROOT_DIR, 'public/video/short-interdiction-15-ans.mp4'));
+    }
+
+    const foundPath = candidates.find(
+      (p) => fs.existsSync(p) && fs.statSync(p).size > 1024
+    );
+    if (!foundPath) {
+      res.status(404).json({
+        error: `Aucun MP4 rendu disponible pour ${proj.title} (${targetVersion}).`,
+      });
+      return;
+    }
+    const stat = fs.statSync(foundPath);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Length', String(stat.size));
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${proj.slug}-${targetVersion}-hd.mp4"`
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    fs.createReadStream(foundPath).pipe(res);
   });
 
   router.post('/api/studio/projects/:id/transcribe', async (req: Request, res: Response) => {
