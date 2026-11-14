@@ -1,5 +1,5 @@
 import React from 'react';
-import { LookPreset } from '../../../data/shortSpec';
+import { CREATOR_PROFILE, LookPreset } from '../../../data/shortSpec';
 import { clamp, leave, seg, spring } from '../../../engine/math';
 
 interface BeatProps {
@@ -7,70 +7,114 @@ interface BeatProps {
   look: LookPreset;
 }
 
+const SPARKS = [
+  { angle: -140, dist: 150, color: '#258EFF' },
+  { angle: -95, dist: 165, color: '#4ADE80' },
+  { angle: -40, dist: 155, color: '#FACC15' },
+  { angle: 15, dist: 160, color: '#258EFF' },
+  { angle: 55, dist: 145, color: '#FFFFFF' },
+  { angle: 145, dist: 150, color: '#258EFF' },
+];
+
 /**
- * Beat 8 (59.35s - 65.00s): Creator Subscribe + Notification Bell Animation
- * Replaces old "Commente LOI" drawer with an authentic "Abonne-toi pour suivre toute l'actualité tech" CTA.
- * Positioned safely between y=360 and y=1040 so bottom seam captions (y=1230) and safe zones stay 100% clear.
+ * Beat 8 (52.50s - 57.00s): Creator Subscribe + Notification Bell Animation
+ * Timed cleanly to Brian: "Abonne-toi" (52.72s) -> click (53.20s) -> bell (53.50s) -> "décryptages tech." (54.75s)
  */
 export const Beat8IgCtaLoop: React.FC<BeatProps> = ({ t, look }) => {
-  if (t < 59.3 || t > 65.15) return null;
+  if (t < 52.45 || t > 57.15) return null;
 
-  const localT = t - 59.35;
+  const localT = t - 52.5;
   const cardP = spring(localT, 15);
-  const exit = leave(t, 65.0, 0.28);
+  const exit = leave(t, 57.0, 0.28);
 
-  // Cursor moves toward "S'abonner" across 59.45 -> 60.20, clicks at 60.25s
-  const cursorP = seg(t, 59.45, 60.2);
-  const clicked = t >= 60.25;
-  const pressScale = t >= 60.2 && t <= 60.38 ? 0.92 : 1;
-  const subP = clicked ? spring(t - 60.25, 22) : 0;
+  const cursorP = seg(t, 52.58, 53.15);
+  const clicked = t >= 53.2;
+  const pressScale = t >= 53.16 && t <= 53.35 ? 0.92 : 1;
+  const subP = clicked ? spring(t - 53.2, 22) : 0;
+  const burstP = seg(t, 53.2, 54.0);
 
-  // Bell activation shockwave + gentle wiggle right at 60.55s
-  const bellActivated = t >= 60.55;
-  const bellRingP = seg(t, 60.55, 61.35);
+  const bellActivated = t >= 53.5;
+  const bellRingP = seg(t, 53.5, 54.35);
   const bellTilt =
-    t >= 60.55 && t <= 61.45
-      ? Math.sin((t - 60.55) * 38) * (1 - seg(t, 60.55, 61.45)) * 18
+    t >= 53.5 && t <= 54.5
+      ? Math.sin((t - 53.5) * 38) * (1 - seg(t, 53.5, 54.5)) * 18
       : 0;
 
-  // Confirmation feed banner sliding down cleanly at 61.30s ("toute l'actualité tech")
-  const toastP = spring(t - 61.25, 16);
+  const toastP = spring(t - 54.15, 16);
 
   return (
     <div
-      className="absolute inset-0 flex flex-col items-center justify-start pt-[370px] pl-[60px] pr-[150px] pointer-events-none"
+      className="absolute inset-0 flex flex-col items-center justify-start pt-[235px] pl-[58px] pr-[148px] pointer-events-none"
       style={{ opacity: exit }}
     >
+      {/* Top retention CTA kicker */}
+      <div
+        className="w-full rounded-[22px] px-[26px] py-[14px] mb-[24px] border backdrop-blur-md flex items-center justify-between"
+        style={{
+          backgroundColor: 'rgba(20, 22, 27, 0.72)',
+          borderColor: 'rgba(255,255,255,0.2)',
+          opacity: clamp(cardP * 2, 0, 1),
+        }}
+      >
+        <span className="text-[28px] font-bold text-white" style={{ fontFamily: look.fontDisplay }}>
+          {CREATOR_PROFILE.ctaHeader}
+        </span>
+        <span className="text-[26px] font-mono font-bold text-[#4ADE80]">
+          {bellActivated ? 'NOTIFS ON ✓' : 'SÉRIE TECH & IA'}
+        </span>
+      </div>
+
       {/* Main Creator Subscribe Card */}
       <div
-        className="relative w-full rounded-[36px] p-[44px] border backdrop-blur-xl"
+        className="relative w-full rounded-[36px] p-[42px] border backdrop-blur-xl"
         style={{
           backgroundColor: 'rgba(252, 251, 248, 0.96)',
-          borderColor: 'rgba(20, 22, 27, 0.12)',
+          borderColor: clicked ? look.accent : 'rgba(20, 22, 27, 0.14)',
+          borderWidth: clicked ? '3px' : '1.5px',
           opacity: clamp(cardP * 1.8, 0, 1),
-          transform: `translateY(${(48 * (1 - cardP)).toFixed(1)}px) scale(${(0.95 + 0.05 * cardP).toFixed(3)})`,
+          transform: `translateY(${(44 * (1 - cardP)).toFixed(1)}px) scale(${(0.95 + 0.05 * cardP).toFixed(3)})`,
           boxShadow: '0 36px 72px -18px rgba(0, 0, 0, 0.45)',
         }}
       >
+        {/* Radial particle sparks on Subscribe click */}
+        {clicked && burstP < 1 && (
+          <div className="absolute left-[38%] bottom-[90px] pointer-events-none">
+            {SPARKS.map((sp, idx) => {
+              const rad = (sp.angle * Math.PI) / 180;
+              return (
+                <span
+                  key={idx}
+                  className="absolute w-[14px] h-[14px] rounded-full"
+                  style={{
+                    backgroundColor: sp.color,
+                    opacity: 1 - burstP,
+                    transform: `translate(${(Math.cos(rad) * sp.dist * burstP).toFixed(1)}px, ${(Math.sin(rad) * sp.dist * burstP).toFixed(1)}px) scale(${(1.2 - 0.7 * burstP).toFixed(2)})`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
         {/* Top creator profile row */}
-        <div className="flex items-center gap-[24px] pb-[30px] border-b border-[#E3DED3]">
+        <div className="flex items-center gap-[22px] pb-[28px] border-b border-[#E3DED3]">
           <div
-            className="w-[96px] h-[96px] rounded-full flex items-center justify-center text-[44px] font-extrabold shrink-0"
+            className="w-[92px] h-[92px] rounded-full flex items-center justify-center text-[42px] font-extrabold shrink-0"
             style={{
               backgroundColor: '#14161B',
               color: '#FFFFFF',
               fontFamily: look.fontDisplay,
             }}
           >
-            M
+            {CREATOR_PROFILE.initial}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-[12px]">
               <span
-                className="text-[44px] font-extrabold tracking-[-0.03em] text-[#14161B]"
+                className="text-[42px] font-extrabold tracking-[-0.03em] text-[#14161B]"
                 style={{ fontFamily: look.fontDisplay }}
               >
-                @melvynxdev
+                {CREATOR_PROFILE.handle}
               </span>
               <span
                 className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
@@ -81,16 +125,16 @@ export const Beat8IgCtaLoop: React.FC<BeatProps> = ({ t, look }) => {
                 </svg>
               </span>
             </div>
-            <div className="text-[32px] font-medium text-[#5C5F68] mt-[2px]">
-              Actualité Tech, IA &amp; Décryptages
+            <div className="text-[30px] font-medium text-[#5C5F68] mt-[2px]">
+              {CREATOR_PROFILE.tagline}
             </div>
           </div>
         </div>
 
         {/* Subscribe Action Row */}
-        <div className="pt-[32px] flex items-center justify-between gap-[20px]">
+        <div className="pt-[30px] flex items-center justify-between gap-[18px]">
           <div
-            className="relative flex-1 h-[104px] rounded-[24px] flex items-center justify-center gap-[16px] font-extrabold text-[40px] tracking-[-0.02em]"
+            className="relative flex-1 h-[102px] rounded-[24px] flex items-center justify-center gap-[14px] font-extrabold text-[40px] tracking-[-0.02em]"
             style={{
               backgroundColor: clicked ? '#EAE7DF' : look.accent,
               color: clicked ? '#14161B' : look.onAccent,
@@ -111,9 +155,8 @@ export const Beat8IgCtaLoop: React.FC<BeatProps> = ({ t, look }) => {
             )}
           </div>
 
-          {/* Notification Bell Pill */}
           <div
-            className="relative w-[104px] h-[104px] rounded-[24px] border flex items-center justify-center shrink-0"
+            className="relative w-[102px] h-[102px] rounded-[24px] border flex items-center justify-center shrink-0"
             style={{
               backgroundColor: bellActivated ? '#14161B' : '#F1EEE6',
               borderColor: bellActivated ? '#14161B' : '#E3DED3',
@@ -131,8 +174,8 @@ export const Beat8IgCtaLoop: React.FC<BeatProps> = ({ t, look }) => {
               />
             )}
             <svg
-              width="46"
-              height="46"
+              width="44"
+              height="44"
               viewBox="0 0 24 24"
               fill={bellActivated ? 'currentColor' : 'none'}
               stroke="currentColor"
@@ -147,16 +190,15 @@ export const Beat8IgCtaLoop: React.FC<BeatProps> = ({ t, look }) => {
           </div>
         </div>
 
-        {/* Animated macOS pointer gliding onto bottom-right edge of S'abonner button */}
         <svg
-          width="52"
-          height="52"
+          width="50"
+          height="50"
           viewBox="0 0 24 24"
           className="absolute pointer-events-none drop-shadow-lg"
           style={{
-            left: `${(160 + 345 * cursorP).toFixed(1)}px`,
-            top: `${(365 - 88 * cursorP + 6 * subP).toFixed(1)}px`,
-            opacity: clamp(localT * 3, 0, 1) * (1 - clamp((t - 62.2) * 2, 0, 1)),
+            left: `${(155 + 340 * cursorP).toFixed(1)}px`,
+            top: `${(350 - 84 * cursorP + 6 * subP).toFixed(1)}px`,
+            opacity: clamp(localT * 3, 0, 1) * (1 - clamp((t - 55.2) * 2, 0, 1)),
             transform: `scale(${pressScale})`,
           }}
         >
@@ -165,20 +207,20 @@ export const Beat8IgCtaLoop: React.FC<BeatProps> = ({ t, look }) => {
       </div>
 
       {/* Topic pill sliding cleanly below Subscribe card */}
-      {t >= 61.2 && (
+      {t >= 54.1 && (
         <div
-          className="w-full mt-[28px] rounded-[26px] px-[30px] py-[22px] border flex items-center justify-between"
+          className="w-full mt-[24px] rounded-[24px] px-[28px] py-[20px] border flex items-center justify-between"
           style={{
-            backgroundColor: 'rgba(20, 22, 27, 0.88)',
-            borderColor: 'rgba(255, 255, 255, 0.16)',
+            backgroundColor: 'rgba(20, 22, 27, 0.9)',
+            borderColor: 'rgba(255, 255, 255, 0.18)',
             opacity: clamp(toastP * 2, 0, 1),
-            transform: `translateY(${(24 * (1 - toastP)).toFixed(1)}px)`,
+            transform: `translateY(${(22 * (1 - toastP)).toFixed(1)}px)`,
             boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.4)',
           }}
         >
-          <div className="flex items-center gap-[16px]">
-            <span className="w-[16px] h-[16px] rounded-full shrink-0" style={{ backgroundColor: look.accent }} />
-            <span className="text-[29px] font-bold text-white whitespace-nowrap">
+          <div className="flex items-center gap-[14px]">
+            <span className="w-[14px] h-[14px] rounded-full shrink-0" style={{ backgroundColor: look.accent }} />
+            <span className="text-[28px] font-bold text-white whitespace-nowrap">
               Décryptages Tech &amp; IA chaque semaine
             </span>
           </div>

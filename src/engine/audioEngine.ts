@@ -3,8 +3,8 @@ import { DEFAULT_PLAYBACK_SPEED, MusicBedId, SFX_EVENTS, SfxEvent } from '../dat
 /**
  * Sample-accurate Web Audio mixing engine anchored to AudioContext hardware clock:
  * - Plays real ElevenLabs French voiceover MP3 (/audio/voice/short-interdiction-15-ans-fr.mp3)
- * - Plays Bright Corporate Groove (upbeat.mp3) by default at balanced background level (0.16 under voice)
- *   to boost energy and retention without ever masking French narration
+ * - Plays Bright Corporate Groove (upbeat.mp3) by default at energetic background level (0.28 under voice)
+ *   to boost energy and retention while keeping Brian baritone French narration clear
  * - Exposes getMasterTime(speed) locked directly to AudioContext.currentTime so voice, captions, and UI never drift
  */
 class ShortAudioEngine {
@@ -31,8 +31,8 @@ class ShortAudioEngine {
 
   private targetMusicGain(): number {
     if (!this.musicEnabled) return 0;
-    // Balanced energetic bed (-15.9 dB relative to source) so groove boosts retention while voice dominates cleanly
-    return this.voiceEnabled ? 0.16 : 0.28;
+    // Energetic corporate groove (-12.5 dB relative to source) balanced cleanly under Brian's warm baritone
+    return this.voiceEnabled ? 0.24 : 0.36;
   }
 
   private ensureContext(): AudioContext {

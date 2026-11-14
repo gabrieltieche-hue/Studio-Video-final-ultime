@@ -1,0 +1,164 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { buildFeedbackPromptMarkdown, formatStudioTimecode, type ShortProject } from '../types/studio';
+
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-short-test-'));
+process.env.STORAGE_DIR = path.join(tempRoot, 'storage');
+process.env.WHISPER_MODEL_PATH = '';
+
+const storage = await import('./storageManager');
+const engine = await import('./ffmpegEngine');
+storage.initStorage();
+
+const ffmpegAvailable = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status === 0;
+
+test('formatStudioTimecode formats mm:ss.cc accurately', () => {
+  assert.equal(formatStudioTimecode(0), '00:00.00');
+  assert.equal(formatStudioTimecode(6.24), '00:06.24');
+  assert.equal(formatStudioTimecode(65.5), '01:05.50');
+});
+
+test('buildFeedbackPromptMarkdown lists only open feedbacks with metadata', () => {
+  const proj: ShortProject = {
+    id: 'proj-prompt-test',
+    slug: 'prompt-test',
+    title: 'Short Test',
+    mode: 'faceless_explainer',
+    platform: 'youtube_shorts',
+    status: 'ready',
+    duration: 53.8,
+    fps: 25,
+    resolution: { width: 1080, height: 1920 },
+    currentVersion: 'v1',
+    versions: [{ version: 'v1', createdAt: '2026-11-14T00:00:00Z', status: 'done', duration: 53.8, fps: 25, notes: 'ok' }],
+    transcript: [],
+    motionTrack: [],
+    layoutTrack: [],
+    sfxTrack: [],
+    musicTrack: { trackName: 'Bright_Corporate_Groove_8c962467.mp3', volume: 0.24, ducking: true },
+    feedbacks: [
+      {
+        id: 'fb-1',
+        timestamp: 12.5,
+        timeFormatted: '00:12.50',
+        text: 'Rapprocher le compteur de 85 % vers le haut',
+        targetElement: 'Motion Top Card',
+        quoteText: '85 %',
+        author: 'Créateur',
+        resolved: false,
+        type: 'comment',
+        createdAt: '2026-11-14T00:00:00Z',
+      },
+      {
+        id: 'fb-2',
+        timestamp: 3.2,
+        timeFormatted: '00:03.20',
+        text: 'Ancien retour résolu',
+        author: 'Créateur',
+        resolved: true,
+        type: 'cut',
+        createdAt: '2026-11-14T00:00:00Z',
+      },
+    ],
+    motionComponents: {},
+    contactSheet: [],
+    styleProfile: {
+      name: 'Papier signature',
+      fontFamily: 'Bricolage Grotesque',
+      accentColor: '#258EFF',
+      textColor: '#14161B',
+      cardBg: '#FCFBF8',
+      captionsPosition: 'bottom',
+      visualBeatsTarget: 8,
+    },
+  };
+
+  const md = buildFeedbackPromptMarkdown(proj);
+  assert.match(md, /1 retour ouvert/);
+  assert.match(md, /00:12\.50/);
+  assert.match(md, /Motion Top Card/);
+  assert.doesNotMatch(md, /Ancien retour résolu/);
+});
+
+test('storageManager persists, reloads, and deletes projects on disk', () => {
+  const proj: ShortProject = {
+    id: 'proj-disk-test',
+    slug: 'disk-test',
+    title: 'Disk Persistence',
+    mode: 'split_screen_clips',
+    platform: 'instagram',
+    status: 'draft',
+    duration: 42,
+    fps: 25,
+    resolution: { width: 1080, height: 1920 },
+    currentVersion: 'v1',
+    versions: [{ version: 'v1', createdAt: '2026-11-14T00:00:00Z', status: 'draft', duration: 42, fps: 25, notes: 'draft' }],
+    transcript: [{ id: 'w-1', word: 'Bonjour', start: 0.1, end: 0.5, confidence: 0.99 }],
+    motionTrack: [],
+    layoutTrack: [],
+    sfxTrack: [],
+    musicTrack: { trackName: '', volume: 0.24, ducking: true },
+    feedbacks: [],
+    motionComponents: {},
+    contactSheet: [],
+    styleProfile: {
+      name: 'Papier signature',
+      fontFamily: 'Bricolage Grotesque',
+      accentColor: '#258EFF',
+      textColor: '#14161B',
+      cardBg: '#FCFBF8',
+      captionsPosition: 'bottom',
+      visualBeatsTarget: 8,
+    },
+  };
+
+  storage.saveProject(proj);
+  const reloaded = storage.getProject('disk-test');
+  assert.ok(reloaded);
+  assert.equal(reloaded?.transcript.length, 1);
+  assert.equal(reloaded?.title, 'Disk Persistence');
+
+  const deleted = storage.deleteProject('proj-disk-test');
+  assert.equal(deleted, true);
+  assert.equal(storage.getProject('proj-disk-test'), null);
+});
+
+test('detectAndRemoveSilences does not collapse a completely silent track', { skip: !ffmpegAvailable }, () => {
+  const silentMp4 = path.join(storage.TAKES_DIR, 'silent-test.mp4');
+  fs.mkdirSync(storage.TAKES_DIR, { recursive: true });
+  execFileSync(
+    'ffmpeg',
+    [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=0xF1EEE6:s=320x568:r=24:d=3',
+      '-f',
+      'lavfi',
+      '-i',
+      'anullsrc=channel_layout=stereo:sample_rate=44100:duration=3',
+      '-shortest',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'ultrafast',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '96k',
+      silentMp4,
+    ],
+    { stdio: 'ignore', timeout: 60_000 }
+  );
+
+  const analysis = engine.detectAndRemoveSilences(silentMp4);
+  assert.equal(analysis.totalSilencesRemoved, 0);
+  assert.ok(analysis.adjustedDuration >= 2.8);
+});

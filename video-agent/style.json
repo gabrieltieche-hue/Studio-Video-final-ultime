@@ -1,12 +1,14 @@
 {
   "version": 1,
-  "name": "Papier Signature · Melvynx",
+  "name": "Papier Signature",
   "creator": {
     "name": "Studio Short FR",
-    "handle": "@melvynxdev",
+    "handle": "@alex.decode",
+    "handleIsPlaceholder": true,
     "lang": "fr",
     "voiceProvider": "elevenlabs",
-    "voiceId": "TX3LPaxmHKxFdv7VOQHJ"
+    "voiceId": "nPczCjzI2devNBz1zQrb",
+    "voiceName": "Brian — Deep, Resonant Baritone (Free Plan)"
   },
   "colors": {
     "paper": "#F1EEE6",
@@ -22,14 +24,19 @@
     "style": "rise",
     "groupedContainer": true,
     "perWordBoxes": false,
-    "size": 76,
+    "size": 70,
     "maxWords": 4,
-    "maxChars": 22,
+    "maxChars": 24,
     "straddle": true
   },
   "layout": {
     "frame": { "bleed": true, "r": 32, "border": 0, "shadow": 40 },
-    "seam": 1160
+    "seam": 1160,
+    "highMotionDensity": true,
+    "noBlankPaper": true,
+    "topProgressChrome": false,
+    "ambientBlueOrbs": true,
+    "noLowerFullPaperVoid": true
   },
   "display": {
     "font": "Bricolage Grotesque",
@@ -37,7 +44,7 @@
     "flat": true
   },
   "pace": {
-    "speed": 1.2,
+    "speed": 1.06,
     "targetDurationSec": [45, 55],
     "tighten": { "sentence": 0.08, "comma": 0.05, "word": 0.03 }
   },
@@ -47,19 +54,21 @@
     "offset": 0
   },
   "mix": {
-    "music": -16,
-    "musicGain": 0.16,
-    "sfx": -18,
+    "music": -12.5,
+    "musicGain": 0.24,
+    "soloMusicGain": 0.36,
+    "sfx": -15,
     "duck": 0.65
   },
   "cta": {
     "type": "subscribe",
-    "label": "Abonne-toi pour suivre toute l'actualité tech"
+    "label": "Abonne-toi pour ne rien rater des prochains décryptages tech"
   },
   "qa": {
     "visualStoryboard": true,
     "audioClockSync": true,
-    "singleCaptionContainer": true
+    "singleCaptionContainer": true,
+    "preRenderMp4ToDisk": true
   },
   "sfx": {
     "swish": 0,

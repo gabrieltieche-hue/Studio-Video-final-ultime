@@ -47,19 +47,19 @@ export const ShortStage: React.FC<ShortStageProps> = ({ t, look, showSafeZones, 
   const seam = getLayoutSeam(t, LAYOUT_KEYS, 0.34);
   const camZoom = track(t, ZOOM_KEYS, 36);
 
-  // Pick editorial backdrop matching the active narrative moment (never duplicating card photo)
+  // Pick editorial backdrop matching Brian's exact narrative segments
   const backdropSrc =
-    t < 17.15
+    t < 16.2
       ? EDITORIAL_IMAGES.teenNight
-      : t < 27.3
+      : t < 45.85
         ? EDITORIAL_IMAGES.parliament
-        : t < 52.55
-          ? EDITORIAL_IMAGES.parliament
-          : EDITORIAL_IMAGES.studio;
+        : EDITORIAL_IMAGES.studio;
 
-  // Subtle slow drift (zoom.drift: 0.008/s) on the editorial frame
+  // Subtle continuous kinetic motion across editorial media, architectural grid & floating blue aura
   const drift = 1 + ((t % 4) * 0.008);
   const mediaScale = camZoom * drift;
+  const gridShiftY = (t * 20) % 44;
+  const gridShiftX = Math.sin(t * 0.28) * 14;
 
   return (
     <div
@@ -92,6 +92,55 @@ export const ShortStage: React.FC<ShortStageProps> = ({ t, look, showSafeZones, 
         {/* Subtle textured paper grain */}
         {look.grain && <div className="absolute inset-0 paper-grain opacity-85 pointer-events-none" />}
 
+        {/* Subtle kinetic architectural dot-grid + lightweight organic drifting blue glow on beige paper */}
+        {seam > 200 && (
+          <div className="absolute inset-x-0 top-0 overflow-hidden pointer-events-none" style={{ height: `${seam.toFixed(1)}px` }}>
+            <div
+              className="absolute inset-0 opacity-28"
+              style={{
+                backgroundImage: `radial-gradient(${look.ink3} 1.5px, transparent 1.5px)`,
+                backgroundSize: '44px 44px',
+                backgroundPosition: `${gridShiftX.toFixed(1)}px ${gridShiftY.toFixed(1)}px`,
+              }}
+            />
+
+            {/* Orb 1: Primary sky-blue ambient glow drifting smoothly across the upper/mid beige canvas */}
+            <div
+              className="absolute w-[840px] h-[840px] rounded-full blur-[34px]"
+              style={{
+                left: `${(120 + Math.sin(t * 0.48) * 320).toFixed(1)}px`,
+                top: `${(-90 + Math.cos(t * 0.34) * 260).toFixed(1)}px`,
+                background:
+                  'radial-gradient(circle, rgba(37,142,255,0.22) 0%, rgba(96,165,250,0.09) 42%, rgba(37,142,255,0) 72%)',
+                transform: `scale(${(1 + 0.08 * Math.sin(t * 0.62)).toFixed(3)})`,
+              }}
+            />
+
+            {/* Orb 2: Counter-drifting soft ice-azure wash for depth and fluid motion */}
+            <div
+              className="absolute w-[720px] h-[720px] rounded-full blur-[38px]"
+              style={{
+                left: `${(220 + Math.cos(t * 0.39 + 1.4) * 340).toFixed(1)}px`,
+                top: `${(seam * 0.42 - 120 + Math.sin(t * 0.3 + 0.7) * 240).toFixed(1)}px`,
+                background:
+                  'radial-gradient(circle, rgba(56,189,248,0.18) 0%, rgba(147,197,253,0.07) 48%, rgba(56,189,248,0) 74%)',
+                transform: `scale(${(1 + 0.07 * Math.cos(t * 0.5)).toFixed(3)})`,
+              }}
+            />
+
+            {/* Orb 3: Ultra-light cobalt halo weaving slowly between cards */}
+            <div
+              className="absolute w-[580px] h-[580px] rounded-full blur-[30px]"
+              style={{
+                left: `${(240 + Math.sin(t * 0.27 + 2.5) * 280).toFixed(1)}px`,
+                top: `${(160 + Math.sin(t * 0.44 + 1.1) * 290).toFixed(1)}px`,
+                background:
+                  'radial-gradient(circle, rgba(37,142,255,0.14) 0%, rgba(191,219,254,0.05) 52%, rgba(37,142,255,0) 76%)',
+              }}
+            />
+          </div>
+        )}
+
         {/* Lower Editorial / Camera Panel (bleeds cleanly below seam) */}
         {seam < 1918 && (
           <div
@@ -113,22 +162,36 @@ export const ShortStage: React.FC<ShortStageProps> = ({ t, look, showSafeZones, 
                 transformOrigin: 'center center',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/25" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/22 to-black/35" />
 
             {/* Subtle editorial context tag inside split panel */}
             {seam > 300 && (
-              <div className="absolute bottom-[60px] left-[56px] right-[180px] flex items-center justify-between text-white/90">
-                <div className="text-[32px] font-semibold tracking-[-0.01em] drop-shadow">
-                  {t < 17.15
-                    ? 'Usage réel · Moins de 16 ans'
-                    : t < 27.3
-                      ? 'Décision institutionnelle · Paris'
-                      : 'Design attentionnel · UE / France'}
+              <div className="absolute bottom-[64px] left-[56px] right-[180px] flex items-center justify-between text-white/95">
+                <div className="flex items-center gap-[14px]">
+                  <span
+                    className="w-[14px] h-[14px] rounded-full"
+                    style={{
+                      backgroundColor: look.accent,
+                      transform: `scale(${(0.85 + 0.3 * Math.abs(Math.sin(t * 4.5))).toFixed(2)})`,
+                    }}
+                  />
+                  <div className="text-[30px] font-bold tracking-[-0.01em] drop-shadow">
+                    {t < 16.2
+                      ? 'Usage réel · Moins de 16 ans'
+                      : t < 23.38
+                        ? 'Décision institutionnelle · Paris'
+                        : 'Design attentionnel · UE / France'}
+                  </div>
                 </div>
+                <span className="text-[26px] font-mono font-bold text-white/80 tabular-nums">
+                  {(t / 1.06).toFixed(1)} s
+                </span>
               </div>
             )}
           </div>
         )}
+
+
 
         {/* Paper Stage Beats (z-20) */}
         <div className="relative z-20 w-full h-full">
@@ -145,22 +208,19 @@ export const ShortStage: React.FC<ShortStageProps> = ({ t, look, showSafeZones, 
         {/* Word-synced captions on the seam (z-30) */}
         <ShortCaptions t={t} seam={seam} look={look} />
 
-        {/* Platform Safe-Zone Overlay (shorts-codes.md: top 220, bottom 420, right 140) */}
+        {/* Platform Safe-Zone Overlay */}
         {showSafeZones && (
           <div className="absolute inset-0 z-40 pointer-events-none">
-            {/* Top 220px header/search zone */}
             <div className="absolute inset-x-0 top-0 h-[220px] bg-red-500/18 border-b-2 border-dashed border-red-500 flex items-end justify-center pb-[18px]">
               <span className="text-[28px] font-bold text-red-700 bg-white/90 px-[16px] py-[4px] rounded-[8px]">
                 Zone exclue haut · 220 px (Shorts / Reels)
               </span>
             </div>
-            {/* Bottom 420px caption/title zone */}
             <div className="absolute inset-x-0 bottom-0 h-[420px] bg-red-500/18 border-t-2 border-dashed border-red-500 flex items-start justify-center pt-[18px]">
               <span className="text-[28px] font-bold text-red-700 bg-white/90 px-[16px] py-[4px] rounded-[8px]">
                 Zone exclue bas · 420 px (Légende &amp; Audio)
               </span>
             </div>
-            {/* Right 140px engagement icons */}
             <div className="absolute right-0 top-[900px] bottom-[420px] w-[140px] bg-amber-500/20 border-l-2 border-dashed border-amber-500 flex flex-col items-center justify-around py-[30px]">
               <div className="w-[62px] h-[62px] rounded-full bg-white/80 border border-amber-600/40" />
               <div className="w-[62px] h-[62px] rounded-full bg-white/80 border border-amber-600/40" />

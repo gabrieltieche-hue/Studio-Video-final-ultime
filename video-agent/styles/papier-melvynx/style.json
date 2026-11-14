@@ -1,13 +1,15 @@
 {
   "version": 1,
-  "name": "Papier Signature · Melvynx",
+  "name": "Papier Signature",
   "creator": {
     "name": "Studio Short FR",
-    "handle": "@melvynxdev",
+    "handle": "@alex.decode",
+    "handleIsPlaceholder": true,
     "lang": "fr",
     "niche": "Tech, IA & Société numérique",
     "voiceProvider": "elevenlabs",
-    "voiceId": "TX3LPaxmHKxFdv7VOQHJ"
+    "voiceId": "nPczCjzI2devNBz1zQrb",
+    "voiceName": "Brian — Deep, Resonant Baritone (Free Plan)"
   },
   "colors": {
     "paper": "#F1EEE6",
@@ -23,9 +25,9 @@
     "style": "rise",
     "groupedContainer": true,
     "perWordBoxes": false,
-    "size": 76,
+    "size": 70,
     "maxWords": 4,
-    "maxChars": 22,
+    "maxChars": 24,
     "straddle": true,
     "blur": false
   },
@@ -37,7 +39,12 @@
   },
   "layout": {
     "frame": { "bleed": true, "r": 32, "border": 0, "shadow": 40 },
-    "seam": 1160
+    "seam": 1160,
+    "highMotionDensity": true,
+    "noBlankPaper": true,
+    "topProgressChrome": false,
+    "ambientBlueOrbs": true,
+    "noLowerFullPaperVoid": true
   },
   "display": {
     "font": "Bricolage Grotesque",
@@ -50,7 +57,7 @@
     "family": "Bricolage Grotesque"
   },
   "pace": {
-    "speed": 1.2,
+    "speed": 1.06,
     "targetDurationSec": [45, 55],
     "tighten": { "sentence": 0.08, "comma": 0.05, "word": 0.03, "lead": 0.03, "tail": 0.8 }
   },
@@ -60,25 +67,28 @@
     "offset": 0
   },
   "mix": {
-    "music": -16,
-    "musicGain": 0.16,
-    "sfx": -18,
+    "music": -12.5,
+    "musicGain": 0.24,
+    "soloMusicGain": 0.36,
+    "sfx": -15,
     "duck": 0.65
   },
   "cta": {
     "type": "subscribe",
-    "label": "Abonne-toi pour suivre toute l'actualité tech"
+    "label": "Abonne-toi pour ne rien rater des prochains décryptages tech"
   },
   "sfx": {
     "swish": 0,
     "accents": 0
   },
   "notes": [
-    "Hook visuel en 2 actes dès la frame 0 (verrou parental -> explosion à 3.39s)",
-    "Sous-titres en conteneur de phrase unique (perWordBoxes: false)",
-    "Voix off ElevenLabs FR Liam (TX3LPaxmHKxFdv7VOQHJ) + Bright Corporate Groove (upbeat.mp3, gain 0.16)",
-    "Durée cible 45 à 55 secondes (~54.2 s à 1.20x) synchronisée sur AudioContext.currentTime",
-    "CTA fin : Abonnement + Cloche (@melvynxdev), sans mot-clé en commentaire",
-    "Vérification visuelle storyboard 8 beats + export MP4 HD 1080x1920 obligatoire"
+    "Hook visuel en 2 actes dès la frame 0 (verrou parental -> explosion sur mot clé + KPI bas)",
+    "Densité motion design élevée sur chaque beat : fond dot-grid animé + halos bleus flottants ultra-légers sur fond beige, connecteurs SVG, zéro bandeau de progression en haut, zéro vide papier (y compris en bas des beats plein écran 1920 au-dessus des sous-titres)",
+    "Sous-titres en conteneur de phrase unique (groupedContainer: true, perWordBoxes: false)",
+    "Voix off ElevenLabs FR grave et chaleureuse Brian (nPczCjzI2devNBz1zQrb) à 1.06x max (zéro distorsion robotique/aiguë)",
+    "Musique de fond Bright Corporate Groove (upbeat.mp3) réglée à 0.24 sous la voix (-12.5 dB, 0.36 en solo) pour dynamiser la rétention sans couvrir la narration",
+    "Durée cible 45 à 55 secondes (~53.8 s) verrouillée sur AudioContext.currentTime",
+    "CTA fin : Abonnement + Cloche avec pseudo configurable (creator.handle — jamais @melvynxdev en dur), sans mot-clé en commentaire",
+    "QA visuelle 8 beats + pré-rendu MP4 HD 1080x1920 sur disque obligatoire"
   ]
 }

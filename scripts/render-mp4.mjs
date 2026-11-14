@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Deterministic 1080x1920 High-Quality MP4 Renderer + Audio Mixer
- * Uses 3 parallel headless Chromium CDP pages in one Chrome process @ 30 fps
- * driven by window.__setShortTime(t), muxed with Liam FR Voiceover (atempo=1.20)
- * + Bright Corporate Groove (upbeat.mp3, volume=0.16) + SFX hits (-14 LUFS).
+ * Uses 3 parallel headless Chromium CDP pages in one Chrome process @ 25 fps
+ * driven by window.__setShortTime(t), muxed with Brian warm FR Voiceover (atempo=1.06)
+ * + Bright Corporate Groove (upbeat.mp3, volume=0.28) + SFX hits (-14 LUFS).
  */
 
 import { spawn } from 'node:child_process';
@@ -17,20 +17,20 @@ const CHROME_EXE =
 const RENDER_URL = process.env.RENDER_URL || 'http://127.0.0.1:3000/?renderMode=1';
 const OUT_MP4 = path.resolve(process.cwd(), 'public/video/short-interdiction-15-ans.mp4');
 
-const SOURCE_DURATION = 65.0;
-const SPEED = 1.2;
-const OUTPUT_DURATION = SOURCE_DURATION / SPEED; // ~54.17s
+const SOURCE_DURATION = 57.0;
+const SPEED = 1.06;
+const OUTPUT_DURATION = SOURCE_DURATION / SPEED; // ~53.77s
 const FPS = 25;
-const TOTAL_FRAMES = Math.round(OUTPUT_DURATION * FPS); // 1354 frames
+const TOTAL_FRAMES = Math.round(OUTPUT_DURATION * FPS); // ~1344 frames
 const WORKERS = 3;
 
 const SFX_LIST = [
-  { at: 3.39, file: 'public/audio/sfx/glass-shatter.mp3', gain: 0.52 },
-  { at: 3.39, file: 'public/audio/sfx/impact-boom.mp3', gain: 0.42 },
-  { at: 27.3, file: 'public/audio/sfx/zhhh.mp3', gain: 0.38 },
-  { at: 38.6, file: 'public/audio/sfx/riser.mp3', gain: 0.28 },
-  { at: 39.57, file: 'public/audio/sfx/impact-boom.mp3', gain: 0.4 },
-  { at: 60.55, file: 'public/audio/sfx/pop-back.mp3', gain: 0.4 },
+  { at: 3.44, file: 'public/audio/sfx/glass-shatter.mp3', gain: 0.52 },
+  { at: 3.44, file: 'public/audio/sfx/impact-boom.mp3', gain: 0.42 },
+  { at: 23.38, file: 'public/audio/sfx/zhhh.mp3', gain: 0.38 },
+  { at: 33.9, file: 'public/audio/sfx/riser.mp3', gain: 0.28 },
+  { at: 34.63, file: 'public/audio/sfx/impact-boom.mp3', gain: 0.4 },
+  { at: 53.5, file: 'public/audio/sfx/pop-back.mp3', gain: 0.4 },
 ];
 
 const SWITCHES = [
@@ -281,7 +281,7 @@ async function run() {
 
   const filterParts = [
     `[0:a]atempo=${SPEED},apad=whole_dur=${OUTPUT_DURATION.toFixed(3)}[voice]`,
-    `[1:a]atrim=0:${OUTPUT_DURATION.toFixed(3)},afade=t=out:st=${(OUTPUT_DURATION - 1.2).toFixed(2)}:d=1.2,volume=0.16[music]`,
+    `[1:a]atrim=0:${OUTPUT_DURATION.toFixed(3)},afade=t=out:st=${(OUTPUT_DURATION - 1.2).toFixed(2)}:d=1.2,volume=0.24[music]`,
   ];
 
   const mixInputs = ['[voice]', '[music]'];

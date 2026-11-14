@@ -17,9 +17,13 @@ import {
   Zap,
   Sparkles,
   Film,
+  SlidersHorizontal,
+  Video,
 } from 'lucide-react';
 import { ShortStage } from './components/short/ShortStage';
 import { TopicResearchView } from './components/TopicResearchView';
+import { StudioWorkspace } from './components/studio/StudioWorkspace';
+import { StudioRecorderView } from './components/studio/StudioRecorderView';
 import {
   BEATS,
   DEFAULT_PLAYBACK_SPEED,
@@ -43,7 +47,14 @@ export default function App() {
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('renderMode') === '1';
 
   const [t, setT] = useState(0);
-  const [viewMode, setViewMode] = useState<'player' | 'research'>('player');
+  const [viewMode, setViewMode] = useState<'player' | 'studio' | 'recorder' | 'research'>(() => {
+    if (typeof window === 'undefined') return 'player';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'studio' || params.get('project')) return 'studio';
+    if (params.get('tab') === 'recorder') return 'recorder';
+    if (params.get('tab') === 'research') return 'research';
+    return 'player';
+  });
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed] = useState(DEFAULT_PLAYBACK_SPEED);
   const [lookId, setLookId] = useState<LookId>('papier');
@@ -51,6 +62,8 @@ export default function App() {
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [downloadingMp4, setDownloadingMp4] = useState(false);
+  const [downloadPct, setDownloadPct] = useState<number | null>(null);
+  const [mp4ReadySizeMb, setMp4ReadySizeMb] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadDone, setDownloadDone] = useState(false);
 
@@ -74,18 +87,50 @@ export default function App() {
       if (!res.ok || !contentType.includes('video/mp4')) {
         throw new Error('Le serveur vidéo redémarre — réessayez dans 2 secondes.');
       }
-      const buf = await res.arrayBuffer();
-      const head = new Uint8Array(buf.slice(0, 12));
+
+      const contentLength = Number(res.headers.get('content-length') || 0);
+      let combined: Uint8Array;
+      if (res.body && typeof res.body.getReader === 'function') {
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            chunks.push(value);
+            received += value.byteLength;
+            if (contentLength > 0) {
+              setDownloadPct(Math.min(99, Math.round((received / contentLength) * 100)));
+            }
+          }
+        }
+        combined = new Uint8Array(received);
+        let offset = 0;
+        for (const c of chunks) {
+          combined.set(c, offset);
+          offset += c.byteLength;
+        }
+      } else {
+        combined = new Uint8Array(await res.arrayBuffer());
+      }
+
       const isFtypMp4 =
-        buf.byteLength > 200_000 &&
-        head[4] === 0x66 &&
-        head[5] === 0x74 &&
-        head[6] === 0x79 &&
-        head[7] === 0x70;
+        combined.byteLength > 200_000 &&
+        combined[4] === 0x66 &&
+        combined[5] === 0x74 &&
+        combined[6] === 0x79 &&
+        combined[7] === 0x70;
       if (!isFtypMp4) {
         throw new Error('Réponse vidéo invalide (page HTML interceptée). Réessayez.');
       }
-      const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
+      setMp4ReadySizeMb((combined.byteLength / (1024 * 1024)).toFixed(1));
+      setDownloadPct(100);
+      const blobUrl = URL.createObjectURL(
+        new Blob([combined.buffer.slice(combined.byteOffset, combined.byteOffset + combined.byteLength) as ArrayBuffer], {
+          type: 'video/mp4',
+        })
+      );
       mp4BlobUrlRef.current = blobUrl;
       return blobUrl;
     })().finally(() => {
@@ -112,8 +157,9 @@ export default function App() {
     void audioEngine.preload();
     fetch('/api/download-mp4/status', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((st: { ready?: boolean } | null) => {
-        if (st?.ready) {
+      .then((st: { ready?: boolean; sizeBytes?: number } | null) => {
+        if (st?.ready && st.sizeBytes) {
+          setMp4ReadySizeMb((st.sizeBytes / (1024 * 1024)).toFixed(1));
           void fetchVerifiedMp4BlobUrl().catch(() => {});
         }
       })
@@ -278,27 +324,63 @@ export default function App() {
       <header className="w-full border-b border-[#E3DED3] bg-[#FCFBF8]">
         <div className="max-w-[1160px] mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
           <span
-            className="text-sm sm:text-base font-extrabold tracking-tight text-[#14161B] whitespace-nowrap shrink-0"
+            className="text-xs sm:text-base font-extrabold tracking-tight text-[#14161B] whitespace-nowrap shrink-0"
             style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
           >
             Studio Short
           </span>
 
-          <nav aria-label="Modes du studio" className="inline-flex items-center gap-1 p-1 bg-[#EAE7DF] rounded-xl min-w-0">
+          <nav aria-label="Modes du studio" className="inline-flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-[#EAE7DF] rounded-xl min-w-0">
             <button
               type="button"
               onClick={() => setViewMode('player')}
               aria-pressed={viewMode === 'player'}
-              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'player'
                   ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
               }`}
             >
-              <Film className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <Film className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
               <span className="sm:hidden">Lecteur</span>
               <span className="hidden sm:inline">Lecteur Short</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsPlaying(false);
+                setViewMode('studio');
+              }}
+              aria-pressed={viewMode === 'studio'}
+              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'studio'
+                  ? 'bg-[#14161B] text-white shadow-sm'
+                  : 'text-[#5C5F68] hover:text-[#14161B]'
+              }`}
+            >
+              <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
+              <span className="sm:hidden">Feedback</span>
+              <span className="hidden sm:inline">Studio Feedback</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsPlaying(false);
+                setViewMode('recorder');
+              }}
+              aria-pressed={viewMode === 'recorder'}
+              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'recorder'
+                  ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                  : 'text-[#5C5F68] hover:text-[#14161B]'
+              }`}
+            >
+              <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
+              <span>Prompteur</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -306,21 +388,27 @@ export default function App() {
                 setViewMode('research');
               }}
               aria-pressed={viewMode === 'research'}
-              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'research'
                   ? 'bg-[#258EFF] text-white shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="sm:hidden">Veille &amp; CSV</span>
-              <span className="hidden sm:inline">Créer un Short · Veille &amp; CSV</span>
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
+              <span className="sm:hidden">Veille</span>
+              <span className="hidden sm:inline">Veille &amp; CSV</span>
             </button>
           </nav>
         </div>
       </header>
 
-      {viewMode === 'research' ? (
+      {viewMode === 'studio' ? (
+        <StudioWorkspace />
+      ) : viewMode === 'recorder' ? (
+        <main className="flex-1">
+          <StudioRecorderView />
+        </main>
+      ) : viewMode === 'research' ? (
         <main className="flex-1">
           <TopicResearchView />
         </main>
@@ -451,7 +539,7 @@ export default function App() {
             {downloadingMp4 ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Préparation du MP4 HD (1080×1920)…
+                Téléchargement MP4 HD{downloadPct !== null ? ` (${downloadPct} %)` : '…'}
               </>
             ) : downloadDone ? (
               <>
@@ -461,7 +549,7 @@ export default function App() {
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Télécharger en haute qualité MP4 (1080×1920)
+                Télécharger MP4 HD (1080×1920{mp4ReadySizeMb ? ` · ${mp4ReadySizeMb} Mo` : ''})
               </>
             )}
           </button>

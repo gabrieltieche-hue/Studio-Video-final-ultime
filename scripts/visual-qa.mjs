@@ -19,14 +19,14 @@ const OUT_SHEET = path.resolve(process.cwd(), '.playwright-cli/storyboard-qa.jpg
 
 // Key source timestamps right on peak visual + spoken action of all 8 beats
 const CHECKPOINTS = [
-  { beat: 1, label: '01-Hook-Lock', t: 0.35 },
-  { beat: 1, label: '01-Hook-Explode', t: 5.05 },
-  { beat: 2, label: '02-Australie-85', t: 13.0 },
-  { beat: 3, label: '03-France-Censure', t: 26.2 },
-  { beat: 4, label: '04-Design-Jauge', t: 31.1 },
-  { beat: 5, label: '05-Barres-x4.9', t: 41.2 },
-  { beat: 6, label: '06-KIDS-Toggles', t: 51.2 },
-  { beat: 8, label: '08-Subscribe-CTA', t: 61.5 },
+  { beat: 1, label: '01-Hook-Lock', t: 0.4 },
+  { beat: 1, label: '01-Hook-Explode', t: 4.7 },
+  { beat: 2, label: '02-Australie-85', t: 13.8 },
+  { beat: 3, label: '03-France-Censure', t: 22.7 },
+  { beat: 4, label: '04-Design-Jauge', t: 26.2 },
+  { beat: 5, label: '05-Barres-x4.9', t: 36.2 },
+  { beat: 6, label: '06-KIDS-Toggles', t: 45.0 },
+  { beat: 8, label: '08-Subscribe-CTA', t: 54.4 },
 ];
 
 const SWITCHES = [

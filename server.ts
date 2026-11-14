@@ -12,6 +12,14 @@ import {
   updateTopicStatus,
 } from './src/engine/topicResearchService';
 import type { TopicStatus } from './src/engine/topicCsv';
+import {
+  RENDERS_DIR,
+  STORAGE_DIR,
+  TAKES_DIR,
+  initStorage,
+} from './src/server/storageManager';
+import { seedFlagshipProjectIfMissing } from './src/server/seedFlagshipProject';
+import { createStudioRouter } from './src/server/studioRouter';
 
 dotenv.config();
 
@@ -19,7 +27,7 @@ const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
 
-const DEFAULT_FREE_VOICE_ID = 'TX3LPaxmHKxFdv7VOQHJ'; // Liam — Energetic, Social Media Creator (Free Plan premade API)
+const DEFAULT_FREE_VOICE_ID = 'nPczCjzI2devNBz1zQrb'; // Brian — Deep, Resonant and Comforting (Free Plan premade API)
 
 function resolveVoiceId(candidate?: string): string {
   const cleaned = typeof candidate === 'string' ? candidate.trim() : '';
@@ -53,8 +61,15 @@ async function ensureRenderedMp4(): Promise<string> {
 }
 
 async function startServer() {
+  initStorage();
+  seedFlagshipProjectIfMissing();
+
   const app = express();
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '25mb' }));
+  app.use('/takes', express.static(TAKES_DIR));
+  app.use('/renders', express.static(RENDERS_DIR));
+  app.use('/storage', express.static(STORAGE_DIR));
+  app.use(createStudioRouter());
 
   // Read or download the live CSV table of researched & produced Shorts (video-agent/shorts-topics.csv)
   app.get('/api/topics-csv', (req, res) => {
