@@ -1,16 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Bot,
+  ChevronDown,
+  Columns2,
   Copy,
+  Eye,
   FileText,
   Film,
+  FolderOpen,
   GitBranch,
   Grid,
+  Layers,
   Loader2,
   MessageSquare,
+  Monitor,
+  PanelLeftOpen,
+  PanelRightOpen,
   Plus,
   Sparkles,
   Wand2,
+  Wrench,
 } from 'lucide-react';
 import { audioEngine } from '../../engine/audioEngine';
 import { clamp } from '../../engine/math';
@@ -26,20 +34,41 @@ import { StudioPlaybackControls } from './StudioPlaybackControls';
 import { StudioMultiTrackTimeline } from './StudioMultiTrackTimeline';
 import { StudioRightSidebar } from './StudioRightSidebar';
 import {
-  ChatGPTModal,
   ContactSheetModal,
   CopyPromptModal,
   MotionEditorModal,
   NewProjectModal,
 } from './StudioModals';
 
-export const StudioWorkspace: React.FC = () => {
-  const [projects, setProjects] = useState<ShortProject[]>([]);
-  const [activeProject, setActiveProject] = useState<ShortProject | null>(null);
-  const [sourceVideos, setSourceVideos] = useState<SourceVideo[]>([]);
-  const [loading, setLoading] = useState(true);
+interface StudioWorkspaceProps {
+  projects: ShortProject[];
+  activeProject: ShortProject | null;
+  sourceVideos: SourceVideo[];
+  loading: boolean;
+  onActivateProject: (projectId: string, version?: string) => Promise<void>;
+  onRefreshWorkspace: (preferId?: string) => Promise<void>;
+  onRefreshProject: (projectId: string) => Promise<void>;
+}
+
+export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
+  projects,
+  activeProject,
+  sourceVideos,
+  loading,
+  onActivateProject,
+  onRefreshWorkspace,
+  onRefreshProject,
+}) => {
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+
+  // Collapsible panels on desktop (clean default: Video 9:16 + Chat Feedback)
+  const [showScriptPanel, setShowScriptPanel] = useState(false);
+  const [leftSidebarTab, setLeftSidebarTab] = useState<'transcript' | 'library'>('transcript');
+  const [showVideoPanel, setShowVideoPanel] = useState(true);
+  const [showTimelinePanel, setShowTimelinePanel] = useState(false);
+  const [showFeedbackPanel, setShowFeedbackPanel] = useState(true);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
 
   // Playback state
   const [currentTime, setCurrentTime] = useState(0);
@@ -48,10 +77,12 @@ export const StudioWorkspace: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const timeRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const toolsMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Inspection / annotation context
   const [selectedTargetElement, setSelectedTargetElement] = useState<string | null>(null);
   const [pendingSnapshot, setPendingSnapshot] = useState<string | null>(null);
+  const [drawingResetSignal, setDrawingResetSignal] = useState(0);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [renderingJobMsg, setRenderingJobMsg] = useState<string | null>(null);
 
@@ -62,42 +93,28 @@ export const StudioWorkspace: React.FC = () => {
   const [showMotionEditor, setShowMotionEditor] = useState(false);
   const [editorComponentId, setEditorComponentId] = useState<string | null>(null);
   const [showCopyPrompt, setShowCopyPrompt] = useState(false);
-  const [showChatGPT, setShowChatGPT] = useState(false);
-
-  const loadWorkspaceData = useCallback(async (preferId?: string) => {
-    try {
-      const [projRes, vidRes] = await Promise.all([
-        fetch('/api/studio/projects'),
-        fetch('/api/studio/videos'),
-      ]);
-      const projData = (await projRes.json()) as { projects?: ShortProject[] };
-      const vidData = (await vidRes.json()) as { videos?: SourceVideo[] };
-
-      const list = projData.projects || [];
-      setProjects(list);
-      setSourceVideos(vidData.videos || []);
-
-      const targetId =
-        preferId ||
-        new URLSearchParams(window.location.search).get('project') ||
-        'proj-interdiction-15-ans';
-      const chosen =
-        list.find((p) => p.id === targetId || p.slug === targetId) || list[0] || null;
-      setActiveProject(chosen);
-    } catch {
-      setErrorBanner('Impossible de charger les projets du Studio.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadWorkspaceData();
-  }, [loadWorkspaceData]);
 
   useEffect(() => {
     timeRef.current = currentTime;
   }, [currentTime]);
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    timeRef.current = 0;
+    setSelectedTargetElement(null);
+    setPendingSnapshot(null);
+  }, [activeProject?.id, activeProject?.currentVersion]);
+
+  useEffect(() => {
+    const onOutsideClick = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        setShowToolsMenu(false);
+      }
+    };
+    window.addEventListener('mousedown', onOutsideClick);
+    return () => window.removeEventListener('mousedown', onOutsideClick);
+  }, []);
 
   useEffect(() => {
     audioEngine.setOptions({
@@ -108,7 +125,13 @@ export const StudioWorkspace: React.FC = () => {
   }, [isMuted]);
 
   const activeDuration = activeProject?.duration || SHORT_DURATION;
-  const isReactFlagship = Boolean(activeProject?.isFlagshipReactStage);
+  const activeVersionObj = (activeProject?.versions || []).find(
+    (v) => v.version === activeProject?.currentVersion
+  );
+  const isReactFlagship =
+    Boolean(activeProject?.isFlagshipReactStage) &&
+    (!activeVersionObj?.outputMp4 ||
+      activeVersionObj.outputMp4 === '/video/short-interdiction-15-ans.mp4');
 
   // Playback engine
   useEffect(() => {
@@ -167,21 +190,17 @@ export const StudioWorkspace: React.FC = () => {
     [activeDuration, isReactFlagship, isPlaying, playbackSpeed]
   );
 
-  const handleSelectProject = (p: ShortProject) => {
+  const handleSelectProject = async (p: ShortProject) => {
     setIsPlaying(false);
-    setCurrentTime(0);
-    timeRef.current = 0;
-    setActiveProject(p);
-    setSelectedTargetElement(null);
-    setPendingSnapshot(null);
+    await onActivateProject(p.id);
   };
 
-  const refreshProject = async (id: string) => {
-    const res = await fetch(`/api/studio/projects/${encodeURIComponent(id)}`);
-    if (!res.ok) return;
-    const data = (await res.json()) as { project: ShortProject };
-    setActiveProject(data.project);
-    setProjects((prev) => prev.map((p) => (p.id === id ? data.project : p)));
+  const handleSelectVersion = async (version: string) => {
+    if (!activeProject) return;
+    setIsPlaying(false);
+    await onActivateProject(activeProject.id, version);
+    setStatusBanner(`Version ${version} activée dans le Studio et le Lecteur.`);
+    setTimeout(() => setStatusBanner(null), 2500);
   };
 
   const handleAddFeedback = async (
@@ -216,7 +235,8 @@ export const StudioWorkspace: React.FC = () => {
     }
     setSelectedTargetElement(null);
     setPendingSnapshot(null);
-    await refreshProject(activeProject.id);
+    setDrawingResetSignal((s) => s + 1);
+    await onRefreshProject(activeProject.id);
     setStatusBanner(`Feedback ajouté au timecode ${formatStudioTimecode(currentTime)}`);
     setTimeout(() => setStatusBanner(null), 2500);
   };
@@ -231,7 +251,7 @@ export const StudioWorkspace: React.FC = () => {
         body: JSON.stringify({ resolved }),
       }
     );
-    await refreshProject(activeProject.id);
+    await onRefreshProject(activeProject.id);
   };
 
   const handleDeleteFeedback = async (fId: string) => {
@@ -240,7 +260,7 @@ export const StudioWorkspace: React.FC = () => {
       `/api/studio/projects/${encodeURIComponent(activeProject.id)}/feedbacks/${encodeURIComponent(fId)}`,
       { method: 'DELETE' }
     );
-    await refreshProject(activeProject.id);
+    await onRefreshProject(activeProject.id);
   };
 
   const handleToggleCutWord = async (wordId: string) => {
@@ -249,7 +269,7 @@ export const StudioWorkspace: React.FC = () => {
       `/api/studio/projects/${encodeURIComponent(activeProject.id)}/words/${encodeURIComponent(wordId)}/cut`,
       { method: 'PATCH' }
     );
-    await refreshProject(activeProject.id);
+    await onRefreshProject(activeProject.id);
   };
 
   const handleCreateProject = async (payload: {
@@ -267,12 +287,14 @@ export const StudioWorkspace: React.FC = () => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Création impossible');
-    await loadWorkspaceData(data.projectId);
+    await onActivateProject(data.projectId);
+    setStatusBanner(`Projet « ${payload.title} » créé et activé.`);
+    setTimeout(() => setStatusBanner(null), 3000);
   };
 
   const handleDeleteProject = async (id: string) => {
     await fetch(`/api/studio/projects/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    await loadWorkspaceData();
+    await onRefreshWorkspace();
   };
 
   const handleSelectPlatform = async (platform: ShortProject['platform']) => {
@@ -285,7 +307,7 @@ export const StudioWorkspace: React.FC = () => {
         body: JSON.stringify({ platform }),
       }
     );
-    await refreshProject(activeProject.id);
+    await onRefreshProject(activeProject.id);
   };
 
   const handleImportVideoFile = async (file: File) => {
@@ -302,7 +324,7 @@ export const StudioWorkspace: React.FC = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Échec import vidéo');
-      await loadWorkspaceData(activeProject?.id);
+      await onRefreshWorkspace(activeProject?.id);
       setStatusBanner(`Rush importé : ${data.video.name}`);
       setTimeout(() => setStatusBanner(null), 3000);
     } catch (err) {
@@ -331,8 +353,8 @@ export const StudioWorkspace: React.FC = () => {
       setErrorBanner(data.error || 'Impossible de créer la version');
       return;
     }
-    await refreshProject(activeProject.id);
-    setStatusBanner(`Nouvelle itération v${nextNum} créée.`);
+    await onActivateProject(activeProject.id, `v${nextNum}`);
+    setStatusBanner(`Nouvelle itération v${nextNum} créée et activée.`);
     setTimeout(() => setStatusBanner(null), 2500);
   };
 
@@ -340,7 +362,7 @@ export const StudioWorkspace: React.FC = () => {
     if (!activeProject) return;
     if (activeProject.isFlagshipReactStage) {
       setStatusBanner(
-        'Le Short principal est déjà compilé en MP4 1080×1920 dans Lecteur Short (téléchargement instantané).'
+        'Le Short principal est déjà compilé en MP4 1080×1920 dans Lecteur Short.'
       );
       setTimeout(() => setStatusBanner(null), 4000);
       return;
@@ -367,7 +389,7 @@ export const StudioWorkspace: React.FC = () => {
         if (jd.status === 'completed') {
           setRenderingJobMsg(null);
           setStatusBanner(`Rendu ${jd.version} terminé (${jd.outputMp4})`);
-          await refreshProject(activeProject.id);
+          await onRefreshProject(activeProject.id);
           return;
         }
         if (jd.status === 'failed') {
@@ -394,7 +416,7 @@ export const StudioWorkspace: React.FC = () => {
       setErrorBanner(data.error || 'Impossible de préparer les silences');
       return;
     }
-    await refreshProject(activeProject.id);
+    await onRefreshProject(activeProject.id);
     setStatusBanner(`Silences retirés : ${data.totalSilencesRemoved || 0}s`);
   };
 
@@ -414,9 +436,32 @@ export const StudioWorkspace: React.FC = () => {
       setErrorBanner(data.error || 'Transcription Whisper indisponible');
       return;
     }
-    await refreshProject(activeProject.id);
+    await onRefreshProject(activeProject.id);
     setStatusBanner(`Transcription terminée (${data.wordsCount} mots).`);
   };
+
+  const handleToggleLeftTab = (tab: 'transcript' | 'library') => {
+    if (showScriptPanel && leftSidebarTab === tab) {
+      setShowScriptPanel(false);
+    } else {
+      setLeftSidebarTab(tab);
+      setShowScriptPanel(true);
+    }
+  };
+
+  const handleFocusVideoChat = () => {
+    setShowScriptPanel(false);
+    setShowTimelinePanel(false);
+    setShowVideoPanel(true);
+    setShowFeedbackPanel(true);
+  };
+
+  const handleSaveSnapshot = useCallback((url: string | null) => {
+    setPendingSnapshot(url);
+    if (url) {
+      setShowFeedbackPanel(true);
+    }
+  }, []);
 
   if (loading || !activeProject) {
     return (
@@ -427,90 +472,247 @@ export const StudioWorkspace: React.FC = () => {
     );
   }
 
+  const openFeedbacksCount = (activeProject.feedbacks || []).filter((f) => !f.resolved).length;
+  const isVideoChatMode =
+    !showScriptPanel && !showTimelinePanel && showVideoPanel && showFeedbackPanel;
+
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] bg-[#F6F5F1] overflow-hidden">
-      {/* Studio Sub-Toolbar */}
+      {/* Clean Studio Sub-Toolbar (Project + Version | Panel Toggles | Tools + Copy Prompt) */}
       <div className="px-3 sm:px-5 py-2 border-b border-[#E3DED3] bg-[#FCFBF8] flex items-center justify-between gap-2 flex-wrap shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="w-2 h-2 rounded-full bg-[#059669] shrink-0" />
-          <h1
-            className="text-sm sm:text-base font-extrabold text-[#14161B] truncate"
-            style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+        {/* Left: Project & Version Selector */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <label htmlFor="studio-project-select" className="sr-only">
+            Projet actif
+          </label>
+          <select
+            id="studio-project-select"
+            value={activeProject.id}
+            onChange={(e) => {
+              const target = projects.find((p) => p.id === e.target.value);
+              if (target) void handleSelectProject(target);
+            }}
+            className="max-w-[190px] sm:max-w-[240px] h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-white text-xs font-bold text-[#14161B] truncate cursor-pointer focus:outline-none focus:border-[#258EFF]"
           >
-            {activeProject.title}
-          </h1>
-          <span className="px-2 py-0.5 rounded-md bg-[#EAE7DF] font-mono text-[11px] font-bold text-[#14161B]">
-            {activeProject.currentVersion}
-          </span>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+
+          <label htmlFor="studio-version-select" className="sr-only">
+            Version active
+          </label>
+          <select
+            id="studio-version-select"
+            value={activeProject.currentVersion}
+            onChange={(e) => void handleSelectVersion(e.target.value)}
+            className="h-8 px-2 rounded-lg border border-[#E3DED3] bg-[#EAE7DF] font-mono text-[11px] font-bold text-[#14161B] cursor-pointer focus:outline-none focus:border-[#258EFF]"
+          >
+            {(activeProject.versions || []).map((v) => (
+              <option key={v.version} value={v.version}>
+                {v.version}
+              </option>
+            ))}
+          </select>
+
           <button
             type="button"
             onClick={handleCreateNextVersion}
-            title="Créer l'itération suivante (v2, v3…)"
-            className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#5C5F68] hover:text-[#14161B] cursor-pointer"
+            title="Créer la version suivante (v2, v3…)"
+            aria-label="Créer la version suivante"
+            className="h-8 px-2 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#5C5F68] hover:text-[#14161B] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
           >
-            <GitBranch className="w-3 h-3" />
-            + Version
+            <GitBranch className="w-3 h-3" aria-hidden="true" />
+            <span className="hidden sm:inline">+ Version</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Center (Desktop): Collapsible Panel Toggles */}
+        <div
+          role="group"
+          data-testid="panel-toggles-bar"
+          aria-label="Panneaux visibles"
+          className="hidden lg:inline-flex items-center gap-0.5 p-0.5 rounded-xl bg-[#EAE7DF]"
+        >
+          <button
+            type="button"
+            data-testid="toggle-script-panel"
+            onClick={() => handleToggleLeftTab('transcript')}
+            aria-pressed={showScriptPanel && leftSidebarTab === 'transcript'}
+            title="Afficher ou masquer le script"
+            className={`px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              showScriptPanel && leftSidebarTab === 'transcript'
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-[#258EFF]" aria-hidden="true" />
+            Script
+          </button>
+
+          <button
+            type="button"
+            data-testid="toggle-projects-panel"
+            onClick={() => handleToggleLeftTab('library')}
+            aria-pressed={showScriptPanel && leftSidebarTab === 'library'}
+            title="Afficher ou masquer la bibliothèque de projets et versions"
+            className={`px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              showScriptPanel && leftSidebarTab === 'library'
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-[#D97706]" aria-hidden="true" />
+            Projets
+          </button>
+
+          <button
+            type="button"
+            data-testid="toggle-video-panel"
+            onClick={() => setShowVideoPanel((s) => !s)}
+            aria-pressed={showVideoPanel}
+            title="Afficher ou masquer l'aperçu vidéo 9:16"
+            className={`px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              showVideoPanel
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <Monitor className="w-3.5 h-3.5 text-[#14161B]" aria-hidden="true" />
+            Vidéo
+          </button>
+
+          <button
+            type="button"
+            data-testid="toggle-timeline-panel"
+            onClick={() => setShowTimelinePanel((s) => !s)}
+            aria-pressed={showTimelinePanel}
+            title="Afficher ou masquer la timeline multi-pistes"
+            className={`px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              showTimelinePanel
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-[#059669]" aria-hidden="true" />
+            Timeline
+          </button>
+
+          <button
+            type="button"
+            data-testid="toggle-feedback-panel"
+            onClick={() => setShowFeedbackPanel((s) => !s)}
+            aria-pressed={showFeedbackPanel}
+            title="Afficher ou masquer le chat feedback"
+            className={`px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              showFeedbackPanel
+                ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-[#258EFF]" aria-hidden="true" />
+            Chat ({openFeedbacksCount})
+          </button>
+
+          <button
+            type="button"
+            data-testid="preset-video-chat"
+            onClick={handleFocusVideoChat}
+            aria-pressed={isVideoChatMode}
+            title="Mode épuré : Vidéo 9:16 + Chat Feedback uniquement"
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              isVideoChatMode
+                ? 'bg-[#14161B] text-white shadow-sm'
+                : 'text-[#5C5F68] hover:text-[#14161B]'
+            }`}
+          >
+            <Columns2 className="w-3.5 h-3.5" aria-hidden="true" />
+            Vidéo + Chat
+          </button>
+        </div>
+
+        {/* Right: Advanced Tools Dropdown + Primary CTA */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setShowNewProject(true)}
-            className="px-2.5 py-1.5 rounded-xl border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer"
+            className="h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
           >
-            <Plus className="w-3.5 h-3.5 text-[#258EFF]" />
-            <span className="hidden md:inline">Nouveau Short</span>
+            <Plus className="w-3.5 h-3.5 text-[#258EFF]" aria-hidden="true" />
+            <span className="hidden sm:inline">Nouveau Short</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowContactSheet(true)}
-            className="px-2.5 py-1.5 rounded-xl border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer"
-          >
-            <Grid className="w-3.5 h-3.5 text-[#059669]" />
-            Planche QC
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEditorComponentId(null);
-              setShowMotionEditor(true);
-            }}
-            className="px-2.5 py-1.5 rounded-xl border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer"
-          >
-            <Wand2 className="w-3.5 h-3.5 text-[#258EFF]" />
-            <span className="hidden sm:inline">Motion</span>
-          </button>
-
-          {!activeProject.isFlagshipReactStage && (
+          <div ref={toolsMenuRef} className="relative">
             <button
               type="button"
-              onClick={() => handleRunRender('final')}
-              className="px-2.5 py-1.5 rounded-xl bg-[#14161B] hover:bg-[#258EFF] text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer"
+              data-testid="studio-tools-menu-btn"
+              onClick={() => setShowToolsMenu((o) => !o)}
+              aria-expanded={showToolsMenu}
+              className="h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
             >
-              <Film className="w-3.5 h-3.5" />
-              Rendu MP4
+              <Wrench className="w-3.5 h-3.5 text-[#5C5F68]" aria-hidden="true" />
+              <span>Outils</span>
+              <ChevronDown className="w-3 h-3 text-[#5C5F68]" aria-hidden="true" />
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => setShowChatGPT(true)}
-            className="px-2.5 py-1.5 rounded-xl border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer"
-          >
-            <Bot className="w-3.5 h-3.5 text-[#5C5F68]" />
-            MCP
-          </button>
+            {showToolsMenu && (
+              <div
+                role="menu"
+                className="absolute right-0 mt-1.5 w-56 rounded-xl border border-[#E3DED3] bg-[#FCFBF8] shadow-xl py-1.5 z-50 text-xs"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    setShowContactSheet(true);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-[#F6F5F1] flex items-center gap-2 font-medium text-[#14161B] cursor-pointer"
+                >
+                  <Grid className="w-3.5 h-3.5 text-[#059669]" />
+                  Planche QC (12 frames)
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    setEditorComponentId(null);
+                    setShowMotionEditor(true);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-[#F6F5F1] flex items-center gap-2 font-medium text-[#14161B] cursor-pointer"
+                >
+                  <Wand2 className="w-3.5 h-3.5 text-[#258EFF]" />
+                  Éditeur Motion (window.setT)
+                </button>
+                {!activeProject.isFlagshipReactStage && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setShowToolsMenu(false);
+                      void handleRunRender('final');
+                    }}
+                    className="w-full px-3 py-2 text-left hover:bg-[#F6F5F1] flex items-center gap-2 font-medium text-[#14161B] cursor-pointer"
+                  >
+                    <Film className="w-3.5 h-3.5 text-[#14161B]" />
+                    Lancer rendu MP4 FFmpeg
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
             onClick={() => setShowCopyPrompt(true)}
-            className="px-3 py-1.5 rounded-xl bg-[#258EFF] hover:opacity-90 text-white text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+            className="h-8 px-3 rounded-lg bg-[#258EFF] hover:opacity-90 text-white text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap"
           >
-            <Copy className="w-3.5 h-3.5" />
-            Copier Prompt IA
+            <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Copier Prompt IA</span>
+            <span className="sm:hidden">Prompt</span>
           </button>
         </div>
       </div>
@@ -518,7 +720,7 @@ export const StudioWorkspace: React.FC = () => {
       {/* Inline Notifications */}
       {(statusBanner || errorBanner || renderingJobMsg) && (
         <div
-          className={`px-4 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 border-b ${
+          className={`px-4 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 border-b shrink-0 ${
             errorBanner
               ? 'bg-[#DC2626]/10 border-[#DC2626]/20 text-[#DC2626]'
               : 'bg-[#258EFF]/10 border-[#258EFF]/20 text-[#14161B]'
@@ -530,13 +732,57 @@ export const StudioWorkspace: React.FC = () => {
         </div>
       )}
 
-      {/* 3-Pane Studio Workspace */}
+      {/* Workspace Body (Desktop: collapsible 3-pane + clickable edge rails, Mobile: bottom switcher) */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-        {/* Left Sidebar */}
+        {/* Collapsed Left Edge Icon Rail (Desktop only) */}
+        {!showScriptPanel && (
+          <div
+            data-testid="collapsed-left-rail"
+            className="hidden lg:flex flex-col items-center py-2.5 px-1 gap-2 w-10 border-r border-[#E3DED3] bg-[#FCFBF8] shrink-0"
+          >
+            <button
+              type="button"
+              data-testid="rail-open-script"
+              onClick={() => {
+                setLeftSidebarTab('transcript');
+                setShowScriptPanel(true);
+              }}
+              title="Déplier le Script & Transcript"
+              aria-label="Déplier le Script"
+              className="w-8 h-8 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] hover:border-[#258EFF] text-[#258EFF] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              data-testid="rail-open-projects"
+              onClick={() => {
+                setLeftSidebarTab('library');
+                setShowScriptPanel(true);
+              }}
+              title="Déplier Projets & Versions"
+              aria-label="Déplier Projets et Versions"
+              className="w-8 h-8 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] hover:border-[#D97706] text-[#D97706] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <FolderOpen className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowScriptPanel(true)}
+              title="Déplier le panneau gauche"
+              aria-label="Déplier le panneau gauche"
+              className="mt-auto w-8 h-8 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Left Sidebar (Script & Projets) */}
         <div
           className={`${
-            mobilePane === 'left' ? 'flex flex-1' : 'hidden lg:flex'
-          } min-h-0 overflow-hidden`}
+            mobilePane === 'left' ? 'flex flex-1' : 'hidden'
+          } ${showScriptPanel ? 'lg:flex' : 'lg:hidden'} min-h-0 overflow-hidden`}
         >
           <StudioLeftSidebar
             project={activeProject}
@@ -544,50 +790,74 @@ export const StudioWorkspace: React.FC = () => {
             sourceVideos={sourceVideos}
             currentTime={currentTime}
             uploadingVideo={uploadingVideo}
-            onSelectProject={handleSelectProject}
+            requestedTab={leftSidebarTab}
+            onSelectProject={(p) => void handleSelectProject(p)}
+            onSelectVersion={(v) => void handleSelectVersion(v)}
+            onCreateNextVersion={() => void handleCreateNextVersion()}
             onOpenNewProject={() => setShowNewProject(true)}
-            onDeleteProject={handleDeleteProject}
-            onSelectPlatform={handleSelectPlatform}
-            onImportVideoFile={handleImportVideoFile}
+            onDeleteProject={(id) => void handleDeleteProject(id)}
+            onSelectPlatform={(pl) => void handleSelectPlatform(pl)}
+            onImportVideoFile={(f) => void handleImportVideoFile(f)}
             onSeek={handleSeek}
-            onToggleCutWord={handleToggleCutWord}
+            onToggleCutWord={(wid) => void handleToggleCutWord(wid)}
             onAddCommentAtTime={(time, word) => {
               setIsPlaying(false);
               handleSeek(time);
               setSelectedTargetElement(`Mot « ${word} »`);
+              setShowFeedbackPanel(true);
               setMobilePane('right');
             }}
-            onTranscribeProject={handleTranscribeProject}
-            onPrepareSilences={handlePrepareSilences}
+            onTranscribeProject={() => void handleTranscribeProject()}
+            onPrepareSilences={() => void handlePrepareSilences()}
+            onClosePanel={() => setShowScriptPanel(false)}
           />
         </div>
 
-        {/* Center Stage + Playback + Multi-Track Timeline */}
+        {/* Center Stage + Playback + Collapsible Multi-Track Timeline */}
         <div
           className={`${
             mobilePane === 'stage' ? 'flex' : 'hidden lg:flex'
           } flex-1 flex-col min-w-0 min-h-0 overflow-hidden`}
         >
-          <StudioPlayer916
-            project={activeProject}
-            currentTime={currentTime}
-            isPlaying={isPlaying}
-            isMuted={isMuted}
-            playbackSpeed={playbackSpeed}
-            selectedTargetElement={selectedTargetElement}
-            onSelectTargetElement={(el) => {
-              setSelectedTargetElement(el);
-              setMobilePane('right');
-            }}
-            onSaveSnapshot={(url) => {
-              setPendingSnapshot(url);
-              setMobilePane('right');
-            }}
-            onSyncTimeFromVideo={(t) => {
-              timeRef.current = t;
-              setCurrentTime(t);
-            }}
-          />
+          {showVideoPanel ? (
+            <StudioPlayer916
+              project={activeProject}
+              currentTime={currentTime}
+              isPlaying={isPlaying}
+              isMuted={isMuted}
+              playbackSpeed={playbackSpeed}
+              selectedTargetElement={selectedTargetElement}
+              drawingResetSignal={drawingResetSignal}
+              onSelectTargetElement={(el) => {
+                setSelectedTargetElement(el);
+                setShowFeedbackPanel(true);
+                setMobilePane('right');
+              }}
+              onSaveSnapshot={handleSaveSnapshot}
+              onSyncTimeFromVideo={(t) => {
+                timeRef.current = t;
+                setCurrentTime(t);
+              }}
+            />
+          ) : (
+            <div
+              data-testid="video-collapsed-bar"
+              className="flex-1 min-h-[120px] bg-[#ECEAE4] flex flex-col items-center justify-center gap-3 p-6 text-center"
+            >
+              <div className="text-xs font-semibold text-[#5C5F68]">
+                Aperçu vidéo 9:16 replié ({activeProject.title} · {activeProject.currentVersion})
+              </div>
+              <button
+                type="button"
+                data-testid="expand-video-btn"
+                onClick={() => setShowVideoPanel(true)}
+                className="px-3.5 py-2 rounded-xl bg-[#14161B] hover:bg-[#258EFF] text-white text-xs font-bold inline-flex items-center gap-2 shadow-sm cursor-pointer transition-colors"
+              >
+                <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+                Afficher l’aperçu 9:16
+              </button>
+            </div>
+          )}
 
           <StudioPlaybackControls
             isPlaying={isPlaying}
@@ -602,26 +872,36 @@ export const StudioWorkspace: React.FC = () => {
             }}
             isMuted={isMuted}
             onToggleMute={() => setIsMuted((m) => !m)}
+            videoOpen={showVideoPanel}
+            onToggleVideo={() => setShowVideoPanel((s) => !s)}
+            timelineOpen={showTimelinePanel}
+            onToggleTimeline={() => setShowTimelinePanel((s) => !s)}
           />
 
-          <StudioMultiTrackTimeline
-            project={activeProject}
-            currentTime={currentTime}
-            duration={activeDuration}
-            onSeek={handleSeek}
-            onSelectFeedback={() => setMobilePane('right')}
-            onOpenMotionEditor={(compId) => {
-              setEditorComponentId(compId);
-              setShowMotionEditor(true);
-            }}
-          />
+          {showTimelinePanel && (
+            <StudioMultiTrackTimeline
+              project={activeProject}
+              currentTime={currentTime}
+              duration={activeDuration}
+              onSeek={handleSeek}
+              onSelectFeedback={() => {
+                setShowFeedbackPanel(true);
+                setMobilePane('right');
+              }}
+              onOpenMotionEditor={(compId) => {
+                setEditorComponentId(compId);
+                setShowMotionEditor(true);
+              }}
+              onClose={() => setShowTimelinePanel(false)}
+            />
+          )}
         </div>
 
-        {/* Right Sidebar (Feedbacks) */}
+        {/* Right Sidebar (Chat Feedback) */}
         <div
           className={`${
-            mobilePane === 'right' ? 'flex flex-1' : 'hidden lg:flex'
-          } min-h-0 overflow-hidden`}
+            mobilePane === 'right' ? 'flex flex-1' : 'hidden'
+          } ${showFeedbackPanel ? 'lg:flex' : 'lg:hidden'} min-h-0 overflow-hidden`}
         >
           <StudioRightSidebar
             project={activeProject}
@@ -629,15 +909,50 @@ export const StudioWorkspace: React.FC = () => {
             selectedTargetElement={selectedTargetElement}
             pendingSnapshot={pendingSnapshot}
             onClearTargetElement={() => setSelectedTargetElement(null)}
-            onClearSnapshot={() => setPendingSnapshot(null)}
+            onClearSnapshot={() => {
+              setPendingSnapshot(null);
+              setDrawingResetSignal((s) => s + 1);
+            }}
             onSeek={handleSeek}
             onAddFeedback={handleAddFeedback}
             onToggleResolveFeedback={handleToggleResolveFeedback}
             onDeleteFeedback={handleDeleteFeedback}
-            onCopyPrompt={() => setShowCopyPrompt(true)}
-            onOpenChatGPT={() => setShowChatGPT(true)}
+            onClosePanel={() => setShowFeedbackPanel(false)}
           />
         </div>
+
+        {/* Collapsed Right Edge Icon Rail (Desktop only) */}
+        {!showFeedbackPanel && (
+          <div
+            data-testid="collapsed-right-rail"
+            className="hidden lg:flex flex-col items-center py-2.5 px-1 gap-2 w-10 border-l border-[#E3DED3] bg-[#FCFBF8] shrink-0"
+          >
+            <button
+              type="button"
+              data-testid="rail-open-feedback"
+              onClick={() => setShowFeedbackPanel(true)}
+              title="Déplier le Chat Feedback"
+              aria-label="Déplier le Chat Feedback"
+              className="relative w-8 h-8 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] hover:border-[#258EFF] text-[#258EFF] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              {openFeedbacksCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#258EFF] text-white text-[9px] font-bold flex items-center justify-center">
+                  {openFeedbacksCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFeedbackPanel(true)}
+              title="Déplier le panneau droit"
+              aria-label="Déplier le panneau droit"
+              className="mt-auto w-8 h-8 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <PanelRightOpen className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Bottom Pane Switcher (< lg) */}
@@ -697,19 +1012,13 @@ export const StudioWorkspace: React.FC = () => {
         onClose={() => setShowMotionEditor(false)}
         project={activeProject}
         initialComponentId={editorComponentId}
-        onSaved={() => void refreshProject(activeProject.id)}
+        onSaved={() => void onRefreshProject(activeProject.id)}
       />
 
       <CopyPromptModal
         isOpen={showCopyPrompt}
         onClose={() => setShowCopyPrompt(false)}
         project={activeProject}
-      />
-
-      <ChatGPTModal
-        isOpen={showChatGPT}
-        onClose={() => setShowChatGPT(false)}
-        projectId={activeProject.id}
       />
     </div>
   );

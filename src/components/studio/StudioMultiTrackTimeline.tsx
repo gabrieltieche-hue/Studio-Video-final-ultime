@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+  ChevronDown,
   Film,
   Layers,
   MessageSquare,
@@ -18,6 +19,7 @@ interface StudioMultiTrackTimelineProps {
   onSeek: (time: number) => void;
   onSelectFeedback?: (fb: FeedbackItem) => void;
   onOpenMotionEditor: (componentId: string) => void;
+  onClose?: () => void;
 }
 
 export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> = ({
@@ -27,6 +29,7 @@ export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> =
   onSeek,
   onSelectFeedback,
   onOpenMotionEditor,
+  onClose,
 }) => {
   const [zoom, setZoom] = useState(1);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -39,71 +42,89 @@ export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> =
     onSeek(ratio * safeDuration);
   };
 
-  const toPct = (t: number) => `${Math.max(0, Math.min(100, (t / safeDuration) * 100)).toFixed(2)}%`;
+  const toPct = (t: number) => `${Math.max(0, Math.min(98.5, (t / safeDuration) * 100)).toFixed(2)}%`;
   const toWidthPct = (s: number, e: number) =>
     `${Math.max(1.5, Math.min(100, ((e - s) / safeDuration) * 100)).toFixed(2)}%`;
 
-  const ticks = Array.from({ length: 9 }, (_, i) => Number(((safeDuration / 8) * i).toFixed(1)));
+  const ticks = Array.from({ length: 8 }, (_, i) => Number(((safeDuration / 8) * i).toFixed(1)));
 
   return (
     <section
       aria-label="Timeline multi-pistes"
+      data-testid="studio-timeline"
       className="bg-[#FCFBF8] border-t border-[#E3DED3] flex flex-col select-none shrink-0"
     >
       {/* Top Timeline Controls */}
       <div className="h-8 px-3 border-b border-[#E3DED3] bg-[#F6F5F1] flex items-center justify-between text-[11px]">
-        <div className="flex items-center gap-3 text-[#5C5F68]">
-          <span className="font-bold text-[#14161B]">Timeline Multi-Pistes</span>
-          <span className="hidden sm:inline font-mono">
-            {(project.motionTrack || []).length} calques motion · {(project.sfxTrack || []).length} SFX ·{' '}
+        <div className="flex items-center gap-3 text-[#5C5F68] min-w-0">
+          <span className="font-bold text-[#14161B] whitespace-nowrap">Timeline Multi-Pistes</span>
+          <span className="hidden sm:inline font-mono tabular-nums truncate">
+            {(project.motionTrack || []).length} motion · {(project.sfxTrack || []).length} SFX ·{' '}
             {(project.feedbacks || []).length} retours
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
             disabled={zoom <= 1}
             title="Dézoomer timeline"
+            aria-label="Dézoomer timeline"
             className="p-1 rounded hover:bg-[#EAE7DF] text-[#5C5F68] disabled:opacity-40 cursor-pointer"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <span className="font-mono text-[10px] text-[#5C5F68] w-8 text-center">{zoom}×</span>
+          <span className="font-mono text-[10px] text-[#5C5F68] w-8 text-center tabular-nums">{zoom}×</span>
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
             disabled={zoom >= 3}
             title="Zoomer timeline"
+            aria-label="Zoomer timeline"
             className="p-1 rounded hover:bg-[#EAE7DF] text-[#5C5F68] disabled:opacity-40 cursor-pointer"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
+
+          {onClose && (
+            <>
+              <div className="w-px h-3.5 bg-[#E3DED3] mx-0.5" />
+              <button
+                type="button"
+                onClick={onClose}
+                title="Replier la timeline"
+                aria-label="Replier la timeline"
+                className="p-1 rounded hover:bg-[#EAE7DF] text-[#5C5F68] hover:text-[#14161B] cursor-pointer"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Scrollable Track Area */}
       <div className="flex overflow-x-auto">
         {/* Track Labels */}
-        <div className="w-28 sm:w-32 shrink-0 bg-[#FCFBF8] border-r border-[#E3DED3] text-[10px] font-semibold text-[#5C5F68] divide-y divide-[#E3DED3]">
-          <div className="h-6 px-2.5 flex items-center justify-between bg-[#F6F5F1] text-[9px] uppercase tracking-wider">
+        <div className="w-24 sm:w-28 shrink-0 bg-[#FCFBF8] border-r border-[#E3DED3] text-[10px] font-semibold text-[#5C5F68] divide-y divide-[#E3DED3]">
+          <div className="h-6 px-2 flex items-center justify-between bg-[#F6F5F1] text-[9px] uppercase tracking-wider">
             <span>Timecode</span>
             <MessageSquare className="w-3 h-3 text-[#258EFF]" />
           </div>
-          <div className="h-7 px-2.5 flex items-center gap-1.5 text-[#14161B]">
+          <div className="h-7 px-2 flex items-center gap-1.5 text-[#14161B]">
             <Wand2 className="w-3 h-3 text-[#258EFF] shrink-0" />
             <span className="truncate">MOTION ({(project.motionTrack || []).length})</span>
           </div>
-          <div className="h-7 px-2.5 flex items-center gap-1.5">
+          <div className="h-7 px-2 flex items-center gap-1.5">
             <Layers className="w-3 h-3 text-[#059669] shrink-0" />
             <span className="truncate">LAYOUT</span>
           </div>
-          <div className="h-8 px-2.5 flex items-center gap-1.5">
+          <div className="h-8 px-2 flex items-center gap-1.5">
             <Volume2 className="w-3 h-3 text-[#D97706] shrink-0" />
             <span className="truncate">SFX ({(project.sfxTrack || []).length})</span>
           </div>
-          <div className="h-7 px-2.5 flex items-center gap-1.5">
+          <div className="h-7 px-2 flex items-center gap-1.5">
             <Music className="w-3 h-3 text-[#5C5F68] shrink-0" />
             <span className="truncate">MUSIQUE</span>
           </div>
@@ -115,7 +136,7 @@ export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> =
             ref={trackRef}
             onClick={handleScrub}
             style={{ width: `${zoom * 100}%` }}
-            className="relative min-w-full cursor-pointer divide-y divide-[#E3DED3]"
+            className="relative min-w-full cursor-pointer divide-y divide-[#E3DED3] pr-4"
           >
             {/* Ruler + Feedback Pins */}
             <div className="h-6 relative bg-[#FCFBF8]">
@@ -123,7 +144,7 @@ export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> =
                 <div
                   key={tick}
                   style={{ left: toPct(tick) }}
-                  className="absolute top-0 bottom-0 border-l border-[#E3DED3] pl-1 text-[9px] font-mono text-[#A19F98] flex items-center pointer-events-none"
+                  className="absolute top-0 bottom-0 border-l border-[#E3DED3] pl-1 text-[9px] font-mono text-[#A19F98] flex items-center pointer-events-none tabular-nums"
                 >
                   {tick}s
                 </div>
@@ -134,6 +155,7 @@ export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> =
                   key={fb.id}
                   type="button"
                   title={`[${fb.timeFormatted}] ${fb.text}`}
+                  aria-label={`Feedback à ${fb.timeFormatted}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onSeek(fb.timestamp);
@@ -225,7 +247,7 @@ export const StudioMultiTrackTimeline: React.FC<StudioMultiTrackTimelineProps> =
                     <Film className="w-3 h-3 text-[#258EFF] shrink-0" />
                     {project.musicTrack.trackName} · vol {Math.round((project.musicTrack.volume || 0.24) * 100)}%
                   </span>
-                  <span className="text-[9px] font-mono text-[#5C5F68]">
+                  <span className="text-[9px] font-mono text-[#5C5F68] shrink-0">
                     {project.musicTrack.ducking ? 'ducking auto' : 'constant'}
                   </span>
                 </div>

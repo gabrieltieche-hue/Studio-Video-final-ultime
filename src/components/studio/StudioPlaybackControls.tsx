@@ -2,6 +2,9 @@ import React from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
+  Layers,
   Pause,
   Play,
   SkipBack,
@@ -21,6 +24,10 @@ interface StudioPlaybackControlsProps {
   onChangeSpeed: (speed: number) => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  timelineOpen?: boolean;
+  onToggleTimeline?: () => void;
+  videoOpen?: boolean;
+  onToggleVideo?: () => void;
 }
 
 export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
@@ -33,6 +40,10 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
   onChangeSpeed,
   isMuted,
   onToggleMute,
+  timelineOpen = false,
+  onToggleTimeline,
+  videoOpen = true,
+  onToggleVideo,
 }) => {
   const speeds = [0.5, 1.0, 1.06, 1.25, 1.5];
 
@@ -45,9 +56,6 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
         <span className="text-[11px] font-mono text-[#A19F98] tabular-nums hidden sm:inline">
           / {formatStudioTimecode(duration)}
         </span>
-        <span className="px-2 py-0.5 rounded-md bg-[#EAE7DF] text-[10px] font-mono font-semibold text-[#5C5F68] hidden md:inline">
-          9:16 · 1080×1920
-        </span>
       </div>
 
       <div className="flex items-center gap-1 sm:gap-1.5">
@@ -55,6 +63,7 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
           type="button"
           onClick={() => onSeek(0)}
           title="Début (00:00)"
+          aria-label="Revenir au début"
           className="p-1.5 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] transition-colors cursor-pointer"
         >
           <SkipBack className="w-3.5 h-3.5" />
@@ -63,6 +72,7 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
           type="button"
           onClick={() => onSeek(Math.max(0, currentTime - 0.5))}
           title="Reculer 0.5 s"
+          aria-label="Reculer 0.5 seconde"
           className="p-1.5 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -81,6 +91,7 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
           type="button"
           onClick={() => onSeek(Math.min(duration, currentTime + 0.5))}
           title="Avancer 0.5 s"
+          aria-label="Avancer 0.5 seconde"
           className="p-1.5 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] transition-colors cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
@@ -89,6 +100,7 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
           type="button"
           onClick={() => onSeek(duration)}
           title="Fin"
+          aria-label="Aller à la fin"
           className="p-1.5 rounded-lg text-[#5C5F68] hover:text-[#14161B] hover:bg-[#EAE7DF] transition-colors cursor-pointer"
         >
           <SkipForward className="w-3.5 h-3.5" />
@@ -96,7 +108,7 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <div className="hidden sm:flex items-center bg-[#EAE7DF] p-0.5 rounded-lg">
+        <div className="hidden md:flex items-center bg-[#EAE7DF] p-0.5 rounded-lg">
           {speeds.map((sp) => (
             <button
               key={sp}
@@ -121,6 +133,46 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-[#DC2626]" /> : <Volume2 className="w-4 h-4" />}
         </button>
+
+        {onToggleVideo && (
+          <button
+            type="button"
+            onClick={onToggleVideo}
+            aria-pressed={videoOpen}
+            title={videoOpen ? 'Masquer la vidéo 9:16' : 'Afficher la vidéo 9:16'}
+            aria-label={videoOpen ? 'Masquer la vidéo 9:16' : 'Afficher la vidéo 9:16'}
+            className={`px-2 py-1 rounded-lg border text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              videoOpen
+                ? 'bg-white text-[#14161B] border-[#E3DED3] hover:bg-[#EAE7DF]'
+                : 'bg-[#14161B] text-white border-[#14161B]'
+            }`}
+          >
+            {videoOpen ? (
+              <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+            <span className="hidden xl:inline">{videoOpen ? 'Masquer vidéo' : 'Afficher vidéo'}</span>
+          </button>
+        )}
+
+        {onToggleTimeline && (
+          <button
+            type="button"
+            onClick={onToggleTimeline}
+            aria-pressed={timelineOpen}
+            title={timelineOpen ? 'Masquer la timeline' : 'Afficher la timeline'}
+            aria-label={timelineOpen ? 'Masquer la timeline' : 'Afficher la timeline'}
+            className={`px-2 py-1 rounded-lg border text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap ${
+              timelineOpen
+                ? 'bg-[#14161B] text-white border-[#14161B]'
+                : 'bg-white text-[#5C5F68] border-[#E3DED3] hover:text-[#14161B]'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Timeline</span>
+          </button>
+        )}
       </div>
     </div>
   );

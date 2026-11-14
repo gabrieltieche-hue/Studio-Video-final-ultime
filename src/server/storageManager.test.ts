@@ -127,6 +127,55 @@ test('storageManager persists, reloads, and deletes projects on disk', () => {
   assert.equal(storage.getProject('proj-disk-test'), null);
 });
 
+test('workspace state persists active project and switches versions cleanly', () => {
+  const proj: ShortProject = {
+    id: 'proj-ws-test',
+    slug: 'ws-test',
+    title: 'Workspace Sync Test',
+    mode: 'faceless_explainer',
+    platform: 'youtube_shorts',
+    status: 'draft',
+    duration: 45,
+    fps: 25,
+    resolution: { width: 1080, height: 1920 },
+    currentVersion: 'v1',
+    versions: [
+      { version: 'v2', createdAt: '2026-11-14T01:00:00Z', status: 'draft', duration: 48, fps: 25, notes: 'v2 iter' },
+      { version: 'v1', createdAt: '2026-11-14T00:00:00Z', status: 'draft', duration: 45, fps: 25, notes: 'v1 init' },
+    ],
+    transcript: [],
+    motionTrack: [],
+    layoutTrack: [],
+    sfxTrack: [],
+    musicTrack: { trackName: '', volume: 0.24, ducking: true },
+    feedbacks: [],
+    motionComponents: {},
+    contactSheet: [],
+    styleProfile: {
+      name: 'Papier signature',
+      fontFamily: 'Bricolage Grotesque',
+      accentColor: '#258EFF',
+      textColor: '#14161B',
+      cardBg: '#FCFBF8',
+      captionsPosition: 'bottom',
+      visualBeatsTarget: 4,
+    },
+  };
+
+  storage.saveProject(proj);
+  const resV2 = storage.setActiveProjectAndVersion('proj-ws-test', 'v2');
+  assert.equal(resV2.state.activeProjectId, 'proj-ws-test');
+  assert.equal(resV2.state.activeVersion, 'v2');
+  assert.equal(resV2.project.currentVersion, 'v2');
+  assert.equal(resV2.project.duration, 48);
+
+  const ws = storage.getWorkspaceState();
+  assert.equal(ws.activeProjectId, 'proj-ws-test');
+  assert.equal(ws.activeVersion, 'v2');
+
+  storage.deleteProject('proj-ws-test');
+});
+
 test('detectAndRemoveSilences does not collapse a completely silent track', { skip: !ffmpegAvailable }, () => {
   const silentMp4 = path.join(storage.TAKES_DIR, 'silent-test.mp4');
   fs.mkdirSync(storage.TAKES_DIR, { recursive: true });

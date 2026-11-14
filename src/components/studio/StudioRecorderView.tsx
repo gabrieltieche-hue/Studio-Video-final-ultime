@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera,
   ChevronDown,
@@ -11,7 +11,8 @@ import {
   VideoOff,
 } from 'lucide-react';
 import { BEATS } from '../../data/shortSpec';
-import { formatStudioTimecode } from '../../types/studio';
+import { buildDynamicBeatsFromProject } from '../../engine/transcriptUtils';
+import { formatStudioTimecode, type ShortProject } from '../../types/studio';
 
 interface ScriptPreset {
   id: string;
@@ -36,8 +37,28 @@ const PRESET_SCRIPTS: ScriptPreset[] = [
   },
 ];
 
-export const StudioRecorderView: React.FC = () => {
-  const [scriptId, setScriptId] = useState(PRESET_SCRIPTS[0].id);
+interface StudioRecorderViewProps {
+  activeProject?: ShortProject | null;
+}
+
+export const StudioRecorderView: React.FC<StudioRecorderViewProps> = ({ activeProject }) => {
+  const allScripts = useMemo(() => {
+    if (!activeProject || activeProject.isFlagshipReactStage) {
+      return PRESET_SCRIPTS;
+    }
+    const beats = buildDynamicBeatsFromProject(activeProject);
+    const lines = beats
+      .map((b) => `${String(b.index).padStart(2, '0')} · ${b.spokenLine || b.title}`)
+      .filter(Boolean);
+    const dynamicScript: ScriptPreset = {
+      id: `project-${activeProject.id}`,
+      title: `${activeProject.title} (${activeProject.currentVersion})`,
+      lines: lines.length > 0 ? lines : [`01 · ${activeProject.hookText || activeProject.title}`],
+    };
+    return [dynamicScript, ...PRESET_SCRIPTS];
+  }, [activeProject]);
+
+  const [scriptId, setScriptId] = useState(allScripts[0].id);
   const [activeLineIdx, setActiveLineIdx] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -48,7 +69,17 @@ export const StudioRecorderView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const script = PRESET_SCRIPTS.find((s) => s.id === scriptId) || PRESET_SCRIPTS[0];
+  useEffect(() => {
+    if (activeProject && !activeProject.isFlagshipReactStage) {
+      setScriptId(`project-${activeProject.id}`);
+      setActiveLineIdx(0);
+    } else {
+      setScriptId(PRESET_SCRIPTS[0].id);
+      setActiveLineIdx(0);
+    }
+  }, [activeProject?.id, activeProject?.isFlagshipReactStage]);
+
+  const script = allScripts.find((s) => s.id === scriptId) || allScripts[0];
 
   useEffect(() => {
     if (!isRecording) return;
@@ -119,7 +150,7 @@ export const StudioRecorderView: React.FC = () => {
           </div>
 
           <div className="space-y-1.5">
-            {PRESET_SCRIPTS.map((s) => (
+            {allScripts.map((s) => (
               <button
                 key={s.id}
                 type="button"

@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Check,
+  ChevronDown,
+  ChevronRight,
   Download,
   ExternalLink,
+  Film,
   Loader2,
   Search,
   Sparkles,
@@ -33,7 +36,13 @@ const STATUS_BADGE: Record<TopicStatus, string> = {
   Candidat: 'bg-[#F1EEE6] text-[#5C5F68] border-[#E3DED3]',
 };
 
-export const TopicResearchView: React.FC = () => {
+interface TopicResearchViewProps {
+  onCreateProjectFromTopic?: (row: TopicCsvRow) => Promise<void>;
+}
+
+export const TopicResearchView: React.FC<TopicResearchViewProps> = ({
+  onCreateProjectFromTopic,
+}) => {
   const [rows, setRows] = useState<TopicCsvRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [researching, setResearching] = useState(false);
@@ -46,6 +55,23 @@ export const TopicResearchView: React.FC = () => {
   const [researchBriefs, setResearchBriefs] = useState<ResearchBrief[]>([]);
   const [lastSessionId, setLastSessionId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [creatingProjectId, setCreatingProjectId] = useState<string | null>(null);
+  const [openSpotlight, setOpenSpotlight] = useState(true);
+  const [openBriefs, setOpenBriefs] = useState(true);
+  const [openTable, setOpenTable] = useState(true);
+
+  const handleLaunchShort = async (row: TopicCsvRow) => {
+    if (!onCreateProjectFromTopic || creatingProjectId) return;
+    setCreatingProjectId(row.id);
+    setError(null);
+    try {
+      await onCreateProjectFromTopic(row);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur création projet Studio.');
+    } finally {
+      setCreatingProjectId(null);
+    }
+  };
 
   const loadCsv = useCallback(async () => {
     setLoading(true);
@@ -263,6 +289,20 @@ export const TopicResearchView: React.FC = () => {
         <div className="bg-[#FCFBF8] border-2 border-[#258EFF] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                data-testid="toggle-spotlight-section"
+                onClick={() => setOpenSpotlight((o) => !o)}
+                aria-expanded={openSpotlight}
+                title={openSpotlight ? 'Replier les détails du thème retenu' : 'Déplier les détails du thème retenu'}
+                className="w-7 h-7 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] flex items-center justify-center text-[#14161B] cursor-pointer shrink-0"
+              >
+                {openSpotlight ? (
+                  <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                )}
+              </button>
               <span className="px-2.5 py-1 rounded-lg bg-[#258EFF] text-white text-xs font-bold">
                 {lastSessionId === latestWinner.demande_session
                   ? `Nouveau choix autonome · ${latestWinner.demande_session}`
@@ -286,69 +326,118 @@ export const TopicResearchView: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <h2
-              className="text-xl sm:text-2xl font-extrabold text-[#14161B] leading-snug"
-              style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
-            >
-              {latestWinner.theme}
-            </h2>
-            <p className="text-sm text-[#5C5F68] mt-1.5 leading-relaxed">
-              {latestWinner.angle_viral_fr}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="bg-[#F6F5F1] border border-[#E3DED3] rounded-xl p-3.5">
-              <div className="text-[11px] font-mono font-semibold text-[#5C5F68] uppercase">
-                Hook parlé (0–3 s)
-              </div>
-              <p className="text-sm font-semibold text-[#14161B] mt-1">
-                « {latestWinner.hook_propose} »
-              </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2
+                className="text-xl sm:text-2xl font-extrabold text-[#14161B] leading-snug"
+                style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+              >
+                {latestWinner.theme}
+              </h2>
+              {openSpotlight && (
+                <p className="text-sm text-[#5C5F68] mt-1.5 leading-relaxed">
+                  {latestWinner.angle_viral_fr}
+                </p>
+              )}
             </div>
-            <div className="bg-[#F6F5F1] border border-[#E3DED3] rounded-xl p-3.5">
-              <div className="text-[11px] font-mono font-semibold text-[#5C5F68] uppercase">
-                Hook écran &amp; Raison du choix
-              </div>
-              <p className="text-xs font-mono font-bold text-[#258EFF] mt-1">
-                {latestWinner.hook_ecran}
-              </p>
-              <p className="text-xs text-[#5C5F68] mt-1 leading-relaxed">
-                {latestWinner.raison_selection}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-[#5C5F68]">
-            <div>
-              <span className="font-semibold text-[#14161B]">Sources :</span> {latestWinner.sources}
-            </div>
-            {latestWinner.statut !== 'Produit' && (
+            {!openSpotlight && onCreateProjectFromTopic && (
               <button
                 type="button"
-                disabled={updatingId === latestWinner.id}
-                onClick={() => handleStatusChange(latestWinner.id, 'Produit')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white text-xs font-semibold cursor-pointer transition-colors"
+                disabled={creatingProjectId === latestWinner.id}
+                onClick={() => void handleLaunchShort(latestWinner)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#258EFF] hover:opacity-90 disabled:opacity-60 text-white text-xs font-bold cursor-pointer shrink-0"
               >
-                <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                Marquer ce Short comme Produit
+                <Film className="w-3.5 h-3.5" aria-hidden="true" />
+                Créer Short → Studio
               </button>
             )}
           </div>
+
+          {openSpotlight && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-[#F6F5F1] border border-[#E3DED3] rounded-xl p-3.5">
+                  <div className="text-[11px] font-mono font-semibold text-[#5C5F68] uppercase">
+                    Hook parlé (0–3 s)
+                  </div>
+                  <p className="text-sm font-semibold text-[#14161B] mt-1">
+                    « {latestWinner.hook_propose} »
+                  </p>
+                </div>
+                <div className="bg-[#F6F5F1] border border-[#E3DED3] rounded-xl p-3.5">
+                  <div className="text-[11px] font-mono font-semibold text-[#5C5F68] uppercase">
+                    Hook écran &amp; Raison du choix
+                  </div>
+                  <p className="text-xs font-mono font-bold text-[#258EFF] mt-1">
+                    {latestWinner.hook_ecran}
+                  </p>
+                  <p className="text-xs text-[#5C5F68] mt-1 leading-relaxed">
+                    {latestWinner.raison_selection}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-[#5C5F68]">
+                <div>
+                  <span className="font-semibold text-[#14161B]">Sources :</span> {latestWinner.sources}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {onCreateProjectFromTopic && (
+                    <button
+                      type="button"
+                      data-testid="spotlight-create-short-btn"
+                      disabled={creatingProjectId === latestWinner.id}
+                      onClick={() => void handleLaunchShort(latestWinner)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#258EFF] hover:opacity-90 disabled:opacity-60 text-white text-xs font-bold cursor-pointer transition-opacity"
+                    >
+                      {creatingProjectId === latestWinner.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Film className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      Créer Short → Studio
+                    </button>
+                  )}
+                  {latestWinner.statut !== 'Produit' && (
+                    <button
+                      type="button"
+                      disabled={updatingId === latestWinner.id}
+                      onClick={() => handleStatusChange(latestWinner.id, 'Produit')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white text-xs font-semibold cursor-pointer transition-colors"
+                    >
+                      <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                      Marquer ce Short comme Produit
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
       {/* Grounding Links & Briefs from latest live search */}
       {(groundingSources.length > 0 || researchBriefs.length > 0) && (
         <div className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-5 space-y-4">
-          <h3
-            className="text-base font-bold text-[#14161B]"
-            style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+          <button
+            type="button"
+            onClick={() => setOpenBriefs((o) => !o)}
+            aria-expanded={openBriefs}
+            className="w-full flex items-center justify-between gap-2 text-left cursor-pointer"
           >
-            Synthèse de recherche web en direct ({lastSessionId})
-          </h3>
-          {researchBriefs.length > 0 && (
+            <h3
+              className="text-base font-bold text-[#14161B]"
+              style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+            >
+              Synthèse de recherche web en direct ({lastSessionId})
+            </h3>
+            {openBriefs ? (
+              <ChevronDown className="w-4 h-4 text-[#5C5F68]" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-[#5C5F68]" />
+            )}
+          </button>
+          {openBriefs && researchBriefs.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {researchBriefs.map((b) => (
                 <div
@@ -363,7 +452,7 @@ export const TopicResearchView: React.FC = () => {
               ))}
             </div>
           )}
-          {groundingSources.length > 0 && (
+          {openBriefs && groundingSources.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {groundingSources.map((src) => (
                 <a
@@ -385,51 +474,69 @@ export const TopicResearchView: React.FC = () => {
       {/* CSV Table Section */}
       <div className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-5 space-y-4 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            data-testid="toggle-csv-table-section"
+            onClick={() => setOpenTable((o) => !o)}
+            aria-expanded={openTable}
+            className="flex items-center gap-2 text-left cursor-pointer group"
+          >
+            <span className="w-7 h-7 rounded-lg border border-[#E3DED3] bg-white group-hover:bg-[#EAE7DF] flex items-center justify-center text-[#14161B] shrink-0">
+              {openTable ? (
+                <ChevronDown className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              )}
+            </span>
             <Table2 className="w-4 h-4 text-[#258EFF]" aria-hidden="true" />
             <h2
               className="text-lg font-bold text-[#14161B]"
               style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
             >
-              Tableau CSV · Historique des recherches &amp; sujets
+              Tableau CSV · Historique des recherches &amp; sujets ({filteredRows.length})
             </h2>
-          </div>
+          </button>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search
-                className="w-3.5 h-3.5 text-[#5C5F68] absolute left-3 top-1/2 -translate-y-1/2"
-                aria-hidden="true"
-              />
-              <label htmlFor="csv-search-input" className="sr-only">
-                Filtrer les sujets du tableau CSV
+          {openTable && (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search
+                  className="w-3.5 h-3.5 text-[#5C5F68] absolute left-3 top-1/2 -translate-y-1/2"
+                  aria-hidden="true"
+                />
+                <label htmlFor="csv-search-input" className="sr-only">
+                  Filtrer les sujets du tableau CSV
+                </label>
+                <input
+                  id="csv-search-input"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filtrer un mot-clé..."
+                  className="h-9 pl-8 pr-3 rounded-lg border border-[#E3DED3] bg-white text-xs text-[#14161B] focus:outline-2 focus:outline-[#258EFF]"
+                />
+              </div>
+
+              <label htmlFor="csv-status-select" className="sr-only">
+                Filtrer par statut
               </label>
-              <input
-                id="csv-search-input"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filtrer un mot-clé..."
-                className="h-9 pl-8 pr-3 rounded-lg border border-[#E3DED3] bg-white text-xs text-[#14161B] focus:outline-2 focus:outline-[#258EFF]"
-              />
+              <select
+                id="csv-status-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-9 px-3 rounded-lg border border-[#E3DED3] bg-white text-xs font-medium text-[#14161B] cursor-pointer"
+              >
+                <option value="Tous">Tous statuts</option>
+                <option value="Retenu (Choix IA)">Retenu (Choix IA)</option>
+                <option value="Produit">Produit</option>
+                <option value="Candidat">Candidat</option>
+              </select>
             </div>
-
-            <label htmlFor="csv-status-select" className="sr-only">
-              Filtrer par statut
-            </label>
-            <select
-              id="csv-status-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-[#E3DED3] bg-white text-xs font-medium text-[#14161B] cursor-pointer"
-            >
-              <option value="Tous">Tous statuts</option>
-              <option value="Retenu (Choix IA)">Retenu (Choix IA)</option>
-              <option value="Produit">Produit</option>
-              <option value="Candidat">Candidat</option>
-            </select>
-          </div>
+          )}
         </div>
+
+        {openTable && (
+          <>
 
         {/* Category filter bar */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -520,31 +627,48 @@ export const TopicResearchView: React.FC = () => {
                           </span>
                         </td>
                         <td className="py-3 px-3 text-right whitespace-nowrap">
-                          {row.statut === 'Candidat' ? (
-                            <button
-                              type="button"
-                              disabled={updatingId === row.id}
-                              onClick={() =>
-                                handleStatusChange(row.id, 'Retenu (Choix IA)')
-                              }
-                              className="px-2.5 py-1 rounded-lg border border-[#E3DED3] hover:border-[#258EFF] text-[11px] font-semibold text-[#14161B] cursor-pointer"
-                            >
-                              Retenir
-                            </button>
-                          ) : row.statut === 'Retenu (Choix IA)' ? (
-                            <button
-                              type="button"
-                              disabled={updatingId === row.id}
-                              onClick={() => handleStatusChange(row.id, 'Produit')}
-                              className="px-2.5 py-1 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-[11px] font-semibold text-white cursor-pointer"
-                            >
-                              Marquer Produit
-                            </button>
-                          ) : (
-                            <span className="text-[11px] font-mono text-[#5C5F68]">
-                              ✓ Publié
-                            </span>
-                          )}
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            {onCreateProjectFromTopic && (
+                              <button
+                                type="button"
+                                disabled={creatingProjectId === row.id}
+                                onClick={() => void handleLaunchShort(row)}
+                                className="px-2.5 py-1 rounded-lg bg-[#258EFF] hover:opacity-90 disabled:opacity-60 text-[11px] font-bold text-white inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                {creatingProjectId === row.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Film className="w-3 h-3" />
+                                )}
+                                Créer Short
+                              </button>
+                            )}
+                            {row.statut === 'Candidat' ? (
+                              <button
+                                type="button"
+                                disabled={updatingId === row.id}
+                                onClick={() =>
+                                  handleStatusChange(row.id, 'Retenu (Choix IA)')
+                                }
+                                className="px-2.5 py-1 rounded-lg border border-[#E3DED3] hover:border-[#258EFF] text-[11px] font-semibold text-[#14161B] cursor-pointer"
+                              >
+                                Retenir
+                              </button>
+                            ) : row.statut === 'Retenu (Choix IA)' ? (
+                              <button
+                                type="button"
+                                disabled={updatingId === row.id}
+                                onClick={() => handleStatusChange(row.id, 'Produit')}
+                                className="px-2.5 py-1 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-[11px] font-semibold text-white cursor-pointer"
+                              >
+                                Marquer Produit
+                              </button>
+                            ) : (
+                              <span className="text-[11px] font-mono text-[#5C5F68]">
+                                ✓ Publié
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -580,32 +704,47 @@ export const TopicResearchView: React.FC = () => {
                     <div className="text-xs text-[#5C5F68]">
                       « {row.hook_propose} »
                     </div>
-                    <div className="flex items-center justify-between pt-1 text-xs font-mono">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs font-mono">
                       <span className="font-bold text-[#258EFF]">
                         Score : {composite}/100
                       </span>
-                      {row.statut !== 'Produit' && (
-                        <button
-                          type="button"
-                          disabled={updatingId === row.id}
-                          onClick={() =>
-                            handleStatusChange(
-                              row.id,
-                              row.statut === 'Candidat'
-                                ? 'Retenu (Choix IA)'
-                                : 'Produit'
-                            )
-                          }
-                          className="px-2.5 py-1 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-[11px] font-semibold text-[#14161B]"
-                        >
-                          {row.statut === 'Candidat' ? 'Retenir' : 'Marquer Produit'}
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {onCreateProjectFromTopic && (
+                          <button
+                            type="button"
+                            disabled={creatingProjectId === row.id}
+                            onClick={() => void handleLaunchShort(row)}
+                            className="px-2.5 py-1 rounded-lg bg-[#258EFF] text-white text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Film className="w-3 h-3" />
+                            Créer Short
+                          </button>
+                        )}
+                        {row.statut !== 'Produit' && (
+                          <button
+                            type="button"
+                            disabled={updatingId === row.id}
+                            onClick={() =>
+                              handleStatusChange(
+                                row.id,
+                                row.statut === 'Candidat'
+                                  ? 'Retenu (Choix IA)'
+                                  : 'Produit'
+                              )
+                            }
+                            className="px-2.5 py-1 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] text-[11px] font-semibold text-[#14161B]"
+                          >
+                            {row.statut === 'Candidat' ? 'Retenir' : 'Marquer Produit'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
+          </>
+        )}
           </>
         )}
       </div>

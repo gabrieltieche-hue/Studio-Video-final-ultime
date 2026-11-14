@@ -19,7 +19,10 @@ import {
   saveProject,
   setActiveProjectAndVersion,
 } from './storageManager';
-import { readTopicsCsv } from '../engine/topicResearchService';
+import {
+  readTopicsCsv,
+  runDeepTopicResearchAndUpdateCsv,
+} from '../engine/topicResearchService';
 import {
   captureMotionComponentAsset,
   downloadRemoteVideo,
@@ -332,7 +335,200 @@ export const MCP_TOOLS = [
       required: ['project_id'],
     },
   },
+  {
+    name: 'update_short_project',
+    description:
+      'Mettre à jour un projet Short (titre, hook, durée, transcript, motionTrack, layoutTrack, editSpec, médias) et le synchroniser sur disque',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string' },
+        title: { type: 'string' },
+        hook_text: { type: 'string' },
+        duration: { type: 'number' },
+        status: { type: 'string', enum: ['draft', 'preparing', 'rendering', 'ready'] },
+        platform: { type: 'string', enum: ['instagram', 'tiktok', 'youtube_shorts'] },
+        transcript: { type: 'array' },
+        motion_track: { type: 'array' },
+        layout_track: { type: 'array' },
+        sfx_track: { type: 'array' },
+        edit_spec: { type: 'object' },
+      },
+      required: ['project_id'],
+    },
+  },
+  {
+    name: 'generate_short_storyboard',
+    description:
+      'Générer automatiquement les séquences (beats), la piste motion, la piste layout et la transcription minutée d’un projet Short',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string' },
+        angle: { type: 'string' },
+        sources: { type: 'string' },
+        duration: { type: 'number', default: 50 },
+      },
+      required: ['project_id'],
+    },
+  },
+  {
+    name: 'research_viral_topics',
+    description:
+      'Lancer la veille multi-thèmes France, scorer 5 candidats, choisir le thème gagnant et mettre à jour video-agent/shorts-topics.csv',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        focus: { type: 'string' },
+      },
+    },
+  },
 ];
+
+function buildStructuredShortAssets(params: {
+  title: string;
+  hookText: string;
+  angle?: string;
+  category?: string;
+  sources?: string;
+  hookScreen?: string;
+  duration: number;
+  mode: ShortProject['mode'];
+}) {
+  const duration = Math.max(15, Math.min(180, params.duration || 50));
+  const layoutMode: 'split' | 'fullscreen' =
+    params.mode === 'split_screen_clips' ? 'split' : 'fullscreen';
+
+  const hookLine =
+    params.hookText.trim() ||
+    `${params.title} : ce que presque personne n'a vu venir.`;
+  const angleLine =
+    params.angle?.trim() ||
+    `Voici les chiffres clés et le vrai mécanisme derrière ${params.title}.`;
+  const proofLine = params.sources?.trim()
+    ? `Selon les données récentes (${params.sources}), l'impact concret change la donne dès maintenant.`
+    : `Les données récentes montrent un écart massif entre le discours officiel et la réalité du terrain.`;
+  const ctaLine =
+    `Enregistre ce Short pour suivre l'évolution et dis-moi en commentaire si tu étais au courant.`;
+
+  const beatSpecs = [
+    {
+      id: 'beat-1',
+      title: params.title,
+      shortLabel: 'Hook',
+      screenLabel: params.hookScreen || (params.category ? `${params.category.toUpperCase()} · ALERTE` : 'HOOK PRINCIPAL'),
+      spokenLine: hookLine,
+      weight: 0.22,
+      type: 'typography' as const,
+      color: '#258EFF',
+    },
+    {
+      id: 'beat-2',
+      title: 'Le vrai mécanisme',
+      shortLabel: 'Analyse',
+      screenLabel: 'LE CONSTAT CHIFFRÉ',
+      spokenLine: angleLine,
+      weight: 0.28,
+      type: 'chart' as const,
+      color: '#14161B',
+    },
+    {
+      id: 'beat-3',
+      title: 'Preuves & Impact réel',
+      shortLabel: 'Preuves',
+      screenLabel: 'SOURCES & FAITS',
+      spokenLine: proofLine,
+      weight: 0.3,
+      type: 'card' as const,
+      color: '#059669',
+    },
+    {
+      id: 'beat-4',
+      title: 'Ce qu’il faut retenir',
+      shortLabel: 'Conclusion',
+      screenLabel: 'À RETENIR',
+      spokenLine: ctaLine,
+      weight: 0.2,
+      type: 'rocket' as const,
+      color: '#D97706',
+    },
+  ];
+
+  let cursor = 0;
+  const beats: Array<{
+    id: string;
+    title: string;
+    shortLabel: string;
+    screenLabel: string;
+    spokenLine: string;
+    from: number;
+    to: number;
+    layout: 'split' | 'fullscreen';
+  }> = [];
+  const motionTrack: ShortProject['motionTrack'] = [];
+  const transcript: ShortProject['transcript'] = [];
+  let wordCounter = 0;
+
+  beatSpecs.forEach((spec, idx) => {
+    const isLast = idx === beatSpecs.length - 1;
+    const rawEnd = isLast ? duration : Number((cursor + duration * spec.weight).toFixed(2));
+    const from = Number(cursor.toFixed(2));
+    const to = Number(Math.max(from + 2, rawEnd).toFixed(2));
+
+    beats.push({
+      id: spec.id,
+      title: spec.title,
+      shortLabel: spec.shortLabel,
+      screenLabel: spec.screenLabel,
+      spokenLine: spec.spokenLine,
+      from,
+      to,
+      layout: layoutMode,
+    });
+
+    motionTrack.push({
+      id: `mot-${spec.id}`,
+      componentId: idx === 0 ? 'comp-hook-shatter' : `comp-${spec.id}`,
+      name: spec.title,
+      start: from,
+      end: to,
+      type: spec.type,
+      color: spec.color,
+    });
+
+    const words = spec.spokenLine.split(/\s+/).filter(Boolean);
+    const beatSpan = Math.max(1, to - from - 0.25);
+    const step = words.length > 0 ? Math.min(0.42, beatSpan / words.length) : 0.35;
+    words.forEach((word, wIdx) => {
+      const wStart = Number((from + wIdx * step).toFixed(2));
+      const wEnd = Number((wStart + Math.max(0.18, step * 0.88)).toFixed(2));
+      wordCounter += 1;
+      transcript.push({
+        id: `w-${wordCounter}`,
+        word,
+        start: wStart,
+        end: wEnd,
+        confidence: 0.98,
+      });
+    });
+
+    cursor = to;
+  });
+
+  return {
+    beats,
+    motionTrack,
+    transcript,
+    layoutTrack: [
+      {
+        id: 'layout-main',
+        layout: layoutMode,
+        start: 0,
+        end: duration,
+      },
+    ],
+  };
+}
 
 export async function executeToolCall(
   toolName: string,
@@ -941,27 +1137,27 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         slug = `${slug.slice(0, 38)}-${Date.now().toString().slice(-4)}`;
       }
       const mode = (args.mode as ShortProject['mode']) || 'faceless_explainer';
-      const duration = Math.max(10, Math.min(180, Number(args.duration) || 50));
+      const duration = Math.max(15, Math.min(180, Number(args.duration) || 50));
       const hookText = String(args.hook_text || topicRow?.hook_propose || '');
-      const hookWords = hookText
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((w, idx) => ({
-          id: `w-hook-${idx}`,
-          word: w,
-          start: Number((idx * 0.34).toFixed(2)),
-          end: Number(((idx + 1) * 0.34).toFixed(2)),
-          confidence: 0.99,
-        }));
+      const category = String(args.category || topicRow?.categorie || '');
+      const generated = buildStructuredShortAssets({
+        title: rawTitle.slice(0, 160),
+        hookText,
+        angle: args.angle ? String(args.angle) : topicRow?.angle_viral_fr,
+        category,
+        sources: args.sources ? String(args.sources) : topicRow?.sources,
+        hookScreen: topicRow?.hook_ecran,
+        duration,
+        mode,
+      });
+
       const now = new Date().toISOString();
       const newProj: ShortProject = {
         id: `proj-${slug}`,
         slug,
         title: rawTitle.slice(0, 160),
         ...(topicRow?.id || topicId ? { topicId: topicRow?.id || topicId } : {}),
-        ...(topicRow?.categorie || args.category
-          ? { topicCategory: String(args.category || topicRow?.categorie) }
-          : {}),
+        ...(category ? { topicCategory: category } : {}),
         ...(hookText ? { hookText } : {}),
         mode,
         platform: (args.platform as ShortProject['platform']) || 'youtube_shorts',
@@ -982,26 +1178,18 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
               : 'Projet créé depuis le Studio.',
           },
         ],
-        transcript: hookWords,
-        motionTrack: [
-          {
-            id: 'mot-hook',
-            componentId: 'comp-hook-shatter',
-            name: 'Hook Principal',
-            start: 0,
-            end: Math.min(5, duration),
-            type: 'typography',
-          },
+        editSpec: {
+          sourceTopicId: topicRow?.id || topicId || null,
+          sources: topicRow?.sources || args.sources || null,
+          beats: generated.beats,
+        },
+        transcript: generated.transcript,
+        motionTrack: generated.motionTrack,
+        layoutTrack: generated.layoutTrack,
+        sfxTrack: [
+          { id: 'sfx-1', sound: 'whoosh.mp3', start: generated.beats[1]?.from || 8, volume: 0.7 },
+          { id: 'sfx-2', sound: 'pop.mp3', start: generated.beats[2]?.from || 22, volume: 0.75 },
         ],
-        layoutTrack: [
-          {
-            id: 'layout-main',
-            layout: mode === 'split_screen_clips' ? 'split' : 'fullscreen',
-            start: 0,
-            end: duration,
-          },
-        ],
-        sfxTrack: [],
         musicTrack: {
           trackName: 'Bright_Corporate_Groove_8c962467.mp3',
           volume: 0.24,
@@ -1017,7 +1205,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
           textColor: '#14161B',
           cardBg: '#FCFBF8',
           captionsPosition: 'bottom',
-          visualBeatsTarget: 8,
+          visualBeatsTarget: generated.beats.length,
         },
       };
       saveProject(newProj);
@@ -1027,6 +1215,8 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
       return {
         success: true,
         projectId: newProj.id,
+        studioUrl: `/?tab=studio&project=${encodeURIComponent(newProj.id)}`,
+        playerUrl: `/?project=${encodeURIComponent(newProj.id)}`,
         project: newProj,
         message: `Projet "${newProj.title}" créé et activé (${newProj.currentVersion}).`,
       };
@@ -1041,8 +1231,88 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         success: true,
         projectId: project.id,
         activeVersion: state.activeVersion,
+        studioUrl: `/?tab=studio&project=${encodeURIComponent(project.id)}&version=${encodeURIComponent(state.activeVersion || project.currentVersion)}`,
+        playerUrl: `/?project=${encodeURIComponent(project.id)}&version=${encodeURIComponent(state.activeVersion || project.currentVersion)}`,
         project,
       };
+    }
+
+    case 'update_short_project': {
+      const proj = getProject(String(args.project_id || ''));
+      if (!proj) throw new Error(`Projet "${args.project_id}" introuvable.`);
+      if (typeof args.title === 'string' && args.title.trim()) {
+        proj.title = args.title.trim().slice(0, 160);
+      }
+      if (typeof args.hook_text === 'string') {
+        proj.hookText = args.hook_text.trim();
+      }
+      if (typeof args.duration === 'number' && Number.isFinite(args.duration) && args.duration >= 5 && args.duration <= 180) {
+        proj.duration = args.duration;
+      }
+      if (typeof args.status === 'string' && ['draft', 'preparing', 'rendering', 'ready'].includes(args.status)) {
+        proj.status = args.status as ShortProject['status'];
+      }
+      if (typeof args.platform === 'string' && ['instagram', 'tiktok', 'youtube_shorts'].includes(args.platform)) {
+        proj.platform = args.platform as ShortProject['platform'];
+      }
+      if (Array.isArray(args.transcript)) {
+        proj.transcript = args.transcript as ShortProject['transcript'];
+      }
+      if (Array.isArray(args.motion_track)) {
+        proj.motionTrack = args.motion_track as ShortProject['motionTrack'];
+      }
+      if (Array.isArray(args.layout_track)) {
+        proj.layoutTrack = args.layout_track as ShortProject['layoutTrack'];
+      }
+      if (Array.isArray(args.sfx_track)) {
+        proj.sfxTrack = args.sfx_track as ShortProject['sfxTrack'];
+      }
+      if (args.edit_spec && typeof args.edit_spec === 'object') {
+        proj.editSpec = { ...(proj.editSpec || {}), ...(args.edit_spec as Record<string, unknown>) };
+      }
+      if (typeof args.speakerVideoUrl === 'string') {
+        proj.speakerVideoUrl = args.speakerVideoUrl;
+      }
+      if (typeof args.audioTrackUrl === 'string') {
+        proj.audioTrackUrl = args.audioTrackUrl;
+      }
+      saveProject(proj);
+      return { success: true, project: proj };
+    }
+
+    case 'generate_short_storyboard': {
+      const proj = getProject(String(args.project_id || ''));
+      if (!proj) throw new Error(`Projet "${args.project_id}" introuvable.`);
+      const duration = Math.max(15, Math.min(180, Number(args.duration) || proj.duration || 50));
+      const generated = buildStructuredShortAssets({
+        title: proj.title,
+        hookText: proj.hookText || '',
+        angle: args.angle ? String(args.angle) : undefined,
+        category: proj.topicCategory,
+        sources: args.sources ? String(args.sources) : undefined,
+        duration,
+        mode: proj.mode,
+      });
+      proj.duration = duration;
+      proj.editSpec = { ...(proj.editSpec || {}), beats: generated.beats };
+      proj.motionTrack = generated.motionTrack;
+      proj.layoutTrack = generated.layoutTrack;
+      if (!proj.transcript || proj.transcript.length < 10) {
+        proj.transcript = generated.transcript;
+      }
+      saveProject(proj);
+      return {
+        success: true,
+        projectId: proj.id,
+        beatsCount: generated.beats.length,
+        wordsCount: proj.transcript.length,
+        project: proj,
+      };
+    }
+
+    case 'research_viral_topics': {
+      const focus = typeof args.focus === 'string' ? args.focus : undefined;
+      return await runDeepTopicResearchAndUpdateCsv(ROOT_DIR, focus);
     }
 
     default:
@@ -1106,9 +1376,12 @@ export function createStudioRouter(): express.Router {
   router.get('/api/studio/workspace', (_req: Request, res: Response) => {
     const state = getWorkspaceState();
     const projects = getAllProjects();
+    const activeProject =
+      projects.find((p) => p.id === state.activeProjectId) || projects[0] || null;
     res.json({
       activeProjectId: state.activeProjectId,
       activeVersion: state.activeVersion,
+      activeProject,
       updatedAt: state.updatedAt,
       projects,
     });
@@ -1162,6 +1435,30 @@ export function createStudioRouter(): express.Router {
       return;
     }
     res.json({ project: proj });
+  });
+
+  router.patch('/api/studio/projects/:id', async (req: Request, res: Response) => {
+    try {
+      const result = await executeToolCall('update_short_project', {
+        project_id: req.params.id,
+        ...(req.body || {}),
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Erreur mise à jour projet' });
+    }
+  });
+
+  router.post('/api/studio/projects/:id/generate-storyboard', async (req: Request, res: Response) => {
+    try {
+      const result = await executeToolCall('generate_short_storyboard', {
+        project_id: req.params.id,
+        ...(req.body || {}),
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Erreur génération storyboard' });
+    }
   });
 
   router.delete('/api/studio/projects/:id', (req: Request, res: Response) => {
