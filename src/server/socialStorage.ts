@@ -167,6 +167,8 @@ export function toPublicAccountConfig(
     tregConnected: tregOk,
     tregConnectionId: rec.tregConnectionId,
     tregAuthorizationMethod: rec.tregAuthorizationMethod,
+    tregSetupRequired: rec.tregSetupRequired,
+    tregSetupDetail: rec.tregSetupDetail,
     igUserId: rec.igUserId,
     tokenExpiresAt: rec.tokenExpiresAt,
     connectedAt: rec.connectedAt,

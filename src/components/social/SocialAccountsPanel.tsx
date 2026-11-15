@@ -314,7 +314,11 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
           if (pData.status === 'done') {
             if (providerPollRef.current) clearInterval(providerPollRef.current);
             setPendingProviderAuth(null);
-            onNotify?.(`Compte ${platform} connecté automatiquement via Treg !`);
+            if (pData.detail) {
+              onNotify?.(pData.detail, true);
+            } else {
+              onNotify?.(`Compte ${platform} connecté automatiquement via Treg !`);
+            }
             await onRefreshStatus();
           } else if (pData.status === 'error') {
             if (providerPollRef.current) clearInterval(providerPollRef.current);
@@ -711,20 +715,73 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
 
               {acc.platform === 'instagram' && acc.route === 'treg' && (
                 (() => {
-                  const hasFbPage =
-                    acc.tregAuthorizationMethod === 'facebook-page' ||
-                    tregSession.connections.some(
-                      (c) =>
-                        c.platform === 'instagram' &&
-                        c.authorizationMethod === 'facebook-page'
-                    );
-                  if (hasFbPage) {
+                  const fbConns = tregSession.connections.filter(
+                    (c) =>
+                      c.platform === 'instagram' &&
+                      (c.authorizationMethod === 'facebook-page' ||
+                        Boolean(c.name && c.name.startsWith('studio-instagram-page')))
+                  );
+                  const bestFbConn =
+                    fbConns.find((c) => Boolean(c.resourceRef) && !c.setupRequired) ||
+                    fbConns[fbConns.length - 1];
+                  const fbPageReady = Boolean(
+                    bestFbConn &&
+                      bestFbConn.resourceRef &&
+                      !bestFbConn.setupRequired &&
+                      !acc.tregSetupRequired
+                  );
+                  const fbPageNeedsSetup = Boolean(
+                    (bestFbConn || acc.tregAuthorizationMethod === 'facebook-page') &&
+                      !fbPageReady
+                  );
+
+                  if (fbPageReady) {
                     return (
                       <div className="rounded-lg border border-[#059669]/25 bg-[#059669]/[0.06] px-2.5 py-2 text-[11px] text-[#059669] font-medium">
-                        Connexion Page Facebook active (publication Reels autorisée par Meta).
+                        Connexion Page Facebook active (ID {bestFbConn?.resourceRef}) — publication Reels autorisée par Meta.
                       </div>
                     );
                   }
+
+                  if (fbPageNeedsSetup) {
+                    return (
+                      <div
+                        data-testid="ig-fb-page-setup-alert"
+                        className="rounded-lg border border-[#D97706]/40 bg-[#D97706]/[0.08] p-2.5 space-y-2 text-[11px]"
+                      >
+                        <p className="text-[#14161B] leading-snug">
+                          <span className="font-bold text-[#B45309]">
+                            Action requise sur Facebook / Instagram :
+                          </span>{' '}
+                          Facebook a autorisé les permissions, mais{' '}
+                          <span className="font-semibold">0 Page Facebook</span> liée à un compte Instagram Pro n’a été retournée.
+                        </p>
+                        <ol className="list-decimal pl-4 space-y-0.5 text-[#5C5F68] leading-snug">
+                          <li>
+                            Dans l’app <span className="font-semibold text-[#14161B]">Instagram</span> →{' '}
+                            <em>Modifier le profil</em> → <em>Page</em>, créez ou liez une{' '}
+                            <span className="font-semibold text-[#14161B]">Page Facebook</span> gérée par votre profil Facebook.
+                          </li>
+                          <li>
+                            Cliquez ci-dessous, puis dans Facebook (<em className="text-[#14161B]">Modifier les paramètres précédents</em>) cochez bien votre Page + <span className="font-mono">{acc.accountHandle || 'votre compte Instagram'}</span>.
+                          </li>
+                        </ol>
+                        <button
+                          type="button"
+                          disabled={connectingProvider === 'instagram'}
+                          onClick={() =>
+                            void handleStartTregProvider('instagram', 'facebook-page')
+                          }
+                          data-testid="ig-treg-fb-page-btn"
+                          className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          Reconnecter Page Facebook (Reels)
+                        </button>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div className="rounded-lg border border-[#D97706]/30 bg-[#D97706]/[0.06] p-2.5 space-y-2 text-[11px]">
                       <p className="text-[#14161B] leading-snug">

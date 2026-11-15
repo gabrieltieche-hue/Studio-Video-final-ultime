@@ -661,7 +661,10 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         onUpdateAccount={handleUpdateAccount}
         onStartOAuth={handleStartOAuth}
         onDisconnect={handleDisconnect}
-        onRefreshStatus={() => loadAll(true)}
+        onRefreshStatus={async () => {
+          await fetch('/api/social/treg/sync', { method: 'POST' }).catch(() => undefined);
+          await loadAll(true);
+        }}
         onNotify={handleNotify}
         pendingOAuthFlow={pendingOAuthFlow}
         onClearPendingOAuth={() => setPendingOAuthFlow(null)}

@@ -12,6 +12,7 @@ const {
   getTregSessionPublic,
   isNonPublicBaseUrlForMeta,
   readTregSession,
+  resolveInstagramPublishTarget,
   saveTregSession,
   selectPreferredInstagramConnection,
 } = await import('./tregClient');
@@ -53,7 +54,7 @@ test('tregClient persists session on disk and redacts token in public view', () 
   assert.equal(readTregSession(), null);
 });
 
-test('selectPreferredInstagramConnection prefers facebook-page over instagram-login', () => {
+test('selectPreferredInstagramConnection prefers healthy facebook-page with resourceRef over broken ones', () => {
   const chosen = selectPreferredInstagramConnection([
     {
       id: '31035',
@@ -64,17 +65,48 @@ test('selectPreferredInstagramConnection prefers facebook-page over instagram-lo
       resourceRef: '17841466748295890',
     },
     {
-      id: '31099',
+      id: '31508',
       provider: 'instagram',
       platform: 'instagram',
       name: 'studio-instagram-page',
       authorizationMethod: 'facebook-page',
-      resourceRef: '17841466748295890',
+      setupRequired: true,
+      resourceRef: '',
+    },
+    {
+      id: '31512',
+      provider: 'instagram',
+      platform: 'instagram',
+      name: 'studio-instagram-page-3',
+      authorizationMethod: 'facebook-page',
+      setupRequired: false,
+      resourceRef: '178414999888777',
     },
   ]);
-  assert.equal(chosen?.id, '31099');
-  assert.equal(chosen?.name, 'studio-instagram-page');
+  assert.equal(chosen?.id, '31512');
+  assert.equal(chosen?.name, 'studio-instagram-page-3');
   assert.equal(chosen?.authorizationMethod, 'facebook-page');
+});
+
+test('resolveInstagramPublishTarget refuses stale instagram-login igUserId when facebook-page has no page', () => {
+  const res = resolveInstagramPublishTarget({
+    conn: {
+      id: '31508',
+      provider: 'instagram',
+      platform: 'instagram',
+      name: 'studio-instagram-page',
+      authorizationMethod: 'facebook-page',
+      setupRequired: true,
+      resourceRef: '',
+    },
+    account: {
+      igUserId: '17841466748295890',
+      tregResourceRef: '17841466748295890',
+      tregAuthorizationMethod: 'instagram-login',
+    },
+  });
+  assert.equal(res.missingFacebookPage, true);
+  assert.equal(res.igUserId, '');
 });
 
 test('isNonPublicBaseUrlForMeta detects AI Studio preview and localhost URLs', () => {
