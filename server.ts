@@ -76,6 +76,7 @@ async function startServer() {
   app.get('/api/health', (_req, res) => {
     res.json({
       ok: true,
+      version: 'ig-fbpage-v2',
       uptimeSec: Math.round(process.uptime()),
       storageDir: STORAGE_DIR,
       elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
@@ -230,8 +231,9 @@ async function startServer() {
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
-    app.use(express.static(distDir));
+    app.use(express.static(distDir, { index: false }));
     app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
       res.sendFile(path.join(distDir, 'index.html'));
     });
   }
