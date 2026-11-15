@@ -413,6 +413,29 @@ export async function verifyTregEmailLogin(
   return getTregSessionPublic();
 }
 
+export function selectPreferredInstagramConnection(
+  connections: TregConnectionSummary[]
+): TregConnectionSummary | undefined {
+  const igConns = connections.filter((c) => c.platform === 'instagram');
+  if (igConns.length === 0) return undefined;
+  return (
+    igConns.find((c) => c.authorizationMethod === 'facebook-page') ||
+    igConns.find((c) => c.name === 'studio-instagram-page') ||
+    igConns[0]
+  );
+}
+
+export function isNonPublicBaseUrlForMeta(baseUrl: string): boolean {
+  const lower = (baseUrl || '').toLowerCase();
+  return (
+    !lower ||
+    lower.includes('ais-dev-') ||
+    lower.includes('ais-pre-') ||
+    lower.includes('localhost') ||
+    lower.includes('127.0.0.1')
+  );
+}
+
 export async function syncTregConnections(): Promise<TregConnectionSummary[]> {
   const session = readTregSession();
   if (!session?.token) return [];
@@ -422,28 +445,18 @@ export async function syncTregConnections(): Promise<TregConnectionSummary[]> {
     return session.connections || [];
   }
 
-  const parsed = parseJsonSafe<
-    | Array<{
-        id?: string | number;
-        provider?: string;
-        service?: string;
-        name?: string;
-        status?: string;
-        health?: string;
-        resource_ref?: string;
-      }>
-    | {
-        connections?: Array<{
-          id?: string | number;
-          provider?: string;
-          service?: string;
-          name?: string;
-          status?: string;
-          health?: string;
-          resource_ref?: string;
-        }>;
-      }
-  >(res.text);
+  type RawConn = {
+    id?: string | number;
+    provider?: string;
+    service?: string;
+    name?: string;
+    status?: string;
+    health?: string;
+    authorization_method?: string;
+    resource_ref?: string;
+  };
+
+  const parsed = parseJsonSafe<RawConn[] | { connections?: RawConn[] }>(res.text);
 
   const list = Array.isArray(parsed)
     ? parsed
@@ -459,22 +472,29 @@ export async function syncTregConnections(): Promise<TregConnectionSummary[]> {
       platform: mapProviderToPlatform(provider),
       name: c.name || undefined,
       status: c.status || c.health || 'active',
+      authorizationMethod: c.authorization_method || undefined,
       resourceRef: c.resource_ref || undefined,
     };
   });
 
   saveTregSession({ ...session, connections: mapped });
 
-  // Sync discovered connections into accounts.json cleanly
+  // Sync discovered connections into accounts.json cleanly (prefer facebook-page for Instagram)
   const rawAccounts = getRawSocialAccounts();
-  for (const conn of mapped) {
-    if (!conn.platform) continue;
-    const acc = rawAccounts[conn.platform];
+  for (const platform of ['youtube', 'instagram', 'tiktok'] as SocialPlatform[]) {
+    const conn =
+      platform === 'instagram'
+        ? selectPreferredInstagramConnection(mapped)
+        : mapped.find((c) => c.platform === platform);
+    if (!conn) continue;
+
+    const acc = rawAccounts[platform];
     const patch: Partial<SocialAccountSecretRecord> = {
       tregConnectionId: conn.id,
       tregResourceRef: conn.resourceRef || acc.tregResourceRef,
+      tregAuthorizationMethod: conn.authorizationMethod || acc.tregAuthorizationMethod,
     };
-    if (conn.platform === 'instagram' && conn.resourceRef && /^\d+$/.test(conn.resourceRef)) {
+    if (platform === 'instagram' && conn.resourceRef && /^\d+$/.test(conn.resourceRef)) {
       patch.igUserId = conn.resourceRef;
     }
     if (!acc.connected) {
@@ -487,13 +507,16 @@ export async function syncTregConnections(): Promise<TregConnectionSummary[]> {
       patch.accountName = conn.name || acc.accountName;
       patch.lastError = undefined;
     }
-    saveRawSocialAccount(conn.platform, patch);
+    saveRawSocialAccount(platform, patch);
   }
 
   return mapped;
 }
 
-export async function startTregProviderOAuth(platform: SocialPlatform): Promise<{
+export async function startTregProviderOAuth(
+  platform: SocialPlatform,
+  options?: { authMethod?: 'instagram-login' | 'facebook-page' }
+): Promise<{
   state: string;
   consentUrl: string;
   redirectUri?: string;
@@ -506,7 +529,14 @@ export async function startTregProviderOAuth(platform: SocialPlatform): Promise<
     );
   }
 
-  const capability = platform === 'instagram' ? 'manage' : 'post';
+  const useFbPage = platform === 'instagram' && options?.authMethod === 'facebook-page';
+  const capability = useFbPage
+    ? 'page-tools'
+    : platform === 'instagram'
+      ? 'manage'
+      : 'post';
+  const connName = useFbPage ? 'studio-instagram-page' : `studio-${platform}`;
+
   const res = await tregFetch('/oauth/start', {
     method: 'POST',
     session,
@@ -514,7 +544,7 @@ export async function startTregProviderOAuth(platform: SocialPlatform): Promise<
     body: JSON.stringify({
       provider: platform,
       capability,
-      name: `studio-${platform}`,
+      name: connName,
     }),
   });
   const data = parseJsonSafe<{
@@ -575,10 +605,13 @@ export async function pollTregProviderOAuth(
   const connections = await syncTregConnections();
   const match =
     connections.find((c) => c.id === String(data.secret_id)) ||
-    connections.find((c) => c.platform === platform);
+    (platform === 'instagram'
+      ? selectPreferredInstagramConnection(connections)
+      : connections.find((c) => c.platform === platform));
 
   // Discover resources (e.g. IG Business Account ID or YouTube Channel)
   if (match?.id) {
+    let foundResource = false;
     try {
       const rRes = await tregFetch(`/connections/${encodeURIComponent(match.id)}/resources`, {
         session,
@@ -591,6 +624,7 @@ export async function pollTregProviderOAuth(
           const first = rList[0];
           const resourceRef = first.ref || first.id;
           if (resourceRef) {
+            foundResource = true;
             await tregFetch(`/connections/${encodeURIComponent(match.id)}/resource`, {
               method: 'POST',
               session,
@@ -609,12 +643,62 @@ export async function pollTregProviderOAuth(
     } catch {
       // resource discovery is optional
     }
+
+    // For Facebook Page Instagram connection, query /me/accounts to extract linked IG Business Account
+    if (
+      platform === 'instagram' &&
+      !foundResource &&
+      match.authorizationMethod === 'facebook-page' &&
+      match.name
+    ) {
+      try {
+        const fbRes = await tregFetch(
+          `/call/${encodeURIComponent(match.name)}/me/accounts`,
+          {
+            method: 'GET',
+            session,
+            query: {
+              fields: 'id,name,instagram_business_account{id,username,name,profile_picture_url}',
+            },
+          }
+        );
+        if (fbRes.status === 200) {
+          const fbJson = parseJsonSafe<{
+            data?: Array<{
+              id?: string;
+              name?: string;
+              instagram_business_account?: {
+                id?: string;
+                username?: string;
+                name?: string;
+                profile_picture_url?: string;
+              };
+            }>;
+          }>(fbRes.text);
+          const withIg = (fbJson?.data || []).find((p) => p.instagram_business_account?.id);
+          const ig = withIg?.instagram_business_account;
+          if (ig?.id) {
+            saveRawSocialAccount('instagram', {
+              igUserId: ig.id,
+              igPageId: withIg?.id,
+              tregResourceRef: ig.id,
+              ...(ig.name ? { accountName: ig.name } : {}),
+              ...(ig.username ? { accountHandle: `@${ig.username.replace(/^@/, '')}` } : {}),
+              ...(ig.profile_picture_url ? { avatarUrl: ig.profile_picture_url } : {}),
+            });
+          }
+        }
+      } catch {
+        // optional Facebook Page lookup
+      }
+    }
   }
 
   saveRawSocialAccount(platform, {
     route: 'treg',
     connected: true,
     tregConnectionId: match?.id || String(data.secret_id || ''),
+    tregAuthorizationMethod: match?.authorizationMethod,
     accountName: data?.name || match?.name || `Treg · ${platform}`,
     connectedAt: new Date().toISOString(),
     lastError: undefined,
@@ -760,18 +844,23 @@ export async function publishViaTregHttp(
     if (!pack.socialMp4Path || !fs.existsSync(pack.socialMp4Path)) {
       throw new Error('Fichier social.mp4 introuvable pour Instagram Reels.');
     }
-    let igUserId = (account.igUserId || account.tregResourceRef || '').trim();
-    if (!igUserId) {
-      const conns = await syncTregConnections();
-      const igConn = conns.find((c) => c.platform === 'instagram');
-      if (igConn?.resourceRef) igUserId = igConn.resourceRef;
-      else if (igConn?.id) {
-        const rRes = await tregFetch(`/connections/${encodeURIComponent(igConn.id)}/resources`, {
-          session,
-        });
-        const rList = parseJsonSafe<Array<{ ref?: string; id?: string }>>(rRes.text);
-        igUserId = rList?.[0]?.ref || rList?.[0]?.id || '';
-      }
+
+    if (isNonPublicBaseUrlForMeta(publicBaseUrl)) {
+      throw new Error(
+        `Instagram Reels exige une URL HTTPS publique sans écran de connexion Google (ex: Railway) pour télécharger la vidéo. L'aperçu actuel (${publicBaseUrl}) bloque Meta : ouvrez et publiez depuis votre URL Railway.`
+      );
+    }
+
+    const conns = session.connections?.length ? session.connections : await syncTregConnections();
+    const preferredIgConn = selectPreferredInstagramConnection(conns);
+    let igUserId = (account.igUserId || preferredIgConn?.resourceRef || account.tregResourceRef || '').trim();
+
+    if (!igUserId && preferredIgConn?.id) {
+      const rRes = await tregFetch(`/connections/${encodeURIComponent(preferredIgConn.id)}/resources`, {
+        session,
+      });
+      const rList = parseJsonSafe<Array<{ ref?: string; id?: string }>>(rRes.text);
+      igUserId = rList?.[0]?.ref || rList?.[0]?.id || '';
     }
     if (!igUserId) {
       throw new Error(
@@ -781,25 +870,40 @@ export async function publishViaTregHttp(
 
     const mediaToken = issuePublicMediaToken(path.dirname(pack.socialMp4Path), 12);
     const videoUrl = `${publicBaseUrl}/api/social/public-media/${mediaToken}/social.mp4`;
-    const coverUrl = pack.coverPath
-      ? `${publicBaseUrl}/api/social/public-media/${mediaToken}/cover.jpg`
-      : undefined;
+    const thumbOffsetMs = Math.max(0, Math.round((job.coverTimestampSec || 1.4) * 1000));
 
-    const createRes = await tregFetch('/call/instagram.instagram.media.container.create', {
+    // Use explicit named tool path when multiple IG connections exist (e.g. studio-instagram-page)
+    const namedTool = preferredIgConn?.name;
+    const createPath = namedTool
+      ? `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(igUserId)}/media`
+      : '/call/instagram.instagram.media.container.create';
+
+    const createRes = await tregFetch(createPath, {
       method: 'POST',
       session,
       query: {
-        ig_user_id: igUserId,
+        ...(namedTool ? {} : { ig_user_id: igUserId }),
         media_type: 'REELS',
         video_url: videoUrl,
         caption: job.caption,
-        ...(coverUrl ? { cover_url: coverUrl } : {}),
+        thumb_offset: thumbOffsetMs,
       },
     });
-    const createJson = parseJsonSafe<{ id?: string; error?: { message?: string } }>(
-      createRes.text
-    );
+    const createJson = parseJsonSafe<{
+      id?: string;
+      error?: { message?: string; code?: number };
+    }>(createRes.text);
+
     if (createRes.status >= 400 || !createJson?.id) {
+      const rawMsg = createJson?.error?.message || createRes.text.slice(0, 220);
+      if (
+        createJson?.error?.code === 10 ||
+        rawMsg.toLowerCase().includes('does not have permission')
+      ) {
+        throw new Error(
+          `Permission Meta (#10) refusée sur "${namedTool || 'studio-instagram'}" (${preferredIgConn?.authorizationMethod || 'instagram-login'}). Meta bloque souvent la publication Reels via Instagram Login : connectez Instagram via « Page Facebook (Treg) » dans Comptes connectés (avec un compte Pro lié à une Page Facebook), ou utilisez OAuth Direct Meta.`
+        );
+      }
       throw new Error(
         createJson?.error?.message ||
           `Treg Instagram container HTTP ${createRes.status}: ${createRes.text.slice(0, 220)}`
@@ -807,24 +911,38 @@ export async function publishViaTregHttp(
     }
 
     const creationId = createJson.id;
-    for (let i = 0; i < 18; i++) {
+    const statusPath = namedTool
+      ? `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(creationId)}`
+      : '/call/instagram.instagram.media.container.status';
+
+    for (let i = 0; i < 24; i++) {
       await new Promise((r) => setTimeout(r, 5000));
-      const statusRes = await tregFetch('/call/instagram.instagram.media.container.status', {
+      const statusRes = await tregFetch(statusPath, {
         method: 'GET',
         session,
-        query: { ig_container_id: creationId, fields: 'status_code,status' },
+        query: {
+          ...(namedTool ? {} : { ig_container_id: creationId }),
+          fields: 'status_code,status',
+        },
       });
       const st = parseJsonSafe<{ status_code?: string; status?: string }>(statusRes.text);
       if (st?.status_code === 'FINISHED') break;
-      if (st?.status_code === 'ERROR') {
-        throw new Error(`Instagram traitement vidéo échoué: ${st.status || 'ERROR'}`);
+      if (st?.status_code === 'ERROR' || st?.status_code === 'EXPIRED') {
+        throw new Error(`Instagram traitement vidéo échoué: ${st.status || st.status_code}`);
       }
     }
 
-    const pubRes = await tregFetch('/call/instagram.instagram.post.create', {
+    const publishPath = namedTool
+      ? `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(igUserId)}/media_publish`
+      : '/call/instagram.instagram.post.publish';
+
+    const pubRes = await tregFetch(publishPath, {
       method: 'POST',
       session,
-      query: { ig_user_id: igUserId, creation_id: creationId },
+      query: {
+        ...(namedTool ? {} : { ig_user_id: igUserId }),
+        creation_id: creationId,
+      },
     });
     const pubJson = parseJsonSafe<{ id?: string; error?: { message?: string } }>(
       pubRes.text
@@ -836,9 +954,27 @@ export async function publishViaTregHttp(
       );
     }
 
+    let permalink = `https://www.instagram.com/reel/${pubJson.id}/`;
+    try {
+      const linkPath = namedTool
+        ? `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(pubJson.id)}`
+        : `/call/instagram.instagram.user.profile`;
+      if (namedTool) {
+        const linkRes = await tregFetch(linkPath, {
+          method: 'GET',
+          session,
+          query: { fields: 'permalink' },
+        });
+        const linkJson = parseJsonSafe<{ permalink?: string }>(linkRes.text);
+        if (linkJson?.permalink) permalink = linkJson.permalink;
+      }
+    } catch {
+      // keep default reel url
+    }
+
     return {
       externalPostId: pubJson.id,
-      publishedUrl: `https://www.instagram.com/reel/${pubJson.id}/`,
+      publishedUrl: permalink,
     };
   }
 

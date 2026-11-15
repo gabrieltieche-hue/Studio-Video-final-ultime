@@ -266,7 +266,10 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
     await onRefreshStatus();
   };
 
-  const handleStartTregProvider = async (platform: SocialPlatform) => {
+  const handleStartTregProvider = async (
+    platform: SocialPlatform,
+    authMethod?: 'instagram-login' | 'facebook-page'
+  ) => {
     if (!tregSession.loggedIn) {
       onNotify?.('Connectez d’abord Treg en 1 clic ci-dessus, puis liez votre réseau.');
       await handleStartTregLogin();
@@ -276,6 +279,8 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
     try {
       const res = await fetch(`/api/social/treg/connect/${encodeURIComponent(platform)}`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authMethod ? { authMethod } : {}),
       });
       const data = (await res.json()) as {
         state?: string;
@@ -702,6 +707,45 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                 <p className="text-[11px] text-[#DC2626] leading-snug">
                   {acc.lastError}
                 </p>
+              )}
+
+              {acc.platform === 'instagram' && acc.route === 'treg' && (
+                (() => {
+                  const hasFbPage =
+                    acc.tregAuthorizationMethod === 'facebook-page' ||
+                    tregSession.connections.some(
+                      (c) =>
+                        c.platform === 'instagram' &&
+                        c.authorizationMethod === 'facebook-page'
+                    );
+                  if (hasFbPage) {
+                    return (
+                      <div className="rounded-lg border border-[#059669]/25 bg-[#059669]/[0.06] px-2.5 py-2 text-[11px] text-[#059669] font-medium">
+                        Connexion Page Facebook active (publication Reels autorisée par Meta).
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="rounded-lg border border-[#D97706]/30 bg-[#D97706]/[0.06] p-2.5 space-y-2 text-[11px]">
+                      <p className="text-[#14161B] leading-snug">
+                        <span className="font-bold">Requis pour publier les Reels :</span>{' '}
+                        Meta bloque souvent la publication via Instagram Login (Erreur #10). Liez votre compte Pro à une Page Facebook puis autorisez ci-dessous :
+                      </p>
+                      <button
+                        type="button"
+                        disabled={connectingProvider === 'instagram'}
+                        onClick={() =>
+                          void handleStartTregProvider('instagram', 'facebook-page')
+                        }
+                        data-testid="ig-treg-fb-page-btn"
+                        className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        Connecter via Page Facebook (Reels)
+                      </button>
+                    </div>
+                  );
+                })()
               )}
 
               {/* Primary Connection / Config Buttons */}

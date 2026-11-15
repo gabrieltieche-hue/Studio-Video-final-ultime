@@ -166,6 +166,7 @@ export function toPublicAccountConfig(
     hasCustomClientCredentials: Boolean(rec.clientId && rec.clientSecret),
     tregConnected: tregOk,
     tregConnectionId: rec.tregConnectionId,
+    tregAuthorizationMethod: rec.tregAuthorizationMethod,
     igUserId: rec.igUserId,
     tokenExpiresAt: rec.tokenExpiresAt,
     connectedAt: rec.connectedAt,

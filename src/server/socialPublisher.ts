@@ -27,6 +27,7 @@ import {
 } from './socialStorage';
 import {
   getTregSessionPublic,
+  isNonPublicBaseUrlForMeta,
   publishViaTregHttp,
   readTregSession,
 } from './tregClient';
@@ -1026,20 +1027,20 @@ async function publishInstagramViaOAuth(
   const packDir = path.dirname(pack.socialMp4Path);
   const mediaToken = issuePublicMediaToken(packDir, 12);
   const baseUrl = getPublicAppBaseUrl();
+  if (isNonPublicBaseUrlForMeta(baseUrl)) {
+    throw new Error(
+      `Instagram Reels exige une URL HTTPS publique sans authentification Google (ex: Railway) pour télécharger la vidéo. Ouvrez et publiez depuis votre URL Railway (${baseUrl} bloqué par Meta).`
+    );
+  }
   const videoUrl = `${baseUrl}/api/social/public-media/${mediaToken}/social.mp4`;
-  const coverUrl = pack.coverPath
-    ? `${baseUrl}/api/social/public-media/${mediaToken}/cover.jpg`
-    : undefined;
 
   const containerParams = new URLSearchParams({
     media_type: 'REELS',
     video_url: videoUrl,
     caption: job.caption,
+    thumb_offset: String(Math.max(0, Math.round((job.coverTimestampSec || 1.4) * 1000))),
     access_token: account.accessToken,
   });
-  if (coverUrl) {
-    containerParams.set('cover_url', coverUrl);
-  }
 
   const createRes = await fetch(
     `https://graph.facebook.com/v21.0/${encodeURIComponent(account.igUserId)}/media`,

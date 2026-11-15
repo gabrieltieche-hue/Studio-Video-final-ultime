@@ -684,8 +684,14 @@ Propose un branding unifié cohérent en français en JSON strict avec exactemen
       res.status(400).json({ error: 'Plateforme invalide.' });
       return;
     }
+    const body = (req.body || {}) as { authMethod?: 'instagram-login' | 'facebook-page' };
     try {
-      const started = await startTregProviderOAuth(platform);
+      const started = await startTregProviderOAuth(platform, {
+        authMethod:
+          body.authMethod === 'facebook-page' || body.authMethod === 'instagram-login'
+            ? body.authMethod
+            : undefined,
+      });
       res.json(started);
     } catch (err) {
       res.status(400).json({

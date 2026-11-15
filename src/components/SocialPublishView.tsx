@@ -53,6 +53,13 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
   });
   const [hosting, setHosting] = useState<HostingDiagnostics | null>(null);
   const [showDeployGuide, setShowDeployGuide] = useState(false);
+  const [railwayUrlInput, setRailwayUrlInput] = useState<string>(() => {
+    try {
+      return window.localStorage.getItem('studio_short_railway_url') || '';
+    } catch {
+      return '';
+    }
+  });
   const [includeTregInRailway, setIncludeTregInRailway] = useState(true);
   const [railwayEnvBlock, setRailwayEnvBlock] = useState('');
   const [copiedRailwayEnv, setCopiedRailwayEnv] = useState(false);
@@ -478,25 +485,65 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
                 <p className="text-[11px] text-[#5C5F68]">
                   {hosting.isAlwaysOn
                     ? `Volume persistant : ${hosting.storageDir} · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé absente'}`
-                    : `Pour publier 24h/24 tablette éteinte, déployez ce repo sur Railway, Render ou Fly.io (configs prêtes dans le dépôt) · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé ELEVENLABS_API_KEY absente dans ce conteneur'}.`}
+                    : `AI Studio et Railway sont deux serveurs séparés : pour publier tablette éteinte (et autoriser Instagram Reels), programmez directement sur votre URL Railway · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé absente'}.`}
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowDeployGuide((v) => !v)}
-              aria-expanded={showDeployGuide}
-              className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 self-start sm:self-auto"
-            >
-              Déploiement 24/7
-              {showDeployGuide ? (
-                <ChevronUp className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2 flex-wrap shrink-0 self-start sm:self-auto">
+              {!hosting.isAlwaysOn && /^https?:\/\//i.test(railwayUrlInput.trim()) && (
+                <a
+                  href={`${railwayUrlInput.trim().replace(/\/+$/, '')}/?tab=publish`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-8 px-3 rounded-lg bg-[#258EFF] hover:bg-[#14161B] text-[11px] font-bold text-white inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                  Ouvrir mon Railway 24/7
+                </a>
               )}
-            </button>
+              <button
+                type="button"
+                onClick={() => setShowDeployGuide((v) => !v)}
+                aria-expanded={showDeployGuide}
+                className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                Déploiement 24/7
+                {showDeployGuide ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
           </div>
+
+          {!hosting.isAlwaysOn && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
+              <label
+                htmlFor="railway-shortcut-input"
+                className="text-[11px] font-semibold text-[#14161B] whitespace-nowrap"
+              >
+                Lien de votre serveur Railway :
+              </label>
+              <input
+                id="railway-shortcut-input"
+                type="url"
+                value={railwayUrlInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRailwayUrlInput(val);
+                  try {
+                    window.localStorage.setItem('studio_short_railway_url', val);
+                  } catch {
+                    // ignore storage error
+                  }
+                }}
+                placeholder="https://studio-video-....up.railway.app"
+                className="flex-1 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+              />
+            </div>
+          )}
 
           {showDeployGuide && (
             <div className="pt-3 border-t border-[#E3DED3] space-y-3 text-[11px] text-[#14161B]">
@@ -628,6 +675,8 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         projects={projects}
         activeProject={activeProject}
         accounts={accounts}
+        hosting={hosting}
+        railwayUrl={/^https?:\/\//i.test(railwayUrlInput.trim()) ? railwayUrlInput.trim() : undefined}
         onSchedule={handleSchedule}
       />
 

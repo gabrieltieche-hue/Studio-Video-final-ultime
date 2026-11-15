@@ -26,6 +26,7 @@ export interface SocialAccountConfig {
   hasCustomClientCredentials?: boolean;
   tregConnected?: boolean;
   tregConnectionId?: string;
+  tregAuthorizationMethod?: string;
   igUserId?: string;
   tokenExpiresAt?: string;
   connectedAt?: string;
@@ -52,6 +53,7 @@ export interface SocialAccountSecretRecord {
   igUserId?: string;
   tregConnectionId?: string;
   tregResourceRef?: string;
+  tregAuthorizationMethod?: string;
   connectedAt?: string;
   lastError?: string;
   defaultPrivacy: 'public' | 'unlisted' | 'private';
@@ -63,6 +65,7 @@ export interface TregConnectionSummary {
   platform?: SocialPlatform;
   name?: string;
   status?: string;
+  authorizationMethod?: string;
   resourceRef?: string;
 }
 
