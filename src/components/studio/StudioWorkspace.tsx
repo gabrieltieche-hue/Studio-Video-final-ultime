@@ -135,20 +135,42 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     Boolean(activeProject?.isFlagshipReactStage) &&
     (!activeVersionObj?.outputMp4 ||
       activeVersionObj.outputMp4 === '/video/short-interdiction-15-ans.mp4');
+  const hasDynamicWebAudio = !isReactFlagship && !activeVersionObj?.outputMp4 && Boolean(activeProject?.audioTrackUrl);
+  const useWebAudio = isReactFlagship || hasDynamicWebAudio;
+  const activeAudioSpeed = isReactFlagship ? playbackSpeed : 1.0;
+
+  useEffect(() => {
+    if (!activeProject) return;
+    if (isReactFlagship) {
+      void audioEngine.setProjectAudio({});
+    } else if (activeProject.audioTrackUrl) {
+      const bed = (activeProject.musicTrack?.trackName || 'upbeat') as 'upbeat' | 'groove' | 'analytical' | 'clockwork' | 'chill';
+      const sfxEvents = (activeProject.sfxTrack || []).map((s) => ({
+        at: s.start,
+        kind: s.sound as 'impact-boom' | 'zhhh' | 'riser' | 'pop-back',
+        gain: s.volume,
+      }));
+      void audioEngine.setProjectAudio({
+        voiceUrl: activeProject.audioTrackUrl,
+        musicBed: bed,
+        sfxEvents,
+      });
+    }
+  }, [activeProject, isReactFlagship]);
 
   // Playback engine
   useEffect(() => {
     if (!isPlaying || !activeProject) {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
-      if (isReactFlagship) audioEngine.stop();
+      if (useWebAudio) audioEngine.stop();
       return;
     }
 
     let cancelled = false;
     const run = async () => {
-      if (isReactFlagship) {
-        await audioEngine.start(timeRef.current, playbackSpeed);
+      if (useWebAudio) {
+        await audioEngine.start(timeRef.current, activeAudioSpeed);
       }
       if (cancelled) return;
 
@@ -156,15 +178,15 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
       const frame = (now: number) => {
         if (cancelled) return;
         const prevT = timeRef.current;
-        const dt = Math.min(0.1, (now - prevNow) / 1000) * playbackSpeed;
+        const dt = Math.min(0.1, (now - prevNow) / 1000) * activeAudioSpeed;
         prevNow = now;
-        const synced = isReactFlagship ? audioEngine.getSyncedTime(playbackSpeed) : null;
+        const synced = useWebAudio ? audioEngine.getSyncedTime(activeAudioSpeed) : null;
         let nextT = synced !== null ? synced : prevT + dt;
         if (nextT >= activeDuration) {
           nextT = 0;
-          if (isReactFlagship) audioEngine.seekWhilePlaying(0, playbackSpeed);
+          if (useWebAudio) audioEngine.seekWhilePlaying(0, activeAudioSpeed);
         }
-        if (isReactFlagship) audioEngine.tick(prevT, nextT);
+        if (useWebAudio) audioEngine.tick(prevT, nextT);
         timeRef.current = nextT;
         setCurrentTime(nextT);
         rafRef.current = requestAnimationFrame(frame);
@@ -176,21 +198,21 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     return () => {
       cancelled = true;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      if (isReactFlagship) audioEngine.stop();
+      if (useWebAudio) audioEngine.stop();
     };
-  }, [isPlaying, activeProject, isReactFlagship, playbackSpeed, activeDuration]);
+  }, [isPlaying, activeProject, useWebAudio, activeAudioSpeed, activeDuration]);
 
   const handleSeek = useCallback(
     (nextT: number) => {
       const clamped = clamp(nextT, 0, activeDuration);
       timeRef.current = clamped;
       setCurrentTime(clamped);
-      if (isReactFlagship) {
-        if (isPlaying) audioEngine.seekWhilePlaying(clamped, playbackSpeed);
+      if (useWebAudio) {
+        if (isPlaying) audioEngine.seekWhilePlaying(clamped, activeAudioSpeed);
         else audioEngine.resetTriggersBefore(clamped);
       }
     },
-    [activeDuration, isReactFlagship, isPlaying, playbackSpeed]
+    [activeDuration, useWebAudio, isPlaying, activeAudioSpeed]
   );
 
   const handleSelectProject = async (p: ShortProject) => {

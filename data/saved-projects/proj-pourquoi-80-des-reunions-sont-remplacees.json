@@ -1,0 +1,1281 @@
+{
+  "id": "proj-pourquoi-80-des-reunions-sont-remplacees",
+  "slug": "pourquoi-80-des-reunions-sont-remplacees",
+  "title": "Pourquoi 80% des réunions sont remplacées par des résumés IA en 2026",
+  "topicCategory": "IA",
+  "hookText": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.",
+  "mode": "faceless_explainer",
+  "platform": "youtube_shorts",
+  "status": "ready",
+  "duration": 41.04,
+  "fps": 25,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "audioTrackUrl": "/storage/projects/proj-pourquoi-80-des-reunions-sont-remplacees/voice_v2.mp3",
+  "currentVersion": "v2",
+  "versions": [
+    {
+      "version": "v2",
+      "createdAt": "2026-11-16T13:30:46.694Z",
+      "status": "done",
+      "duration": 41.04,
+      "fps": 25,
+      "notes": "V2 · 8 séquences cinétiques, hook shatter ~2s, titres ≤5 mots, B-Roll bas d’écran, Brian 1.05× + Groove -12.5 dB",
+      "platform": "youtube_shorts",
+      "audioTrackUrl": "/storage/projects/proj-pourquoi-80-des-reunions-sont-remplacees/voice_v2.mp3",
+      "outputMp4": "/renders/pourquoi-80-des-reunions-sont-remplacees_v2.mp4",
+      "contactSheetUrl": "/renders/pourquoi-80-des-reunions-sont-remplacees_v2_contact.jpg",
+      "hasMp4": true
+    },
+    {
+      "version": "v1",
+      "createdAt": "2026-11-15T14:19:02.024Z",
+      "status": "done",
+      "duration": 26.4,
+      "fps": 25,
+      "notes": "V1 initiale · 5 séquences (révisée suite aux 4 retours studio)",
+      "outputMp4": "/renders/pourquoi-80-des-reunions-sont-remplacees_v1.mp4",
+      "hasMp4": false
+    }
+  ],
+  "transcript": [
+    {
+      "id": "w-1",
+      "word": "Quatre-vingts",
+      "start": 0.067,
+      "end": 0.652,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-2",
+      "word": "pour",
+      "start": 0.686,
+      "end": 0.863,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-3",
+      "word": "cent",
+      "start": 0.94,
+      "end": 1.161,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-4",
+      "word": "des",
+      "start": 1.194,
+      "end": 1.293,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-5",
+      "word": "réunions",
+      "start": 1.327,
+      "end": 1.78,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-6",
+      "word": "viennent",
+      "start": 1.813,
+      "end": 2.068,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-7",
+      "word": "d'être",
+      "start": 2.09,
+      "end": 2.333,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-8",
+      "word": "remplacées",
+      "start": 2.399,
+      "end": 2.93,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-9",
+      "word": "par",
+      "start": 2.952,
+      "end": 3.063,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-10",
+      "word": "des",
+      "start": 3.107,
+      "end": 3.207,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-11",
+      "word": "résumés",
+      "start": 3.24,
+      "end": 3.638,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-12",
+      "word": "IA.",
+      "start": 3.671,
+      "end": 4.125,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-13",
+      "word": "Un",
+      "start": 4.699,
+      "end": 4.821,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-14",
+      "word": "salarié",
+      "start": 4.865,
+      "end": 5.252,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-15",
+      "word": "passe",
+      "start": 5.308,
+      "end": 5.495,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-16",
+      "word": "vingt-trois",
+      "start": 5.54,
+      "end": 6.059,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-17",
+      "word": "heures",
+      "start": 6.148,
+      "end": 6.336,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-18",
+      "word": "par",
+      "start": 6.358,
+      "end": 6.502,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-19",
+      "word": "mois",
+      "start": 6.546,
+      "end": 6.8,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-20",
+      "word": "en",
+      "start": 6.833,
+      "end": 6.989,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-21",
+      "word": "appels",
+      "start": 7.099,
+      "end": 7.342,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-22",
+      "word": "inutiles",
+      "start": 7.375,
+      "end": 7.839,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-23",
+      "word": "sans",
+      "start": 7.872,
+      "end": 8.05,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-24",
+      "word": "compte",
+      "start": 8.083,
+      "end": 8.282,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-25",
+      "word": "rendu",
+      "start": 8.304,
+      "end": 8.536,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-26",
+      "word": "clair.",
+      "start": 8.58,
+      "end": 8.99,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-27",
+      "word": "L'agent",
+      "start": 9.565,
+      "end": 9.874,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-28",
+      "word": "IA",
+      "start": 9.918,
+      "end": 10.172,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-29",
+      "word": "écoute",
+      "start": 10.228,
+      "end": 10.471,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-30",
+      "word": "l'appel,",
+      "start": 10.504,
+      "end": 11.079,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-31",
+      "word": "filtre",
+      "start": 11.311,
+      "end": 11.721,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-32",
+      "word": "le",
+      "start": 11.753,
+      "end": 11.82,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-33",
+      "word": "bruit,",
+      "start": 11.864,
+      "end": 12.24,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-34",
+      "word": "extrait",
+      "start": 12.506,
+      "end": 12.904,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-35",
+      "word": "les",
+      "start": 12.926,
+      "end": 13.014,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-36",
+      "word": "décisions",
+      "start": 13.036,
+      "end": 13.645,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-37",
+      "word": "et",
+      "start": 13.755,
+      "end": 13.91,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-38",
+      "word": "crée",
+      "start": 13.932,
+      "end": 14.087,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-39",
+      "word": "les",
+      "start": 14.11,
+      "end": 14.209,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-40",
+      "word": "tâches.",
+      "start": 14.253,
+      "end": 14.673,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-41",
+      "word": "Le",
+      "start": 15.248,
+      "end": 15.359,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-42",
+      "word": "bouleversement",
+      "start": 15.414,
+      "end": 16.067,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-43",
+      "word": "ne",
+      "start": 16.099,
+      "end": 16.159,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-44",
+      "word": "vient",
+      "start": 16.199,
+      "end": 16.387,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-45",
+      "word": "pas",
+      "start": 16.42,
+      "end": 16.542,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-46",
+      "word": "du",
+      "start": 16.564,
+      "end": 16.652,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-47",
+      "word": "texte,",
+      "start": 16.696,
+      "end": 17.205,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-48",
+      "word": "mais",
+      "start": 17.437,
+      "end": 17.548,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-49",
+      "word": "de",
+      "start": 17.57,
+      "end": 17.636,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-50",
+      "word": "la",
+      "start": 17.681,
+      "end": 17.741,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-51",
+      "word": "mémoire",
+      "start": 17.813,
+      "end": 18.19,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-52",
+      "word": "collective",
+      "start": 18.211,
+      "end": 18.698,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-53",
+      "word": "instantanée.",
+      "start": 18.72,
+      "end": 19.384,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-54",
+      "word": "Avant",
+      "start": 19.87,
+      "end": 20.135,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-55",
+      "word": "il",
+      "start": 20.157,
+      "end": 20.217,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-56",
+      "word": "fallait",
+      "start": 20.257,
+      "end": 20.467,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-57",
+      "word": "quatorze",
+      "start": 20.522,
+      "end": 20.953,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-58",
+      "word": "heures",
+      "start": 20.975,
+      "end": 21.119,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-59",
+      "word": "de",
+      "start": 21.142,
+      "end": 21.219,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-60",
+      "word": "réunions",
+      "start": 21.274,
+      "end": 21.617,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-61",
+      "word": "par",
+      "start": 21.639,
+      "end": 21.761,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-62",
+      "word": "semaine.",
+      "start": 21.805,
+      "end": 22.325,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-63",
+      "word": "Aujourd'hui",
+      "start": 22.745,
+      "end": 23.309,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-64",
+      "word": "trois",
+      "start": 23.364,
+      "end": 23.596,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-65",
+      "word": "heures",
+      "start": 23.663,
+      "end": 23.807,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-66",
+      "word": "suffisent",
+      "start": 23.829,
+      "end": 24.337,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-67",
+      "word": "largement.",
+      "start": 24.503,
+      "end": 25.144,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-68",
+      "word": "Pour",
+      "start": 25.63,
+      "end": 25.808,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-69",
+      "word": "gagner",
+      "start": 25.863,
+      "end": 26.117,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-70",
+      "word": "ce",
+      "start": 26.162,
+      "end": 26.261,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-71",
+      "word": "temps",
+      "start": 26.328,
+      "end": 26.537,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-72",
+      "word": "dès",
+      "start": 26.56,
+      "end": 26.692,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-73",
+      "word": "lundi,",
+      "start": 26.726,
+      "end": 27.311,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-74",
+      "word": "coupe",
+      "start": 27.51,
+      "end": 27.754,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-75",
+      "word": "les",
+      "start": 27.776,
+      "end": 27.865,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-76",
+      "word": "points",
+      "start": 27.898,
+      "end": 28.13,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-77",
+      "word": "inutiles",
+      "start": 28.196,
+      "end": 28.86,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-78",
+      "word": "et",
+      "start": 28.948,
+      "end": 29.103,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-79",
+      "word": "automatise",
+      "start": 29.125,
+      "end": 29.645,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-80",
+      "word": "le",
+      "start": 29.667,
+      "end": 29.733,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-81",
+      "word": "suivi.",
+      "start": 29.777,
+      "end": 30.242,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-82",
+      "word": "Les",
+      "start": 30.817,
+      "end": 30.983,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-83",
+      "word": "équipes",
+      "start": 31.06,
+      "end": 31.348,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-84",
+      "word": "équipées",
+      "start": 31.403,
+      "end": 31.89,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-85",
+      "word": "livrent",
+      "start": 31.911,
+      "end": 32.243,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-86",
+      "word": "trente-huit",
+      "start": 32.276,
+      "end": 32.718,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-87",
+      "word": "pour",
+      "start": 32.751,
+      "end": 32.895,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-88",
+      "word": "cent",
+      "start": 32.95,
+      "end": 33.128,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-89",
+      "word": "plus",
+      "start": 33.161,
+      "end": 33.305,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-90",
+      "word": "vite",
+      "start": 33.327,
+      "end": 33.691,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-91",
+      "word": "sans",
+      "start": 33.857,
+      "end": 34.145,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-92",
+      "word": "rallonger",
+      "start": 34.167,
+      "end": 34.598,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-93",
+      "word": "leurs",
+      "start": 34.62,
+      "end": 34.742,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-94",
+      "word": "journées.",
+      "start": 34.764,
+      "end": 35.217,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-95",
+      "word": "Enregistre",
+      "start": 35.792,
+      "end": 36.522,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-96",
+      "word": "ce",
+      "start": 36.567,
+      "end": 36.677,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-97",
+      "word": "Short",
+      "start": 36.743,
+      "end": 37.141,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-98",
+      "word": "et",
+      "start": 37.23,
+      "end": 37.351,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-99",
+      "word": "abonne-toi",
+      "start": 37.385,
+      "end": 37.871,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-100",
+      "word": "pour",
+      "start": 37.915,
+      "end": 38.026,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-101",
+      "word": "le",
+      "start": 38.048,
+      "end": 38.108,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-102",
+      "word": "prochain",
+      "start": 38.159,
+      "end": 38.49,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-103",
+      "word": "décryptage",
+      "start": 38.546,
+      "end": 39.165,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-104",
+      "word": "IA",
+      "start": 39.22,
+      "end": 39.551,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-105",
+      "word": "chaque",
+      "start": 39.618,
+      "end": 39.872,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-106",
+      "word": "semaine.",
+      "start": 39.894,
+      "end": 40.337,
+      "confidence": 0.99
+    }
+  ],
+  "motionTrack": [
+    {
+      "id": "mot-beat-1",
+      "componentId": "comp-beat-1",
+      "name": "80 % déjà remplacées",
+      "start": 0,
+      "end": 4.41,
+      "type": "typography",
+      "color": "#258EFF"
+    },
+    {
+      "id": "mot-beat-2",
+      "componentId": "comp-beat-2",
+      "name": "La facture cachée",
+      "start": 4.41,
+      "end": 9.28,
+      "type": "counter",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-3",
+      "componentId": "comp-beat-3",
+      "name": "Comment l’IA capture",
+      "start": 9.28,
+      "end": 14.96,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-4",
+      "componentId": "comp-beat-4",
+      "name": "Le vrai choc",
+      "start": 14.96,
+      "end": 19.63,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-5",
+      "componentId": "comp-beat-5",
+      "name": "Avant vs 2026",
+      "start": 19.63,
+      "end": 25.39,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-6",
+      "componentId": "comp-beat-6",
+      "name": "3 réglages immédiats",
+      "start": 25.39,
+      "end": 30.53,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-7",
+      "componentId": "comp-beat-7",
+      "name": "Gain net mesuré",
+      "start": 30.53,
+      "end": 35.5,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-8",
+      "componentId": "comp-beat-8",
+      "name": "Abonne-toi maintenant",
+      "start": 35.5,
+      "end": 41.04,
+      "type": "rocket",
+      "color": "#059669"
+    }
+  ],
+  "layoutTrack": [
+    {
+      "id": "layout-beat-1",
+      "layout": "split",
+      "start": 0,
+      "end": 4.41
+    },
+    {
+      "id": "layout-beat-2",
+      "layout": "split",
+      "start": 4.41,
+      "end": 9.28
+    },
+    {
+      "id": "layout-beat-3",
+      "layout": "split",
+      "start": 9.28,
+      "end": 14.96
+    },
+    {
+      "id": "layout-beat-4",
+      "layout": "fullscreen",
+      "start": 14.96,
+      "end": 19.63
+    },
+    {
+      "id": "layout-beat-5",
+      "layout": "fullscreen",
+      "start": 19.63,
+      "end": 25.39
+    },
+    {
+      "id": "layout-beat-6",
+      "layout": "split",
+      "start": 25.39,
+      "end": 30.53
+    },
+    {
+      "id": "layout-beat-7",
+      "layout": "split",
+      "start": 30.53,
+      "end": 35.5
+    },
+    {
+      "id": "layout-beat-8",
+      "layout": "split",
+      "start": 35.5,
+      "end": 41.04
+    }
+  ],
+  "sfxTrack": [
+    {
+      "id": "sfx-hook-shatter",
+      "sound": "glass-shatter",
+      "start": 2.12,
+      "volume": 0.46
+    },
+    {
+      "id": "sfx-hook-boom",
+      "sound": "impact-boom",
+      "start": 2.12,
+      "volume": 0.4
+    },
+    {
+      "id": "sfx-2",
+      "sound": "thud",
+      "start": 4.53,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-3",
+      "sound": "tap",
+      "start": 9.4,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-4",
+      "sound": "zhhh",
+      "start": 15.08,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-5",
+      "sound": "riser",
+      "start": 19.75,
+      "volume": 0.26
+    },
+    {
+      "id": "sfx-6",
+      "sound": "tap",
+      "start": 25.51,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-7",
+      "sound": "pop",
+      "start": 30.65,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-8",
+      "sound": "pop-back",
+      "start": 36.2,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-8-bell",
+      "sound": "bell",
+      "start": 36.32,
+      "volume": 0.32
+    }
+  ],
+  "musicTrack": {
+    "trackName": "upbeat",
+    "volume": 0.24,
+    "ducking": true
+  },
+  "feedbacks": [
+    {
+      "id": "fb-1794752928110-c607",
+      "version": "v1",
+      "timestamp": 7.61,
+      "timeFormatted": "00:07.61",
+      "quoteText": "chiffre.",
+      "text": "Pendant les 7 premières secondes de videos on reste sur le meme truc ca endfreint les regles et c’est nul !",
+      "author": "Créateur",
+      "resolved": true,
+      "resolutionNote": "Corrigé en v2 : hook_shatter en 2 actes avec explosion/tampon OBSOLÈTE dès ~2s et découpage rapide en 8 séquences.",
+      "createdAt": "2026-11-15T14:28:48.110Z",
+      "type": "comment"
+    },
+    {
+      "id": "fb-1794752815034-bedb",
+      "version": "v1",
+      "timestamp": 2.02,
+      "timeFormatted": "00:02.02",
+      "quoteText": "remplacées",
+      "text": "Trop de texte , trop long a lire , C pas bon pour la viralite ca !",
+      "author": "Créateur",
+      "resolved": true,
+      "resolutionNote": "Corrigé en v2 : suppression du paragraphe spokenLine à l’écran et titres limités à ≤ 5 mots ultra-scannables.",
+      "createdAt": "2026-11-15T14:26:55.034Z",
+      "type": "comment"
+    },
+    {
+      "id": "fb-1794752776013-6898",
+      "version": "v1",
+      "timestamp": 0,
+      "timeFormatted": "00:00.00",
+      "text": "Il y a rien la , manque d’illustration et de motion design !",
+      "author": "Créateur",
+      "resolved": true,
+      "resolutionNote": "Corrigé en v2 : intégration du B-Roll 35mm Ken Burns + HUD dans la moitié basse en Split et scènes pleine page 2 rangées.",
+      "targetElement": "B-Roll / Bottom Media",
+      "createdAt": "2026-11-15T14:26:16.013Z",
+      "type": "comment"
+    },
+    {
+      "id": "fb-1794752727043-ce7a",
+      "version": "v1",
+      "timestamp": 0,
+      "timeFormatted": "00:00.00",
+      "text": "La il y a rien ca manque d’illustratio , de motion design !",
+      "author": "Créateur",
+      "resolved": true,
+      "resolutionNote": "Corrigé en v2 : ajout d’icônes vectorielles animées, timeline, jauge 270°, toggles et terminal + B-Roll bas d’écran.",
+      "createdAt": "2026-11-15T14:25:27.043Z",
+      "type": "comment"
+    }
+  ],
+  "motionComponents": {},
+  "contactSheet": [],
+  "editSpec": {
+    "lookId": "papier",
+    "speed": 1.05,
+    "hookText": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.",
+    "youtubeTitle": "Pourquoi 80 % des réunions disparaissent en 2026",
+    "caption": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.\n\nTu utilises déjà un résumé IA en visio ? Dis-le en commentaire.",
+    "hashtags": [
+      "#ia",
+      "#productivite",
+      "#decryptage",
+      "#shorts"
+    ],
+    "beats": [
+      {
+        "id": "beat-1",
+        "title": "80 % déjà remplacées",
+        "shortLabel": "Hook 2 actes",
+        "screenLabel": "IA · RUPTURE 2026",
+        "spokenLine": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.",
+        "visualType": "hook_shatter",
+        "layoutHint": "split",
+        "brollKey": "ai_meetings",
+        "brollCaption": "Réunions remplacées · 2026",
+        "iconKind": "calendar",
+        "stampWord": "OBSOLÈTE",
+        "statValue": "80 %",
+        "statLabel": "Réunions automatisées",
+        "subStats": [
+          {
+            "value": "80 %",
+            "label": "Remplacées IA"
+          },
+          {
+            "value": "2 min",
+            "label": "Compte rendu"
+          }
+        ],
+        "sfxKind": "glass-shatter",
+        "from": 0,
+        "to": 4.41,
+        "layout": "split"
+      },
+      {
+        "id": "beat-2",
+        "title": "La facture cachée",
+        "shortLabel": "Temps perdu",
+        "screenLabel": "COÛT RÉEL",
+        "spokenLine": "Un salarié passe vingt-trois heures par mois en appels inutiles sans compte rendu clair.",
+        "visualType": "counter_flip",
+        "layoutHint": "split",
+        "brollKey": "focus_clockwork",
+        "brollCaption": "23 h/mois gaspillées",
+        "iconKind": "clock",
+        "statValue": "23 h",
+        "statLabel": "Perdues chaque mois",
+        "comparisonLeft": {
+          "label": "Appel 2022",
+          "value": "45 min",
+          "ratio": 0.88
+        },
+        "comparisonRight": {
+          "label": "Résumé IA",
+          "value": "2 min",
+          "ratio": 0.22
+        },
+        "sfxKind": "thud",
+        "from": 4.41,
+        "to": 9.28,
+        "layout": "split"
+      },
+      {
+        "id": "beat-3",
+        "title": "Comment l’IA capture",
+        "shortLabel": "Mécanisme",
+        "screenLabel": "PIPELINE 4 ÉTAPES",
+        "spokenLine": "L’agent IA écoute l’appel, filtre le bruit, extrait les décisions et crée les tâches.",
+        "visualType": "timeline_steps",
+        "layoutHint": "split",
+        "brollKey": "startup_team",
+        "brollCaption": "Pipeline temps réel",
+        "iconKind": "ai",
+        "steps": [
+          "Audio",
+          "Tri IA",
+          "Décisions",
+          "Tickets"
+        ],
+        "stampWord": "AUTO",
+        "sfxKind": "tap",
+        "from": 9.28,
+        "to": 14.96,
+        "layout": "split"
+      },
+      {
+        "id": "beat-4",
+        "title": "Le vrai choc",
+        "shortLabel": "Re-hook Jauge",
+        "screenLabel": "INDICE DE RUPTURE",
+        "spokenLine": "Le bouleversement ne vient pas du texte, mais de la mémoire collective instantanée.",
+        "visualType": "gauge",
+        "layoutHint": "fullscreen",
+        "iconKind": "ai",
+        "gaugePct": 89,
+        "statLabel": "Adoption équipes 2026",
+        "bullets": [
+          "Zéro prise de notes",
+          "Preuve horodatée",
+          "Décisions tracées"
+        ],
+        "sfxKind": "zhhh",
+        "from": 14.96,
+        "to": 19.63,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-5",
+        "title": "Avant vs 2026",
+        "shortLabel": "Comparatif",
+        "screenLabel": "ÉCART MESURÉ",
+        "spokenLine": "Avant il fallait quatorze heures de réunions par semaine. Aujourd’hui trois heures suffisent largement.",
+        "visualType": "comparison_bars",
+        "layoutHint": "fullscreen",
+        "comparisonLeft": {
+          "label": "Réunions 2022",
+          "value": "14 h/sem",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Avec résumé IA",
+          "value": "3 h/sem",
+          "ratio": 0.24
+        },
+        "multiplierBadge": "÷4,6",
+        "statValue": "+11 h",
+        "statLabel": "Libérées chaque semaine",
+        "sfxKind": "riser",
+        "from": 19.63,
+        "to": 25.39,
+        "layout": "fullscreen",
+        "subStats": [
+          {
+            "value": "23 h",
+            "label": "Par mois"
+          },
+          {
+            "value": "80 %",
+            "label": "Évitables"
+          },
+          {
+            "value": "-78 %",
+            "label": "Appels"
+          }
+        ]
+      },
+      {
+        "id": "beat-6",
+        "title": "3 réglages immédiats",
+        "shortLabel": "Toggles",
+        "screenLabel": "PLAN D’ACTION",
+        "spokenLine": "Pour gagner ce temps dès lundi, coupe les points inutiles et automatise le suivi.",
+        "visualType": "toggles_switch",
+        "layoutHint": "split",
+        "brollKey": "data_analytics",
+        "brollCaption": "Déploiement · 5 min",
+        "toggles": [
+          {
+            "label": "Réunion sans ordre",
+            "before": "ACTIF",
+            "after": "COUPÉ",
+            "activeAfter": false
+          },
+          {
+            "label": "Résumé IA auto",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": true
+          },
+          {
+            "label": "Actions assignées",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": true
+          }
+        ],
+        "sfxKind": "tap",
+        "from": 25.39,
+        "to": 30.53,
+        "layout": "split"
+      },
+      {
+        "id": "beat-7",
+        "title": "Gain net mesuré",
+        "shortLabel": "Verdict 2026",
+        "screenLabel": "PREUVE TERRAIN",
+        "spokenLine": "Les équipes équipées livrent trente-huit pour cent plus vite sans rallonger leurs journées.",
+        "visualType": "verdict_proof",
+        "layoutHint": "split",
+        "brollKey": "ai_lab",
+        "brollCaption": "Audit productivité 2026",
+        "terminalCmd": "> audit --reunions-ia-2026",
+        "terminalOut": [
+          "✓ 80 % réunions évitées",
+          "✓ Décisions ×3 plus rapides",
+          "✓ Zéro oubli d’action"
+        ],
+        "statValue": "+38 %",
+        "statLabel": "Productivité équipe",
+        "sfxKind": "pop",
+        "from": 30.53,
+        "to": 35.5,
+        "layout": "split",
+        "verdictBadge": "CONFIRMÉ 2026",
+        "takeaways": [
+          "80 % des appels évités",
+          "Décisions 3× plus rapides",
+          "Mémoire d’équipe instantanée"
+        ]
+      },
+      {
+        "id": "beat-8",
+        "title": "Abonne-toi maintenant",
+        "shortLabel": "CTA",
+        "screenLabel": "PROCHAIN DÉCRYPTAGE",
+        "spokenLine": "Enregistre ce Short et abonne-toi pour le prochain décryptage IA chaque semaine.",
+        "visualType": "cta_card",
+        "layoutHint": "split",
+        "brollKey": "studio",
+        "brollCaption": "Nouveau décryptage bientôt",
+        "statValue": "@alex.decode",
+        "statLabel": "IA, Tech & Décryptages 2026",
+        "sfxKind": "pop-back",
+        "from": 35.5,
+        "to": 41.04,
+        "layout": "split",
+        "commentTrigger": "Écris « IA » en commentaire"
+      }
+    ]
+  },
+  "styleProfile": {
+    "name": "Papier signature",
+    "fontFamily": "Bricolage Grotesque",
+    "accentColor": "#258EFF",
+    "textColor": "#14161B",
+    "cardBg": "#FCFBF8",
+    "captionsPosition": "bottom",
+    "visualBeatsTarget": 8
+  },
+  "hasMp4": true
+}

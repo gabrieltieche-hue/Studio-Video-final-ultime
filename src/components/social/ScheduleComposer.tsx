@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import type { ShortProject } from '../../types/studio';
 import type {
-  HostingDiagnostics,
   PreparedMediaAssets,
   SocialAccountConfig,
   SocialCopyPack,
@@ -29,8 +28,6 @@ interface ScheduleComposerProps {
   projects: ShortProject[];
   activeProject: ShortProject | null;
   accounts: SocialAccountConfig[];
-  hosting?: HostingDiagnostics | null;
-  railwayUrl?: string;
   onSchedule: (payload: {
     projectId: string;
     version: string;
@@ -51,8 +48,6 @@ export const ScheduleComposer: React.FC<ScheduleComposerProps> = ({
   projects,
   activeProject,
   accounts,
-  hosting,
-  railwayUrl,
   onSchedule,
 }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
@@ -606,27 +601,6 @@ export const ScheduleComposer: React.FC<ScheduleComposerProps> = ({
           }`}
         >
           {composerErr || composerMsg}
-        </div>
-      )}
-
-      {hosting && !hosting.isAlwaysOn && (
-        <div
-          data-testid="aistudio-schedule-warning"
-          className="p-3 rounded-xl border border-[#D97706]/35 bg-[#D97706]/[0.07] text-[11px] text-[#14161B] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-        >
-          <p className="leading-snug">
-            <span className="font-bold">Important :</span> vous êtes actuellement sur Google AI Studio. Pour que vos programmations tournent <span className="font-semibold">tablette éteinte</span> et qu’Instagram Reels récupère vos vidéos sans blocage Google, programmez depuis votre URL Railway.
-          </p>
-          {railwayUrl && (
-            <a
-              href={`${railwayUrl.replace(/\/+$/, '')}/?tab=publish`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-8 px-3 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white font-semibold inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-colors"
-            >
-              Ouvrir mon Studio Railway ↗
-            </a>
-          )}
         </div>
       )}
 

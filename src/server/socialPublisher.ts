@@ -362,7 +362,14 @@ export async function generateAiSocialCopy(
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
     const spoken = (project.transcript || [])
       .filter((w) => !w.isCut)
       .map((w) => w.word)
@@ -388,7 +395,7 @@ export async function generateAiSocialCopy(
       .join('\n');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-4-hydrogen',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',

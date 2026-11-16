@@ -7,13 +7,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarClock,
   Check,
+  Cloud,
   Download,
   Film,
+  Layers,
   Loader2,
   Music,
   Pause,
   Play,
+  RefreshCw,
   RotateCcw,
+  Settings2,
   SlidersHorizontal,
   Sparkles,
   Video,
@@ -23,6 +27,7 @@ import {
 } from 'lucide-react';
 import { ShortStage } from './components/short/ShortStage';
 import { DynamicShortStage } from './components/short/DynamicShortStage';
+import { BatchCreateView } from './components/BatchCreateView';
 import { TopicResearchView } from './components/TopicResearchView';
 import { SocialPublishView } from './components/SocialPublishView';
 import { StudioWorkspace } from './components/studio/StudioWorkspace';
@@ -53,13 +58,25 @@ export default function App() {
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('renderMode') === '1';
 
+  const renderParams = useMemo(() => {
+    if (typeof window === 'undefined') return { projectId: '', look: 'papier' as LookId };
+    const p = new URLSearchParams(window.location.search);
+    const l = p.get('look');
+    const validLook: LookId = l === 'pop' || l === 'poster' ? l : 'papier';
+    return { projectId: p.get('project') || '', look: validLook };
+  }, []);
+
   const [t, setT] = useState(0);
-  const [viewMode, setViewMode] = useState<'player' | 'studio' | 'recorder' | 'research' | 'publish'>(() => {
+  const [renderProject, setRenderProject] = useState<ShortProject | null>(null);
+  const [viewMode, setViewMode] = useState<
+    'player' | 'studio' | 'recorder' | 'research' | 'batch' | 'publish'
+  >(() => {
     if (typeof window === 'undefined') return 'player';
     const params = new URLSearchParams(window.location.search);
     if (params.get('tab') === 'studio') return 'studio';
     if (params.get('tab') === 'recorder') return 'recorder';
     if (params.get('tab') === 'research') return 'research';
+    if (params.get('tab') === 'batch') return 'batch';
     if (params.get('tab') === 'publish') return 'publish';
     return 'player';
   });
@@ -72,7 +89,7 @@ export default function App() {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed] = useState(DEFAULT_PLAYBACK_SPEED);
-  const [lookId, setLookId] = useState<LookId>('papier');
+  const [lookId, setLookId] = useState<LookId>(renderParams.look);
   const [musicEnabled, setMusicEnabled] = useState(true);
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -82,6 +99,31 @@ export default function App() {
   const [mp4ReadySizeMb, setMp4ReadySizeMb] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadDone, setDownloadDone] = useState(false);
+  const [renderingProjectId, setRenderingProjectId] = useState<string | null>(null);
+
+  const [syncStatus, setSyncStatus] = useState<{
+    githubRepo: string;
+    githubConnected: boolean;
+    githubTokenMasked: string | null;
+    railwayUrl: string;
+    railwayConnected: boolean;
+    autoSync: boolean;
+    lastSyncAt?: string;
+    lastSyncSummary?: string;
+  } | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [syncErr, setSyncErr] = useState<string | null>(null);
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
+  const [railwayInput, setRailwayInput] = useState<string>(() => {
+    try {
+      return window.localStorage.getItem('studio_short_railway_url') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [githubRepoInput, setGithubRepoInput] = useState('');
+  const [githubTokenInput, setGithubTokenInput] = useState('');
 
   const tRef = useRef(0);
   const lastRafRef = useRef<number | null>(null);
@@ -125,10 +167,37 @@ export default function App() {
     return activeVersionObj?.outputMp4 || activeProject.speakerVideoUrl || undefined;
   }, [activeProject, activeVersionObj, isFlagshipReactPlayer]);
 
+  const hasDynamicWebAudio = useMemo(
+    () => !isFlagshipReactPlayer && !playerMediaSrc && Boolean(activeProject?.audioTrackUrl),
+    [isFlagshipReactPlayer, playerMediaSrc, activeProject]
+  );
+
+  const useWebAudioLoop = isFlagshipReactPlayer || hasDynamicWebAudio;
+  const effectiveAudioSpeed = isFlagshipReactPlayer ? speed : 1.0;
+
   const playerDuration = useMemo(() => {
     if (isFlagshipReactPlayer) return SHORT_DURATION;
-    return Math.max(10, activeProject?.duration || SHORT_DURATION);
+    return Math.max(8, activeProject?.duration || SHORT_DURATION);
   }, [isFlagshipReactPlayer, activeProject]);
+
+  const fetchSyncStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sync/status', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = (await res.json()) as { status?: typeof syncStatus };
+      if (data.status) {
+        setSyncStatus(data.status);
+        if (data.status.railwayUrl) {
+          setRailwayInput(data.status.railwayUrl);
+        }
+        if (data.status.githubRepo) {
+          setGithubRepoInput(data.status.githubRepo);
+        }
+      }
+    } catch {
+      // ignore transient status poll
+    }
+  }, []);
 
   const fetchWorkspace = useCallback(async (preferId?: string) => {
     try {
@@ -153,12 +222,13 @@ export default function App() {
       } else if (list[0]) {
         setActiveProjectId(list[0].id);
       }
+      void fetchSyncStatus();
     } catch (err) {
       console.error('Failed to load workspace:', err);
     } finally {
       setWorkspaceLoading(false);
     }
-  }, []);
+  }, [fetchSyncStatus]);
 
   const refreshProject = useCallback(async (projectId: string) => {
     try {
@@ -332,16 +402,44 @@ export default function App() {
 
   useEffect(() => {
     if (isRenderMode) {
-      window.__setShortTime = (nextT: number) => {
-        const clamped = clamp(nextT, 0, SHORT_DURATION);
-        tRef.current = clamped;
-        setT(clamped);
+      let cancelled = false;
+      const targetProjId = renderParams.projectId;
+      const bindTimeSetter = (maxDuration: number) => {
+        window.__setShortTime = (nextT: number) => {
+          const clamped = clamp(nextT, 0, Math.max(1, maxDuration));
+          tRef.current = clamped;
+          setT(clamped);
+        };
+        window.__setShortLook = (nextLook: LookId) => {
+          setLookId(nextLook);
+        };
       };
-      window.__setShortLook = (nextLook: LookId) => {
-        setLookId(nextLook);
+
+      if (targetProjId && targetProjId !== 'proj-interdiction-15-ans') {
+        bindTimeSetter(120);
+        fetch(`/api/studio/projects/${encodeURIComponent(targetProjId)}`, {
+          credentials: 'same-origin',
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data: { project?: ShortProject } | null) => {
+            if (cancelled) return;
+            if (data?.project) {
+              setRenderProject(data.project);
+              bindTimeSetter(data.project.duration || SHORT_DURATION);
+            }
+            window.__SHORT_READY = true;
+          })
+          .catch(() => {
+            if (!cancelled) window.__SHORT_READY = true;
+          });
+      } else {
+        bindTimeSetter(SHORT_DURATION);
+        window.__SHORT_READY = true;
+      }
+
+      return () => {
+        cancelled = true;
       };
-      window.__SHORT_READY = true;
-      return;
     }
     void audioEngine.preload();
     fetch('/api/download-mp4/status', { credentials: 'same-origin' })
@@ -360,7 +458,31 @@ export default function App() {
         mp4BlobUrlRef.current = null;
       }
     };
-  }, [isRenderMode, fetchVerifiedMp4BlobUrl]);
+  }, [isRenderMode, renderParams.projectId, fetchVerifiedMp4BlobUrl]);
+
+  useEffect(() => {
+    if (isRenderMode || !activeProject) return;
+    if (isFlagshipReactPlayer) {
+      void audioEngine.setProjectAudio({});
+    } else if (activeProject.audioTrackUrl) {
+      const bed = (activeProject.musicTrack?.trackName || 'upbeat') as
+        | 'upbeat'
+        | 'groove'
+        | 'analytical'
+        | 'clockwork'
+        | 'chill';
+      const sfxEvents = (activeProject.sfxTrack || []).map((s) => ({
+        at: s.start,
+        kind: s.sound as 'impact-boom' | 'zhhh' | 'riser' | 'pop-back',
+        gain: s.volume,
+      }));
+      void audioEngine.setProjectAudio({
+        voiceUrl: activeProject.audioTrackUrl,
+        musicBed: bed,
+        sfxEvents,
+      });
+    }
+  }, [isRenderMode, activeProject, isFlagshipReactPlayer]);
 
   useEffect(() => {
     audioEngine.setOptions({ musicEnabled, sfxEnabled, voiceEnabled });
@@ -390,8 +512,8 @@ export default function App() {
     let cancelled = false;
 
     const runLoop = async () => {
-      if (isFlagshipReactPlayer) {
-        await audioEngine.start(tRef.current, speed);
+      if (useWebAudioLoop) {
+        await audioEngine.start(tRef.current, effectiveAudioSpeed);
       }
       if (cancelled) return;
 
@@ -400,19 +522,19 @@ export default function App() {
       const frame = (now: number) => {
         if (cancelled) return;
         const prevT = tRef.current;
-        const synced = isFlagshipReactPlayer ? audioEngine.getSyncedTime(speed) : null;
-        const dt = Math.min(0.1, (now - prevNow) / 1000) * speed;
+        const synced = useWebAudioLoop ? audioEngine.getSyncedTime(effectiveAudioSpeed) : null;
+        const dt = Math.min(0.1, (now - prevNow) / 1000) * effectiveAudioSpeed;
         prevNow = now;
         let nextT = synced !== null ? synced : prevT + dt;
 
         if (nextT >= playerDuration) {
           nextT = 0;
-          if (isFlagshipReactPlayer) {
-            audioEngine.seekWhilePlaying(0, speed);
+          if (useWebAudioLoop) {
+            audioEngine.seekWhilePlaying(0, effectiveAudioSpeed);
           }
         }
 
-        if (isFlagshipReactPlayer) {
+        if (useWebAudioLoop) {
           audioEngine.tick(prevT, nextT);
         }
         tRef.current = nextT;
@@ -430,7 +552,7 @@ export default function App() {
       if (lastRafRef.current !== null) cancelAnimationFrame(lastRafRef.current);
       audioEngine.stop();
     };
-  }, [isPlaying, speed, isRenderMode, viewMode, playerMediaSrc, isFlagshipReactPlayer, playerDuration]);
+  }, [isPlaying, effectiveAudioSpeed, isRenderMode, viewMode, playerMediaSrc, useWebAudioLoop, playerDuration]);
 
   const handleTogglePlay = useCallback(() => {
     setIsPlaying((p) => !p);
@@ -443,15 +565,15 @@ export default function App() {
       setT(clamped);
       if (playerMediaSrc && playerVideoRef.current) {
         playerVideoRef.current.currentTime = clamped;
-      } else if (isFlagshipReactPlayer) {
+      } else if (useWebAudioLoop) {
         if (isPlaying) {
-          audioEngine.seekWhilePlaying(clamped, speed);
+          audioEngine.seekWhilePlaying(clamped, effectiveAudioSpeed);
         } else {
           audioEngine.resetTriggersBefore(clamped);
         }
       }
     },
-    [playerDuration, playerMediaSrc, isFlagshipReactPlayer, isPlaying, speed]
+    [playerDuration, playerMediaSrc, useWebAudioLoop, isPlaying, effectiveAudioSpeed]
   );
 
   const handleReset = useCallback(() => {
@@ -461,10 +583,10 @@ export default function App() {
     if (playerMediaSrc && playerVideoRef.current) {
       playerVideoRef.current.pause();
       playerVideoRef.current.currentTime = 0;
-    } else if (isFlagshipReactPlayer) {
+    } else if (useWebAudioLoop) {
       audioEngine.resetTriggersBefore(0);
     }
-  }, [playerMediaSrc, isFlagshipReactPlayer]);
+  }, [playerMediaSrc, useWebAudioLoop]);
 
   const triggerBlobSave = useCallback((blobUrl: string, filename = 'short-interdiction-15-ans-hd.mp4') => {
     const a = document.createElement('a');
@@ -524,6 +646,179 @@ export default function App() {
     }
   }, [downloadingMp4, isFlagshipReactPlayer, activeProject, fetchVerifiedMp4BlobUrl, triggerBlobSave]);
 
+  const handleRenderProjectMp4 = useCallback(
+    async (projectId: string) => {
+      if (renderingProjectId) return;
+      setRenderingProjectId(projectId);
+      setDownloadError(null);
+      try {
+        const res = await fetch(
+          `/api/studio/projects/${encodeURIComponent(projectId)}/render-now`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ lookId }),
+          }
+        );
+        const data = (await res.json()) as { project?: ShortProject; error?: string };
+        if (!res.ok || !data.project) {
+          throw new Error(data.error || 'Échec génération MP4.');
+        }
+        await fetchWorkspace(projectId);
+      } catch (err) {
+        setDownloadError(err instanceof Error ? err.message : 'Erreur génération MP4');
+      } finally {
+        setRenderingProjectId(null);
+      }
+    },
+    [renderingProjectId, lookId, fetchWorkspace]
+  );
+
+  const handleDownloadSpecificProject = useCallback(
+    async (proj: ShortProject) => {
+      if (proj.isFlagshipReactStage && (!proj.versions?.[0]?.outputMp4 || proj.versions[0].outputMp4 === '/video/short-interdiction-15-ans.mp4')) {
+        await handleActivateProject(proj.id);
+        await handleDownloadMp4();
+        return;
+      }
+      setDownloadError(null);
+      try {
+        const res = await fetch(
+          `/api/studio/projects/${encodeURIComponent(proj.id)}/download?version=${encodeURIComponent(proj.currentVersion)}`,
+          { credentials: 'same-origin' }
+        );
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error((errBody as { error?: string }).error || 'MP4 indisponible.');
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        triggerBlobSave(url, `${proj.slug}-${proj.currentVersion}-hd.mp4`);
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      } catch (err) {
+        setDownloadError(err instanceof Error ? err.message : 'Erreur export MP4');
+      }
+    },
+    [handleActivateProject, handleDownloadMp4, triggerBlobSave]
+  );
+
+  const handleSyncAllNow = useCallback(async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncErr(null);
+    setSyncMsg(null);
+    try {
+      const cleanRailway = railwayInput.trim();
+      const res = await fetch('/api/sync/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          target: 'all',
+          ...(cleanRailway ? { railwayUrl: cleanRailway } : {}),
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        summary?: string;
+        errors?: string[];
+        error?: string;
+        status?: typeof syncStatus;
+      };
+      if (data.status) setSyncStatus(data.status);
+      if (!res.ok && data.error) {
+        throw new Error(data.error);
+      }
+      if (data.errors && data.errors.length > 0) {
+        setSyncErr(data.errors.join(' · '));
+      } else {
+        setSyncMsg(data.summary || 'Synchronisation terminée.');
+      }
+      await fetchWorkspace();
+    } catch (err) {
+      setSyncErr(err instanceof Error ? err.message : 'Erreur synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncing, railwayInput, fetchWorkspace]);
+
+  const handlePullRailway = useCallback(async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncErr(null);
+    setSyncMsg(null);
+    try {
+      const cleanRailway = railwayInput.trim();
+      const res = await fetch('/api/sync/pull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          ...(cleanRailway ? { railwayUrl: cleanRailway } : {}),
+        }),
+      });
+      const data = (await res.json()) as {
+        pulledProjects?: number;
+        pulledFiles?: number;
+        error?: string;
+        status?: typeof syncStatus;
+      };
+      if (!res.ok) {
+        throw new Error(data.error || 'Récupération Railway impossible.');
+      }
+      if (data.status) setSyncStatus(data.status);
+      setSyncMsg(
+        `Récupéré depuis Railway : ${data.pulledProjects || 0} projet(s), ${data.pulledFiles || 0} fichier(s).`
+      );
+      await fetchWorkspace();
+    } catch (err) {
+      setSyncErr(err instanceof Error ? err.message : 'Erreur import Railway');
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncing, railwayInput, fetchWorkspace]);
+
+  const handleSaveSyncSettings = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setSyncErr(null);
+      setSyncMsg(null);
+      try {
+        const cleanRailway = railwayInput.trim();
+        try {
+          window.localStorage.setItem('studio_short_railway_url', cleanRailway);
+        } catch {
+          // ignore localStorage error
+        }
+        const payload: Record<string, unknown> = {
+          railwayUrl: cleanRailway,
+          githubRepo: githubRepoInput.trim(),
+        };
+        if (githubTokenInput.trim()) {
+          payload.githubToken = githubTokenInput.trim();
+        }
+        const res = await fetch('/api/sync/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload),
+        });
+        const data = (await res.json()) as { status?: typeof syncStatus; error?: string };
+        if (!res.ok) {
+          throw new Error(data.error || 'Configuration invalide.');
+        }
+        if (data.status) setSyncStatus(data.status);
+        setGithubTokenInput('');
+        setShowSyncSettings(false);
+        setSyncMsg('Configuration enregistrée.');
+      } catch (err) {
+        setSyncErr(err instanceof Error ? err.message : 'Erreur configuration sync');
+      }
+    },
+    [railwayInput, githubRepoInput, githubTokenInput]
+  );
+
   // Keyboard shortcuts (Space: play/pause, Left/Right: scrub 1s)
   useEffect(() => {
     if (isRenderMode || viewMode !== 'player') return;
@@ -545,14 +840,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isRenderMode, viewMode, handleTogglePlay, handleSeek]);
 
-  if (isRenderMode) {
-    return (
-      <div id="short-render-root" className="w-[1080px] h-[1920px] overflow-hidden bg-[#F1EEE6]">
-        <ShortStage t={t} look={look} showSafeZones={false} renderMode />
-      </div>
-    );
-  }
-
   const dynamicBeats = useMemo(
     () => (activeProject ? buildDynamicBeatsFromProject(activeProject) : []),
     [activeProject]
@@ -572,6 +859,24 @@ export default function App() {
     return activeProject?.currentVersion || 'v1';
   }, [isFlagshipReactPlayer, dynamicBeats, t, activeProject]);
 
+  if (isRenderMode) {
+    return (
+      <div id="short-render-root" className="w-[1080px] h-[1920px] overflow-hidden bg-[#F1EEE6]">
+        {renderProject ? (
+          <DynamicShortStage
+            project={renderProject}
+            t={t}
+            look={look}
+            showSafeZones={false}
+            renderMode
+          />
+        ) : (
+          <ShortStage t={t} look={look} showSafeZones={false} renderMode />
+        )}
+      </div>
+    );
+  }
+
   const progressPct = clamp((t / playerDuration) * 100, 0, 100);
   const displayTime = isFlagshipReactPlayer ? t / speed : t;
   const displayDuration = isFlagshipReactPlayer ? playerDuration / speed : playerDuration;
@@ -580,15 +885,16 @@ export default function App() {
     <div className="min-h-screen bg-[#F6F5F1] text-[#14161B] flex flex-col">
       {/* Compact Studio Navigation Bar */}
       <header className="w-full border-b border-[#E3DED3] bg-[#FCFBF8]">
-        <div className="max-w-[1160px] mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="max-w-[1160px] mx-auto px-2.5 sm:px-6 h-14 flex items-center justify-between gap-1.5 sm:gap-4">
           <span
             className="text-xs sm:text-base font-extrabold tracking-tight text-[#14161B] whitespace-nowrap shrink-0"
             style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
           >
-            Studio Short
+            <span className="sm:hidden">Short</span>
+            <span className="hidden sm:inline">Studio Short</span>
           </span>
 
-          <nav aria-label="Modes du studio" className="inline-flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-[#EAE7DF] rounded-xl min-w-0">
+          <nav aria-label="Modes du studio" className="inline-flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-[#EAE7DF] rounded-xl min-w-0 max-w-full overflow-x-auto">
             <button
               type="button"
               onClick={() => {
@@ -596,7 +902,7 @@ export default function App() {
                 setViewMode('player');
               }}
               aria-pressed={viewMode === 'player'}
-              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'player'
                   ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
@@ -615,14 +921,14 @@ export default function App() {
                 setViewMode('studio');
               }}
               aria-pressed={viewMode === 'studio'}
-              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'studio'
                   ? 'bg-[#14161B] text-white shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
               }`}
             >
               <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
-              <span className="sm:hidden">Feedback</span>
+              <span className="sm:hidden">Studio</span>
               <span className="hidden sm:inline">Studio Feedback</span>
             </button>
 
@@ -633,7 +939,7 @@ export default function App() {
                 setViewMode('recorder');
               }}
               aria-pressed={viewMode === 'recorder'}
-              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'recorder'
                   ? 'bg-[#FCFBF8] text-[#14161B] shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
@@ -650,7 +956,7 @@ export default function App() {
                 setViewMode('research');
               }}
               aria-pressed={viewMode === 'research'}
-              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'research'
                   ? 'bg-[#258EFF] text-white shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
@@ -663,6 +969,25 @@ export default function App() {
 
             <button
               type="button"
+              data-testid="nav-batch-tab"
+              onClick={() => {
+                setIsPlaying(false);
+                setViewMode('batch');
+              }}
+              aria-pressed={viewMode === 'batch'}
+              className={`inline-flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'batch'
+                  ? 'bg-[#258EFF] text-white shadow-sm'
+                  : 'text-[#5C5F68] hover:text-[#14161B]'
+              }`}
+            >
+              <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden sm:inline" aria-hidden="true" />
+              <span className="sm:hidden">Masse</span>
+              <span className="hidden sm:inline">En masse</span>
+            </button>
+
+            <button
+              type="button"
               data-testid="nav-publish-tab"
               onClick={() => {
                 setIsPlaying(false);
@@ -670,7 +995,7 @@ export default function App() {
                 setViewMode('publish');
               }}
               aria-pressed={viewMode === 'publish'}
-              className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 viewMode === 'publish'
                   ? 'bg-[#059669] text-white shadow-sm'
                   : 'text-[#5C5F68] hover:text-[#14161B]'
@@ -704,275 +1029,663 @@ export default function App() {
         </main>
       ) : viewMode === 'research' ? (
         <main className="flex-1">
-          <TopicResearchView onCreateProjectFromTopic={handleCreateProjectFromTopic} />
+          <TopicResearchView
+            onCreateProjectFromTopic={handleCreateProjectFromTopic}
+            onOpenBatch={() => {
+              setIsPlaying(false);
+              setViewMode('batch');
+            }}
+          />
+        </main>
+      ) : viewMode === 'batch' ? (
+        <main className="flex-1">
+          <BatchCreateView
+            onRefreshWorkspace={fetchWorkspace}
+            onOpenProjectInPlayer={async (projId) => {
+              await fetchWorkspace(projId);
+              await handleActivateProject(projId);
+              setViewMode('player');
+            }}
+            onOpenProjectInStudio={async (projId) => {
+              await fetchWorkspace(projId);
+              await handleActivateProject(projId);
+              setViewMode('studio');
+            }}
+            onOpenPublish={() => {
+              setIsPlaying(false);
+              void fetchWorkspace();
+              setViewMode('publish');
+            }}
+          />
         </main>
       ) : viewMode === 'publish' ? (
         <main className="flex-1">
           <SocialPublishView projects={projects} activeProject={activeProject} />
         </main>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 sm:py-3">
-          <main className="w-full max-w-[420px] flex flex-col items-center gap-2.5">
-            {/* Project & Version Switcher in Lecteur Short */}
-            {projects.length > 0 && activeProject && (
-              <div className="w-full flex items-center gap-1.5 px-1">
-                <label htmlFor="player-project-select" className="sr-only">
-                  Projet actif dans le lecteur
-                </label>
-                <select
-                  id="player-project-select"
-                  value={activeProject.id}
-                  onChange={(e) => void handleActivateProject(e.target.value)}
-                  className="flex-1 min-w-0 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] text-xs font-bold text-[#14161B] truncate cursor-pointer"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
+        <div className="flex-1 w-full max-w-[1140px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column: Active Short Player */}
+            <main className="lg:col-span-5 w-full max-w-[400px] mx-auto flex flex-col items-center gap-2.5">
+              {/* Project & Version Switcher in Lecteur Short */}
+              {projects.length > 0 && activeProject && (
+                <div className="w-full flex items-center gap-1.5 px-1">
+                  <label htmlFor="player-project-select" className="sr-only">
+                    Projet actif dans le lecteur
+                  </label>
+                  <select
+                    id="player-project-select"
+                    value={activeProject.id}
+                    onChange={(e) => void handleActivateProject(e.target.value)}
+                    className="flex-1 min-w-0 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] text-xs font-bold text-[#14161B] truncate cursor-pointer"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
 
-                <label htmlFor="player-version-select" className="sr-only">
-                  Version active dans le lecteur
-                </label>
-                <select
-                  id="player-version-select"
-                  value={activeProject.currentVersion}
-                  onChange={(e) =>
-                    void handleActivateProject(activeProject.id, e.target.value)
-                  }
-                  className="h-8 px-2 rounded-lg border border-[#E3DED3] bg-[#EAE7DF] font-mono text-[11px] font-bold text-[#14161B] cursor-pointer shrink-0"
-                >
-                  {(activeProject.versions || []).map((v) => (
-                    <option key={v.version} value={v.version}>
-                      {v.version}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Minimal Title Line */}
-            <div className="w-full flex items-center justify-between gap-3 px-1">
-              <div className="min-w-0">
-                <h1
-                  className="text-base sm:text-lg font-extrabold tracking-tight text-[#14161B] truncate"
-                  style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
-                >
-                  {activeProject?.title || 'Interdire les réseaux avant 15 ans'}
-                </h1>
-                <p className="text-xs text-[#5C5F68] tabular-nums truncate">
-                  1080×1920 · {displayDuration.toFixed(1)} s · {activeBeatLabel}
-                </p>
-              </div>
-              <span className="text-xs font-mono font-semibold text-[#5C5F68] tabular-nums shrink-0">
-                {activeProject?.currentVersion || 'v1'}
-              </span>
-            </div>
-
-            {/* 9:16 Short Stage / Rendered Video */}
-            <div className="w-[276px] sm:w-[300px] aspect-[9/16] mx-auto rounded-[20px] overflow-hidden border border-[#E3DED3] bg-[#F1EEE6] shadow-sm">
-              {playerMediaSrc ? (
-                <video
-                  ref={playerVideoRef}
-                  src={playerMediaSrc}
-                  playsInline
-                  onTimeUpdate={(e) => {
-                    const next = e.currentTarget.currentTime;
-                    tRef.current = next;
-                    setT(next);
-                  }}
-                  onEnded={() => setIsPlaying(false)}
-                  className="w-full h-full object-cover"
-                />
-              ) : isFlagshipReactPlayer ? (
-                <ShortStage t={t} look={look} showSafeZones={false} />
-              ) : activeProject ? (
-                <DynamicShortStage
-                  project={activeProject}
-                  t={t}
-                  look={look}
-                  showSafeZones={false}
-                />
-              ) : null}
-            </div>
-
-            {/* Transport Bar */}
-            <div className="w-full bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-3 flex items-center gap-2.5 shadow-sm">
-              <button
-                type="button"
-                onClick={handleTogglePlay}
-                aria-label={isPlaying ? 'Mettre en pause' : 'Lire le Short'}
-                className="w-11 h-11 rounded-xl bg-[#14161B] text-white flex items-center justify-center hover:bg-[#258EFF] transition-colors cursor-pointer shrink-0"
-              >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleReset}
-                aria-label="Revenir à 0.0 s"
-                className="w-10 h-11 rounded-xl border border-[#E3DED3] bg-white text-[#14161B] flex items-center justify-center hover:bg-[#F6F5F1] transition-colors cursor-pointer shrink-0"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-
-              <div className="flex-1 min-w-0 flex flex-col gap-1 px-1">
-                <label htmlFor="short-scrubber" className="sr-only">
-                  Position dans la timeline
-                </label>
-                <input
-                  id="short-scrubber"
-                  type="range"
-                  min={0}
-                  max={playerDuration}
-                  step={0.05}
-                  value={t}
-                  onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                  className="w-full h-2 rounded-full cursor-pointer accent-[#258EFF]"
-                  style={{
-                    background: `linear-gradient(to right, #258EFF ${progressPct}%, #E3DED3 ${progressPct}%)`,
-                  }}
-                />
-                <div className="flex items-center justify-between text-[11px] font-mono text-[#5C5F68] tabular-nums">
-                  <span>{formatClock(displayTime)}</span>
-                  <span>{formatClock(displayDuration)}</span>
+                  <label htmlFor="player-version-select" className="sr-only">
+                    Version active dans le lecteur
+                  </label>
+                  <select
+                    id="player-version-select"
+                    value={activeProject.currentVersion}
+                    onChange={(e) =>
+                      void handleActivateProject(activeProject.id, e.target.value)
+                    }
+                    className="h-8 px-2 rounded-lg border border-[#E3DED3] bg-[#EAE7DF] font-mono text-[11px] font-bold text-[#14161B] cursor-pointer shrink-0"
+                  >
+                    {(activeProject.versions || []).map((v) => (
+                      <option key={v.version} value={v.version}>
+                        {v.version}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              )}
+
+              {/* Minimal Title Line */}
+              <div className="w-full flex items-center justify-between gap-3 px-1">
+                <div className="min-w-0">
+                  <h1
+                    className="text-base sm:text-lg font-extrabold tracking-tight text-[#14161B] truncate"
+                    style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+                  >
+                    {activeProject?.title || 'Interdire les réseaux avant 15 ans'}
+                  </h1>
+                  <p className="text-xs text-[#5C5F68] tabular-nums truncate">
+                    1080×1920 · {displayDuration.toFixed(1)} s · {activeBeatLabel}
+                  </p>
+                </div>
+                <span className="text-xs font-mono font-semibold text-[#5C5F68] tabular-nums shrink-0">
+                  {activeProject?.currentVersion || 'v1'}
+                </span>
               </div>
-            </div>
 
-            {/* Audio Switches (Flagship WebAudio) or Look Switcher (Dynamic Preview) + MP4 Export */}
-            <div className="w-full flex flex-col gap-3">
-              {isFlagshipReactPlayer ? (
-                <div className="w-full flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => setVoiceEnabled((v) => !v)}
-                      aria-pressed={voiceEnabled}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
-                        voiceEnabled
-                          ? 'bg-[#258EFF] text-white border-[#258EFF]'
-                          : 'bg-[#FCFBF8] text-[#5C5F68] border-[#E3DED3]'
-                      }`}
-                    >
-                      {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                      Voix FR
-                    </button>
+              {/* 9:16 Short Stage / Rendered Video */}
+              <div className="w-[276px] sm:w-[300px] aspect-[9/16] mx-auto rounded-[20px] overflow-hidden border border-[#E3DED3] bg-[#F1EEE6] shadow-sm">
+                {playerMediaSrc ? (
+                  <video
+                    key={playerMediaSrc}
+                    ref={playerVideoRef}
+                    src={playerMediaSrc}
+                    poster={
+                      activeVersionObj?.contactSheetUrl?.endsWith('_contact.jpg')
+                        ? activeVersionObj.contactSheetUrl.replace('_contact.jpg', '_thumb.jpg')
+                        : undefined
+                    }
+                    preload="auto"
+                    playsInline
+                    onLoadedMetadata={(e) => {
+                      if (e.currentTarget.currentTime === 0) {
+                        e.currentTarget.currentTime = 0.04;
+                      }
+                    }}
+                    onTimeUpdate={(e) => {
+                      const next = e.currentTarget.currentTime;
+                      tRef.current = next;
+                      setT(next);
+                    }}
+                    onEnded={() => setIsPlaying(false)}
+                    className="w-full h-full object-cover"
+                  />
+                ) : isFlagshipReactPlayer ? (
+                  <ShortStage t={t} look={look} showSafeZones={false} />
+                ) : activeProject ? (
+                  <DynamicShortStage
+                    project={activeProject}
+                    t={t}
+                    look={look}
+                    showSafeZones={false}
+                  />
+                ) : null}
+              </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setMusicEnabled((v) => !v)}
-                      aria-pressed={musicEnabled}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
-                        musicEnabled
-                          ? 'bg-[#14161B] text-white border-[#14161B]'
-                          : 'bg-[#FCFBF8] text-[#5C5F68] border-[#E3DED3]'
-                      }`}
-                    >
-                      <Music className="w-3.5 h-3.5" />
-                      Bright Groove
-                    </button>
+              {/* Transport Bar */}
+              <div className="w-full bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-3 flex items-center gap-2.5 shadow-sm">
+                <button
+                  type="button"
+                  onClick={handleTogglePlay}
+                  aria-label={isPlaying ? 'Mettre en pause' : 'Lire le Short'}
+                  className="w-11 h-11 rounded-xl bg-[#14161B] text-white flex items-center justify-center hover:bg-[#258EFF] transition-colors cursor-pointer shrink-0"
+                >
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setSfxEnabled((v) => !v)}
-                      aria-pressed={sfxEnabled}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
-                        sfxEnabled
-                          ? 'bg-[#14161B] text-white border-[#14161B]'
-                          : 'bg-[#FCFBF8] text-[#5C5F68] border-[#E3DED3]'
-                      }`}
-                    >
-                      <Zap className="w-3.5 h-3.5" />
-                      SFX
-                    </button>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  aria-label="Revenir à 0.0 s"
+                  className="w-10 h-11 rounded-xl border border-[#E3DED3] bg-white text-[#14161B] flex items-center justify-center hover:bg-[#F6F5F1] transition-colors cursor-pointer shrink-0"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+
+                <div className="flex-1 min-w-0 flex flex-col gap-1 px-1">
+                  <label htmlFor="short-scrubber" className="sr-only">
+                    Position dans la timeline
+                  </label>
+                  <input
+                    id="short-scrubber"
+                    type="range"
+                    min={0}
+                    max={playerDuration}
+                    step={0.05}
+                    value={t}
+                    onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                    className="w-full h-2 rounded-full cursor-pointer accent-[#258EFF]"
+                    style={{
+                      background: `linear-gradient(to right, #258EFF ${progressPct}%, #E3DED3 ${progressPct}%)`,
+                    }}
+                  />
+                  <div className="flex items-center justify-between text-[11px] font-mono text-[#5C5F68] tabular-nums">
+                    <span>{formatClock(displayTime)}</span>
+                    <span>{formatClock(displayDuration)}</span>
                   </div>
                 </div>
-              ) : (
-                <div className="w-full flex items-center justify-between gap-2">
-                  {playerMediaSrc ? (
+              </div>
+
+              {/* Audio Switches (Flagship WebAudio) or Look Switcher (Dynamic Preview) + MP4 Export */}
+              <div className="w-full flex flex-col gap-2.5">
+                {isFlagshipReactPlayer ? (
+                  <div className="w-full flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setVoiceEnabled((v) => !v)}
+                        aria-pressed={voiceEnabled}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
+                          voiceEnabled
+                            ? 'bg-[#258EFF] text-white border-[#258EFF]'
+                            : 'bg-[#FCFBF8] text-[#5C5F68] border-[#E3DED3]'
+                        }`}
+                      >
+                        {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                        Voix FR
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setMusicEnabled((v) => !v)}
+                        aria-pressed={musicEnabled}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
+                          musicEnabled
+                            ? 'bg-[#14161B] text-white border-[#14161B]'
+                            : 'bg-[#FCFBF8] text-[#5C5F68] border-[#E3DED3]'
+                        }`}
+                      >
+                        <Music className="w-3.5 h-3.5" />
+                        Bright Groove
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSfxEnabled((v) => !v)}
+                        aria-pressed={sfxEnabled}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
+                          sfxEnabled
+                            ? 'bg-[#14161B] text-white border-[#14161B]'
+                            : 'bg-[#FCFBF8] text-[#5C5F68] border-[#E3DED3]'
+                        }`}
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        SFX
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full flex items-center justify-between gap-2">
+                    {playerMediaSrc ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsVideoMuted((m) => !m)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] text-xs font-medium text-[#14161B] cursor-pointer"
+                      >
+                        {isVideoMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                        {isVideoMuted ? 'Audio coupé' : 'Audio vidéo'}
+                      </button>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#EAE7DF]">
+                        {(Object.keys(LOOK_PRESETS) as LookId[]).map((id) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setLookId(id)}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
+                              lookId === id ? 'bg-[#FCFBF8] text-[#14161B] shadow-xs' : 'text-[#5C5F68]'
+                            }`}
+                          >
+                            {LOOK_PRESETS[id].label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => setIsVideoMuted((m) => !m)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] text-xs font-medium text-[#14161B] cursor-pointer"
+                      onClick={() => {
+                        setIsPlaying(false);
+                        setViewMode('studio');
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-xs font-semibold text-[#14161B] cursor-pointer"
                     >
-                      {isVideoMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                      {isVideoMuted ? 'Audio coupé' : 'Audio vidéo'}
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-[#258EFF]" />
+                      Annoter dans Studio
                     </button>
-                  ) : (
-                    <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#EAE7DF]">
-                      {(Object.keys(LOOK_PRESETS) as LookId[]).map((id) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => setLookId(id)}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
-                            lookId === id ? 'bg-[#FCFBF8] text-[#14161B] shadow-xs' : 'text-[#5C5F68]'
-                          }`}
-                        >
-                          {LOOK_PRESETS[id].label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  </div>
+                )}
+
+                {!isFlagshipReactPlayer && activeProject && activeProject.hasMp4 === false && !playerMediaSrc ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleRenderProjectMp4(activeProject.id)}
+                    disabled={renderingProjectId === activeProject.id}
+                    className="w-full py-3.5 px-5 rounded-2xl bg-[#258EFF] hover:bg-[#14161B] disabled:opacity-70 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-sm transition-colors cursor-pointer"
+                  >
+                    {renderingProjectId === activeProject.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Génération MP4 HD en cours…
+                      </>
+                    ) : (
+                      <>
+                        <Film className="w-4 h-4" />
+                        Générer MP4 HD (1080×1920)
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleDownloadMp4}
+                    disabled={downloadingMp4}
+                    className="w-full py-3.5 px-5 rounded-2xl bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-70 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-sm transition-colors cursor-pointer"
+                  >
+                    {downloadingMp4 ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Téléchargement MP4 HD{downloadPct !== null ? ` (${downloadPct} %)` : '…'}
+                      </>
+                    ) : downloadDone ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        MP4 haute qualité téléchargé
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Télécharger MP4 HD (1080×1920
+                        {isFlagshipReactPlayer && mp4ReadySizeMb ? ` · ${mp4ReadySizeMb} Mo` : ''})
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {downloadError && (
+                  <p className="text-xs text-[#DC2626] text-center">{downloadError}</p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPlaying(false);
+                    setViewMode('publish');
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-[#14161B] font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <CalendarClock className="w-3.5 h-3.5 text-[#059669]" aria-hidden="true" />
+                  Programmer sur YouTube / Reels / TikTok
+                </button>
+              </div>
+            </main>
+
+            {/* Right Column: Saved Videos Shelf & 3-Way Synchronization */}
+            <aside className="lg:col-span-7 space-y-4">
+              {/* Saved Videos Library */}
+              <section
+                data-testid="saved-videos-shelf"
+                aria-label="Mes vidéos sauvegardées"
+                className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2
+                      className="text-base sm:text-lg font-extrabold tracking-tight text-[#14161B]"
+                      style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+                    >
+                      Mes vidéos sauvegardées
+                    </h2>
+                    <p className="text-xs text-[#5C5F68]">
+                      {projects.length} Short(s) enregistré(s) · prêts à lire, télécharger ou publier
+                    </p>
+                  </div>
 
                   <button
                     type="button"
                     onClick={() => {
                       setIsPlaying(false);
-                      setViewMode('studio');
+                      setViewMode('batch');
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-xs font-semibold text-[#14161B] cursor-pointer"
+                    className="h-8 px-3 rounded-lg bg-[#258EFF] hover:bg-[#14161B] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors"
                   >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#258EFF]" />
-                    Annoter dans Studio
+                    <Layers className="w-3.5 h-3.5" aria-hidden="true" />
+                    + En masse
                   </button>
                 </div>
-              )}
 
-              <button
-                type="button"
-                onClick={handleDownloadMp4}
-                disabled={downloadingMp4}
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-70 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-sm transition-colors cursor-pointer"
-              >
-                {downloadingMp4 ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Téléchargement MP4 HD{downloadPct !== null ? ` (${downloadPct} %)` : '…'}
-                  </>
-                ) : downloadDone ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    MP4 haute qualité téléchargé
-                  </>
+                {projects.length === 0 ? (
+                  <div className="p-6 rounded-xl border border-dashed border-[#E3DED3] text-center text-xs text-[#5C5F68]">
+                    Aucune vidéo sauvegardée pour l’instant. Lancez une création en masse pour générer vos premiers Shorts.
+                  </div>
                 ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Télécharger MP4 HD (1080×1920
-                    {isFlagshipReactPlayer && mp4ReadySizeMb ? ` · ${mp4ReadySizeMb} Mo` : ''})
-                  </>
+                  <div className="space-y-2.5">
+                    {projects.map((proj) => {
+                      const isActive = proj.id === activeProject?.id;
+                      const verObj = (proj.versions || []).find(
+                        (v) => v.version === proj.currentVersion
+                      );
+                      const mp4Ready = Boolean(
+                        proj.hasMp4 || verObj?.hasMp4 || proj.isFlagshipReactStage
+                      );
+                      const thumbUrl = verObj?.contactSheetUrl?.endsWith('_contact.jpg')
+                        ? verObj.contactSheetUrl.replace('_contact.jpg', '_thumb.jpg')
+                        : undefined;
+                      const isRenderingThis = renderingProjectId === proj.id;
+
+                      return (
+                        <div
+                          key={proj.id}
+                          data-testid={`saved-video-card-${proj.id}`}
+                          className={`p-3 rounded-xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                            isActive
+                              ? 'border-[#258EFF] bg-[#258EFF]/[0.04]'
+                              : 'border-[#E3DED3] bg-white hover:border-[#14161B]/25'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-[70px] rounded-lg border border-[#E3DED3] bg-[#F1EEE6] overflow-hidden shrink-0 flex items-center justify-center">
+                              {thumbUrl ? (
+                                <img
+                                  src={thumbUrl}
+                                  alt={proj.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Film className="w-4 h-4 text-[#258EFF]" aria-hidden="true" />
+                              )}
+                            </div>
+
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    mp4Ready
+                                      ? 'bg-[#059669]/12 text-[#047857]'
+                                      : 'bg-[#D97706]/12 text-[#B45309]'
+                                  }`}
+                                >
+                                  {mp4Ready ? 'MP4 prêt' : 'MP4 à générer'}
+                                </span>
+                                <span className="text-[11px] font-mono text-[#5C5F68] tabular-nums">
+                                  {proj.currentVersion} · {proj.duration.toFixed(1)} s
+                                </span>
+                              </div>
+                              <div className="text-xs sm:text-sm font-bold text-[#14161B] truncate">
+                                {proj.title}
+                              </div>
+                              <div className="text-[11px] text-[#5C5F68] truncate">
+                                {proj.topicCategory || 'Short'} · 1080×1920
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => void handleActivateProject(proj.id)}
+                              className={`h-8 px-2.5 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                                isActive
+                                  ? 'bg-[#14161B] text-white'
+                                  : 'border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-[#14161B]'
+                              }`}
+                            >
+                              <Play className="w-3 h-3" aria-hidden="true" />
+                              Lire
+                            </button>
+
+                            {mp4Ready ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleDownloadSpecificProject(proj)}
+                                className="h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                              >
+                                <Download className="w-3 h-3" aria-hidden="true" />
+                                MP4
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={Boolean(renderingProjectId)}
+                                onClick={() => void handleRenderProjectMp4(proj.id)}
+                                className="h-8 px-2.5 rounded-lg bg-[#258EFF] hover:bg-[#14161B] disabled:opacity-60 text-white text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                              >
+                                {isRenderingThis ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Film className="w-3 h-3" aria-hidden="true" />
+                                )}
+                                Générer MP4
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await handleActivateProject(proj.id);
+                                setViewMode('studio');
+                              }}
+                              className="h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#14161B] text-[11px] font-semibold text-[#5C5F68] hover:text-[#14161B] cursor-pointer whitespace-nowrap"
+                            >
+                              Studio
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
+              </section>
 
-              {downloadError && (
-                <p className="text-xs text-[#DC2626] text-center">{downloadError}</p>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsPlaying(false);
-                  setViewMode('publish');
-                }}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-[#14161B] font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              {/* Unified 3-Way Synchronization Panel */}
+              <section
+                data-testid="sync-panel"
+                aria-label="Synchronisation GitHub et Railway"
+                className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs"
               >
-                <CalendarClock className="w-3.5 h-3.5 text-[#059669]" aria-hidden="true" />
-                Programmer sur YouTube / Reels / TikTok
-              </button>
-            </div>
-          </main>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#14161B]">
+                      <Cloud className="w-4 h-4 text-[#258EFF] shrink-0" aria-hidden="true" />
+                      <span>Synchronisation Studio · GitHub · Railway</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                      <span
+                        className={`px-2 py-0.5 rounded font-semibold whitespace-nowrap ${
+                          syncStatus?.githubConnected
+                            ? 'bg-[#059669]/12 text-[#047857]'
+                            : 'bg-[#EAE7DF] text-[#5C5F68]'
+                        }`}
+                      >
+                        GitHub :{' '}
+                        {syncStatus?.githubConnected
+                          ? syncStatus.githubRepo || 'Connecté'
+                          : 'À configurer'}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded font-semibold whitespace-nowrap ${
+                          syncStatus?.railwayConnected
+                            ? 'bg-[#258EFF]/12 text-[#1D4ED8]'
+                            : 'bg-[#EAE7DF] text-[#5C5F68]'
+                        }`}
+                      >
+                        Railway : {syncStatus?.railwayConnected ? 'Connecté' : 'Optionnel'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setShowSyncSettings((v) => !v)}
+                      aria-expanded={showSyncSettings}
+                      className="h-9 px-3 rounded-xl border border-[#E3DED3] bg-white hover:border-[#14161B] text-xs font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    >
+                      <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      Configurer
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid="sync-now-btn"
+                      disabled={syncing}
+                      onClick={() => void handleSyncAllNow()}
+                      className="h-9 px-3.5 rounded-xl bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-60 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors"
+                    >
+                      {syncing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      Synchroniser tout
+                    </button>
+                  </div>
+                </div>
+
+                {syncStatus?.lastSyncSummary && !syncMsg && !syncErr && (
+                  <p className="text-[11px] text-[#5C5F68] truncate">
+                    Dernière synchro : {syncStatus.lastSyncSummary}
+                  </p>
+                )}
+
+                {(syncMsg || syncErr) && (
+                  <div
+                    role="status"
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold ${
+                      syncErr
+                        ? 'bg-[#DC2626]/10 text-[#DC2626]'
+                        : 'bg-[#059669]/10 text-[#047857]'
+                    }`}
+                  >
+                    {syncErr || syncMsg}
+                  </div>
+                )}
+
+                {showSyncSettings && (
+                  <form
+                    onSubmit={handleSaveSyncSettings}
+                    className="pt-3 border-t border-[#E3DED3] space-y-2.5 text-xs"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="sync-railway-url"
+                          className="block text-[11px] font-semibold text-[#5C5F68]"
+                        >
+                          URL publique Railway (pour envoi direct des vidéos)
+                        </label>
+                        <input
+                          id="sync-railway-url"
+                          type="url"
+                          value={railwayInput}
+                          onChange={(e) => setRailwayInput(e.target.value)}
+                          placeholder="https://studio-video-....up.railway.app"
+                          className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="sync-github-repo"
+                          className="block text-[11px] font-semibold text-[#5C5F68]"
+                        >
+                          Dépôt GitHub (proprietaire/repo)
+                        </label>
+                        <input
+                          id="sync-github-repo"
+                          type="text"
+                          value={githubRepoInput}
+                          onChange={(e) => setGithubRepoInput(e.target.value)}
+                          placeholder="gabrieltieche-hue/Studio-Video-final-ultime"
+                          className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="sync-github-token"
+                        className="block text-[11px] font-semibold text-[#5C5F68]"
+                      >
+                        Token GitHub (PAT · laissé masqué, laissez vide pour conserver l&apos;actuel)
+                      </label>
+                      <input
+                        id="sync-github-token"
+                        type="password"
+                        value={githubTokenInput}
+                        onChange={(e) => setGithubTokenInput(e.target.value)}
+                        placeholder={
+                          syncStatus?.githubTokenMasked
+                            ? `Actuel : ${syncStatus.githubTokenMasked}`
+                            : 'github_pat_...'
+                        }
+                        className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={syncing || !railwayInput.trim()}
+                        onClick={() => void handlePullRailway()}
+                        className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:border-[#258EFF] disabled:opacity-50 text-[11px] font-semibold text-[#14161B] cursor-pointer"
+                      >
+                        Importer depuis Railway
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="h-8 px-4 rounded-lg bg-[#258EFF] hover:bg-[#14161B] text-white text-[11px] font-bold cursor-pointer"
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </section>
+            </aside>
+          </div>
         </div>
       )}
     </div>

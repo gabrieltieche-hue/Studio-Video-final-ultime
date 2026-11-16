@@ -16,9 +16,21 @@ import {
   getProject,
   getWorkspaceState,
   initStorage,
+  resolveProjectMp4Path,
   saveProject,
   setActiveProjectAndVersion,
+  withProjectMediaStatus,
 } from './storageManager';
+import {
+  assignBeatTimingsAndTranscript,
+  resolveBeatLayout,
+  sanitizeScriptText,
+} from '../engine/batchShortBuilder';
+import { renderDynamicProjectToMp4 } from './batchRenderer';
+import { synthesizeVoiceoverForProject } from './batchService';
+import { triggerAutoSyncInBackground } from './syncManager';
+import type { LookId } from '../data/shortSpec';
+import type { BatchBeatSpec } from '../types/batch';
 import {
   readTopicsCsv,
   runDeepTopicResearchAndUpdateCsv,
@@ -1309,7 +1321,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         activeVersion: state.activeVersion,
         studioUrl: `/?tab=studio&project=${encodeURIComponent(project.id)}&version=${encodeURIComponent(state.activeVersion || project.currentVersion)}`,
         playerUrl: `/?project=${encodeURIComponent(project.id)}&version=${encodeURIComponent(state.activeVersion || project.currentVersion)}`,
-        project,
+        project: withProjectMediaStatus(project),
       };
     }
 
@@ -1521,7 +1533,7 @@ export function createStudioRouter(): express.Router {
 
   router.get('/api/studio/workspace', (_req: Request, res: Response) => {
     const state = getWorkspaceState();
-    const projects = getAllProjects();
+    const projects = getAllProjects().map((p) => withProjectMediaStatus(p));
     const activeProject =
       projects.find((p) => p.id === state.activeProjectId) || projects[0] || null;
     res.json({
@@ -1551,7 +1563,7 @@ export function createStudioRouter(): express.Router {
   });
 
   router.get('/api/studio/projects', (_req: Request, res: Response) => {
-    res.json({ projects: getAllProjects() });
+    res.json({ projects: getAllProjects().map((p) => withProjectMediaStatus(p)) });
   });
 
   router.post('/api/studio/projects/from-topic', async (req: Request, res: Response) => {
@@ -1580,7 +1592,7 @@ export function createStudioRouter(): express.Router {
       res.status(404).json({ error: 'Projet introuvable' });
       return;
     }
-    res.json({ project: proj });
+    res.json({ project: withProjectMediaStatus(proj) });
   });
 
   router.patch('/api/studio/projects/:id', async (req: Request, res: Response) => {
@@ -1818,28 +1830,7 @@ export function createStudioRouter(): express.Router {
       typeof req.query.version === 'string' && req.query.version
         ? req.query.version
         : proj.currentVersion;
-    const versionObj = (proj.versions || []).find((v) => v.version === targetVersion);
-    const candidateRel = versionObj?.outputMp4;
-
-    const candidates: string[] = [];
-    if (candidateRel) {
-      if (candidateRel.startsWith('/video/')) {
-        candidates.push(path.join(ROOT_DIR, 'public', candidateRel));
-      } else if (candidateRel.startsWith('/renders/')) {
-        candidates.push(path.join(RENDERS_DIR, path.basename(candidateRel)));
-      } else if (candidateRel.startsWith('/takes/')) {
-        candidates.push(path.join(TAKES_DIR, path.basename(candidateRel)));
-      }
-    }
-    candidates.push(path.join(RENDERS_DIR, `${proj.slug}_${targetVersion}.mp4`));
-    candidates.push(path.join(RENDERS_DIR, `${proj.slug}_${targetVersion}_draft.mp4`));
-    if (proj.isFlagshipReactStage) {
-      candidates.push(path.join(ROOT_DIR, 'public/video/short-interdiction-15-ans.mp4'));
-    }
-
-    const foundPath = candidates.find(
-      (p) => fs.existsSync(p) && fs.statSync(p).size > 1024
-    );
+    const foundPath = resolveProjectMp4Path(proj, targetVersion);
     if (!foundPath) {
       res.status(404).json({
         error: `Aucun MP4 rendu disponible pour ${proj.title} (${targetVersion}).`,
@@ -1855,6 +1846,106 @@ export function createStudioRouter(): express.Router {
     );
     res.setHeader('Cache-Control', 'no-store');
     fs.createReadStream(foundPath).pipe(res);
+  });
+
+  router.post('/api/studio/projects/:id/render-now', async (req: Request, res: Response) => {
+    const proj = getProject(req.params.id);
+    if (!proj) {
+      res.status(404).json({ error: 'Projet introuvable' });
+      return;
+    }
+    try {
+      const body = (req.body || {}) as { version?: string; lookId?: LookId };
+      const targetVersion = body.version || proj.currentVersion || 'v1';
+      const lookId: LookId =
+        body.lookId === 'pop' || body.lookId === 'poster'
+          ? body.lookId
+          : ((proj.editSpec?.lookId as LookId) || 'papier');
+
+      const projectDir = path.join(PROJECTS_DIR, proj.id);
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      let voiceMp3Path: string | undefined;
+      if (proj.audioTrackUrl) {
+        const candidateVoice = path.join(projectDir, path.basename(proj.audioTrackUrl));
+        if (fs.existsSync(candidateVoice)) {
+          voiceMp3Path = candidateVoice;
+        }
+      }
+
+      const rawBeats = Array.isArray(proj.editSpec?.beats)
+        ? (proj.editSpec.beats as BatchBeatSpec[])
+        : [];
+      if (!voiceMp3Path && rawBeats.length > 0) {
+        const spokenText = rawBeats
+          .map((b) => sanitizeScriptText(b.spokenLine || ''))
+          .filter(Boolean)
+          .join(' ');
+        if (spokenText) {
+          const speed = Math.min(1.06, Math.max(0.95, Number(proj.editSpec?.speed) || 1.05));
+          const voice = await synthesizeVoiceoverForProject({
+            projectDir,
+            fullText: spokenText,
+            speed,
+            voiceFilename: `voice_${targetVersion}.mp3`,
+          });
+          voiceMp3Path = voice.voiceMp3Path;
+          if (voice.audioTrackUrl) {
+            proj.audioTrackUrl = voice.audioTrackUrl;
+          }
+          const timed = assignBeatTimingsAndTranscript(rawBeats, voice.words, voice.durationSec);
+          proj.duration = timed.durationSec;
+          proj.transcript = voice.words;
+          proj.motionTrack = timed.motionTrack;
+          proj.sfxTrack = timed.sfxTrack;
+          proj.layoutTrack = timed.beats.map((b, bIdx) => ({
+            id: `layout-${b.id}`,
+            layout: resolveBeatLayout(b, bIdx, timed.beats.length),
+            start: b.from,
+            end: b.to,
+          }));
+          proj.editSpec = { ...(proj.editSpec || {}), beats: timed.beats };
+          saveProject(proj, { skipMirror: true });
+        }
+      }
+
+      const port = Number(process.env.PORT) || 3000;
+      const rendered = await renderDynamicProjectToMp4({
+        project: proj,
+        version: targetVersion,
+        lookId,
+        port,
+        voiceMp3Path,
+      });
+
+      proj.status = 'ready';
+      proj.duration = rendered.duration;
+      proj.hasMp4 = true;
+      const vIdx = (proj.versions || []).findIndex((v) => v.version === targetVersion);
+      if (vIdx >= 0) {
+        proj.versions[vIdx] = {
+          ...proj.versions[vIdx],
+          status: 'done',
+          duration: rendered.duration,
+          outputMp4: rendered.outputMp4Url,
+          contactSheetUrl: rendered.contactSheetUrl,
+          hasMp4: true,
+        };
+      }
+      saveProject(proj);
+      triggerAutoSyncInBackground(proj.id);
+
+      res.json({
+        success: true,
+        project: withProjectMediaStatus(proj),
+        outputMp4Url: rendered.outputMp4Url,
+        contactSheetUrl: rendered.contactSheetUrl,
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur lors du rendu MP4 du Short.',
+      });
+    }
   });
 
   router.post('/api/studio/projects/:id/transcribe', async (req: Request, res: Response) => {

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ShortProject, StudioWorkspaceState } from '../types/studio';
@@ -17,6 +18,27 @@ export const STYLES_DIR = path.join(STORAGE_DIR, 'styles');
 export const MUSIC_DIR = path.join(STORAGE_DIR, 'music');
 export const SFX_DIR = path.join(STORAGE_DIR, 'sfx');
 export const WORKSPACE_STATE_FILE = path.join(STORAGE_DIR, 'workspace-state.json');
+
+export const REPO_SAVED_PROJECTS_DIR = path.join(ROOT_DIR, 'data', 'saved-projects');
+export const REPO_SAVED_MEDIA_DIR = path.join(ROOT_DIR, 'data', 'saved-media');
+export const REPO_SAVED_VIDEOS_DIR = path.join(ROOT_DIR, 'public', 'video', 'renders');
+const MAX_PORTABLE_MP4_BYTES = 48 * 1024 * 1024; // Keep under GitHub 50MB file limit
+
+function isTempTestStorage(): boolean {
+  const tmpRoot = path.resolve(os.tmpdir());
+  const storageResolved = path.resolve(STORAGE_DIR);
+  return storageResolved.startsWith(tmpRoot);
+}
+
+export function writeJsonAtomic(filePath: string, data: unknown): void {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+  fs.renameSync(tmpPath, filePath);
+}
 
 export function initStorage(): void {
   const dirs = [
@@ -37,38 +59,260 @@ export function initStorage(): void {
   }
 }
 
-export function saveProject(project: ShortProject): void {
+export function resolveProjectMp4Path(
+  project: ShortProject,
+  version?: string
+): string | null {
+  const targetVersion = version || project.currentVersion || 'v1';
+  const versionObj = (project.versions || []).find((v) => v.version === targetVersion);
+  const candidateRel = versionObj?.outputMp4;
+
+  const candidates: string[] = [];
+  if (candidateRel) {
+    if (candidateRel.startsWith('/video/')) {
+      candidates.push(path.join(ROOT_DIR, 'public', candidateRel));
+    } else if (candidateRel.startsWith('/renders/')) {
+      const base = path.basename(candidateRel);
+      candidates.push(path.join(RENDERS_DIR, base));
+      candidates.push(path.join(REPO_SAVED_VIDEOS_DIR, base));
+    } else if (candidateRel.startsWith('/takes/')) {
+      candidates.push(path.join(TAKES_DIR, path.basename(candidateRel)));
+    }
+  }
+
+  candidates.push(path.join(RENDERS_DIR, `${project.slug}_${targetVersion}.mp4`));
+  candidates.push(path.join(REPO_SAVED_VIDEOS_DIR, `${project.slug}_${targetVersion}.mp4`));
+  candidates.push(path.join(RENDERS_DIR, `${project.slug}_${targetVersion}_draft.mp4`));
+  if (project.isFlagshipReactStage) {
+    candidates.push(path.join(ROOT_DIR, 'public/video/short-interdiction-15-ans.mp4'));
+  }
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).size >= 1024) {
+        return candidate;
+      }
+    } catch {
+      // ignore stat errors
+    }
+  }
+  return null;
+}
+
+export function hasProjectMp4OnDisk(project: ShortProject, version?: string): boolean {
+  return Boolean(resolveProjectMp4Path(project, version));
+}
+
+export function withProjectMediaStatus(project: ShortProject): ShortProject {
+  const versions = (project.versions || []).map((v) => {
+    const mp4Path = resolveProjectMp4Path(project, v.version);
+    const hasMp4 = Boolean(mp4Path);
+    let outputMp4 = v.outputMp4;
+    if (mp4Path && !outputMp4) {
+      if (mp4Path.startsWith(path.join(ROOT_DIR, 'public', 'video'))) {
+        outputMp4 = `/video/${path.relative(path.join(ROOT_DIR, 'public', 'video'), mp4Path).replace(/\\/g, '/')}`;
+      } else {
+        outputMp4 = `/renders/${path.basename(mp4Path)}`;
+      }
+    }
+    return {
+      ...v,
+      outputMp4,
+      hasMp4,
+    };
+  });
+
+  const activeVer = versions.find((v) => v.version === project.currentVersion);
+  const currentHasMp4 =
+    Boolean(activeVer?.hasMp4) || hasProjectMp4OnDisk(project, project.currentVersion);
+
+  return {
+    ...project,
+    versions,
+    hasMp4: currentHasMp4,
+  };
+}
+
+export interface MirrorRepoOptions {
+  repoProjectsDir?: string;
+  repoMediaDir?: string;
+  repoVideosDir?: string;
+  force?: boolean;
+}
+
+export function mirrorProjectToRepo(
+  project: ShortProject,
+  opts: MirrorRepoOptions = {}
+): void {
+  if (!opts.force && isTempTestStorage()) return;
+
+  const projectsDir = opts.repoProjectsDir || REPO_SAVED_PROJECTS_DIR;
+  const mediaDir = opts.repoMediaDir || REPO_SAVED_MEDIA_DIR;
+  const videosDir = opts.repoVideosDir || REPO_SAVED_VIDEOS_DIR;
+
+  fs.mkdirSync(projectsDir, { recursive: true });
+  const enriched = withProjectMediaStatus(project);
+  writeJsonAtomic(path.join(projectsDir, `${project.id}.json`), enriched);
+
+  const projStorageDir = path.join(PROJECTS_DIR, project.id);
+  const targetMediaDir = path.join(mediaDir, project.id);
+
+  // Mirror voice MP3 files and render thumbnails/contact sheets
+  if (fs.existsSync(projStorageDir)) {
+    const entries = fs.readdirSync(projStorageDir);
+    for (const name of entries) {
+      if (name.endsWith('.mp3') && !name.startsWith('raw-')) {
+        fs.mkdirSync(targetMediaDir, { recursive: true });
+        const src = path.join(projStorageDir, name);
+        const dst = path.join(targetMediaDir, name);
+        if (fs.statSync(src).size <= 15 * 1024 * 1024) {
+          fs.copyFileSync(src, dst);
+        }
+      }
+    }
+  }
+
+  if (fs.existsSync(RENDERS_DIR)) {
+    const renderFiles = fs.readdirSync(RENDERS_DIR);
+    for (const file of renderFiles) {
+      if (!file.startsWith(`${project.slug}_`)) continue;
+      const src = path.join(RENDERS_DIR, file);
+      if (!fs.statSync(src).isFile()) continue;
+
+      if (file.endsWith('_thumb.jpg') || file.endsWith('_contact.jpg')) {
+        fs.mkdirSync(targetMediaDir, { recursive: true });
+        fs.copyFileSync(src, path.join(targetMediaDir, file));
+      } else if (
+        file.endsWith('.mp4') &&
+        !file.endsWith('_draft.mp4') &&
+        fs.statSync(src).size <= MAX_PORTABLE_MP4_BYTES
+      ) {
+        fs.mkdirSync(videosDir, { recursive: true });
+        fs.copyFileSync(src, path.join(videosDir, file));
+      }
+    }
+  }
+}
+
+export function hydrateSavedProjectsFromRepo(
+  opts: MirrorRepoOptions = {}
+): { restoredProjects: number; restoredMedia: number } {
+  const projectsDir = opts.repoProjectsDir || REPO_SAVED_PROJECTS_DIR;
+  const mediaDir = opts.repoMediaDir || REPO_SAVED_MEDIA_DIR;
+  const videosDir = opts.repoVideosDir || REPO_SAVED_VIDEOS_DIR;
+
+  initStorage();
+  let restoredProjects = 0;
+  let restoredMedia = 0;
+
+  if (fs.existsSync(projectsDir)) {
+    const jsonFiles = fs.readdirSync(projectsDir).filter((f) => f.endsWith('.json'));
+    for (const file of jsonFiles) {
+      try {
+        const snapshot = JSON.parse(
+          fs.readFileSync(path.join(projectsDir, file), 'utf-8')
+        ) as ShortProject;
+        if (!snapshot?.id) continue;
+
+        const targetDir = path.join(PROJECTS_DIR, snapshot.id);
+        const targetProjectFile = path.join(targetDir, 'project.json');
+        if (!fs.existsSync(targetProjectFile)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+          writeJsonAtomic(targetProjectFile, snapshot);
+          if (snapshot.transcript) {
+            writeJsonAtomic(path.join(targetDir, 'transcript.json'), snapshot.transcript);
+          }
+          if (snapshot.feedbacks) {
+            writeJsonAtomic(path.join(targetDir, 'feedbacks.json'), snapshot.feedbacks);
+          }
+          if (snapshot.versions) {
+            writeJsonAtomic(path.join(targetDir, 'versions.json'), snapshot.versions);
+          }
+          if (snapshot.motionComponents) {
+            writeJsonAtomic(path.join(targetDir, 'components.json'), snapshot.motionComponents);
+          }
+          if (snapshot.editSpec) {
+            writeJsonAtomic(path.join(targetDir, 'spec.json'), snapshot.editSpec);
+          }
+          restoredProjects += 1;
+        }
+
+        // Restore saved lightweight media (voice MP3, thumbs, contact sheets) if missing locally
+        const sourceMediaDir = path.join(mediaDir, snapshot.id);
+        if (fs.existsSync(sourceMediaDir)) {
+          const mFiles = fs.readdirSync(sourceMediaDir);
+          for (const m of mFiles) {
+            const src = path.join(sourceMediaDir, m);
+            if (!fs.statSync(src).isFile()) continue;
+            if (m.endsWith('.mp3')) {
+              fs.mkdirSync(targetDir, { recursive: true });
+              const dst = path.join(targetDir, m);
+              if (!fs.existsSync(dst)) {
+                fs.copyFileSync(src, dst);
+                restoredMedia += 1;
+              }
+            } else if (m.endsWith('.jpg') || m.endsWith('.png')) {
+              const dst = path.join(RENDERS_DIR, m);
+              if (!fs.existsSync(dst)) {
+                fs.copyFileSync(src, dst);
+                restoredMedia += 1;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`Hydration error for ${file}:`, err);
+      }
+    }
+  }
+
+  // Restore portable rendered MP4s into RENDERS_DIR if absent locally
+  if (fs.existsSync(videosDir)) {
+    const mp4Files = fs.readdirSync(videosDir).filter((f) => f.endsWith('.mp4'));
+    for (const f of mp4Files) {
+      const src = path.join(videosDir, f);
+      const dst = path.join(RENDERS_DIR, f);
+      try {
+        if (fs.statSync(src).isFile() && !fs.existsSync(dst)) {
+          fs.copyFileSync(src, dst);
+          restoredMedia += 1;
+        }
+      } catch {
+        // non-fatal copy error
+      }
+    }
+  }
+
+  return { restoredProjects, restoredMedia };
+}
+
+export function saveProject(project: ShortProject, opts: { skipMirror?: boolean } = {}): void {
   initStorage();
   const projectDir = path.join(PROJECTS_DIR, project.id);
   if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true });
   }
-  fs.writeFileSync(path.join(projectDir, 'project.json'), JSON.stringify(project, null, 2), 'utf-8');
+  writeJsonAtomic(path.join(projectDir, 'project.json'), project);
   if (project.transcript) {
-    fs.writeFileSync(path.join(projectDir, 'transcript.json'), JSON.stringify(project.transcript, null, 2), 'utf-8');
+    writeJsonAtomic(path.join(projectDir, 'transcript.json'), project.transcript);
   }
   if (project.feedbacks) {
-    fs.writeFileSync(path.join(projectDir, 'feedbacks.json'), JSON.stringify(project.feedbacks, null, 2), 'utf-8');
+    writeJsonAtomic(path.join(projectDir, 'feedbacks.json'), project.feedbacks);
   }
   if (project.versions) {
-    fs.writeFileSync(path.join(projectDir, 'versions.json'), JSON.stringify(project.versions, null, 2), 'utf-8');
+    writeJsonAtomic(path.join(projectDir, 'versions.json'), project.versions);
   }
   if (project.motionComponents) {
-    fs.writeFileSync(
-      path.join(projectDir, 'components.json'),
-      JSON.stringify(project.motionComponents, null, 2),
-      'utf-8'
-    );
+    writeJsonAtomic(path.join(projectDir, 'components.json'), project.motionComponents);
   }
   if (project.editSpec) {
-    fs.writeFileSync(path.join(projectDir, 'spec.json'), JSON.stringify(project.editSpec, null, 2), 'utf-8');
+    writeJsonAtomic(path.join(projectDir, 'spec.json'), project.editSpec);
   }
   if (project.silenceAnalysis) {
-    fs.writeFileSync(
-      path.join(projectDir, 'silence-analysis.json'),
-      JSON.stringify(project.silenceAnalysis, null, 2),
-      'utf-8'
-    );
+    writeJsonAtomic(path.join(projectDir, 'silence-analysis.json'), project.silenceAnalysis);
+  }
+  if (!opts.skipMirror) {
+    mirrorProjectToRepo(project);
   }
 }
 
@@ -119,8 +363,29 @@ export function deleteProject(idOrSlug: string): boolean {
   const p = getProject(idOrSlug);
   if (!p) return false;
   const projectDir = path.join(PROJECTS_DIR, p.id);
+  let removed = false;
   if (fs.existsSync(projectDir)) {
     fs.rmSync(projectDir, { recursive: true, force: true });
+    removed = true;
+  }
+
+  if (!isTempTestStorage()) {
+    const repoJson = path.join(REPO_SAVED_PROJECTS_DIR, `${p.id}.json`);
+    if (fs.existsSync(repoJson)) fs.rmSync(repoJson, { force: true });
+
+    const repoMedia = path.join(REPO_SAVED_MEDIA_DIR, p.id);
+    if (fs.existsSync(repoMedia)) fs.rmSync(repoMedia, { recursive: true, force: true });
+
+    if (fs.existsSync(REPO_SAVED_VIDEOS_DIR)) {
+      for (const f of fs.readdirSync(REPO_SAVED_VIDEOS_DIR)) {
+        if (f.startsWith(`${p.slug}_`) && f.endsWith('.mp4')) {
+          fs.rmSync(path.join(REPO_SAVED_VIDEOS_DIR, f), { force: true });
+        }
+      }
+    }
+  }
+
+  if (removed) {
     const state = getWorkspaceState();
     if (state.activeProjectId === p.id) {
       const remaining = getAllProjects();
@@ -175,7 +440,7 @@ export function saveWorkspaceState(state: StudioWorkspaceState): StudioWorkspace
     activeVersion: state.activeVersion,
     updatedAt: state.updatedAt || new Date().toISOString(),
   };
-  fs.writeFileSync(WORKSPACE_STATE_FILE, JSON.stringify(next, null, 2), 'utf-8');
+  writeJsonAtomic(WORKSPACE_STATE_FILE, next);
   return next;
 }
 
@@ -205,3 +470,4 @@ export function setActiveProjectAndVersion(
   });
   return { project: proj, state };
 }
+

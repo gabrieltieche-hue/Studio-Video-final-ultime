@@ -1,3 +1,4 @@
+import type { DynamicIconKind, DynamicVisualType } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
 
 export interface TranscriptSection {
@@ -12,11 +13,29 @@ export interface DynamicBeat {
   id: string;
   index: number;
   title: string;
+  shortLabel?: string;
   spokenLine: string;
   screenLabel: string;
   from: number;
   to: number;
   layout: 'split' | 'fullscreen';
+  visualType?: DynamicVisualType;
+  brollKey?: string;
+  brollCaption?: string;
+  iconKind?: DynamicIconKind;
+  stampWord?: string;
+  statValue?: string;
+  statLabel?: string;
+  subStats?: Array<{ value: string; label: string }>;
+  bullets?: string[];
+  steps?: string[];
+  toggles?: Array<{ label: string; before: string; after: string; activeAfter: boolean }>;
+  terminalCmd?: string;
+  terminalOut?: string[];
+  comparisonLeft?: { label: string; value: string; ratio: number };
+  comparisonRight?: { label: string; value: string; ratio: number };
+  multiplierBadge?: string;
+  gaugePct?: number;
 }
 
 /**
@@ -91,16 +110,45 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
     return specBeats.map((b, idx) => {
       const from = Number(b.from ?? (idx * duration) / specBeats.length);
       const to = Number(b.to ?? ((idx + 1) * duration) / specBeats.length);
-      const layoutRaw = String(b.layout || 'split');
+      const layoutRaw = String(b.layout || b.layoutHint || 'split');
+      const vType = b.visualType as DynamicVisualType | undefined;
       return {
         id: String(b.id || `spec-beat-${idx + 1}`),
         index: idx + 1,
         title: String(b.title || b.shortLabel || `Séquence ${idx + 1}`),
+        shortLabel: typeof b.shortLabel === 'string' ? b.shortLabel : undefined,
         spokenLine: String(b.spokenLine || b.text || ''),
         screenLabel: String(b.screenLabel || b.hookScreen || b.title || `Beat ${idx + 1}`),
         from: Number.isFinite(from) ? from : 0,
         to: Number.isFinite(to) ? to : duration,
         layout: layoutRaw === 'fullscreen' ? 'fullscreen' : 'split',
+        visualType: vType,
+        brollKey: typeof b.brollKey === 'string' ? b.brollKey : undefined,
+        brollCaption: typeof b.brollCaption === 'string' ? b.brollCaption : undefined,
+        iconKind: typeof b.iconKind === 'string' ? (b.iconKind as DynamicIconKind) : undefined,
+        stampWord: typeof b.stampWord === 'string' ? b.stampWord : undefined,
+        statValue: typeof b.statValue === 'string' ? b.statValue : undefined,
+        statLabel: typeof b.statLabel === 'string' ? b.statLabel : undefined,
+        subStats: Array.isArray(b.subStats)
+          ? (b.subStats as Array<{ value: string; label: string }>)
+          : undefined,
+        bullets: Array.isArray(b.bullets) ? b.bullets.map(String) : undefined,
+        steps: Array.isArray(b.steps) ? b.steps.map(String) : undefined,
+        toggles: Array.isArray(b.toggles)
+          ? (b.toggles as DynamicBeat['toggles'])
+          : undefined,
+        terminalCmd: typeof b.terminalCmd === 'string' ? b.terminalCmd : undefined,
+        terminalOut: Array.isArray(b.terminalOut) ? b.terminalOut.map(String) : undefined,
+        comparisonLeft:
+          b.comparisonLeft && typeof b.comparisonLeft === 'object'
+            ? (b.comparisonLeft as DynamicBeat['comparisonLeft'])
+            : undefined,
+        comparisonRight:
+          b.comparisonRight && typeof b.comparisonRight === 'object'
+            ? (b.comparisonRight as DynamicBeat['comparisonRight'])
+            : undefined,
+        multiplierBadge: typeof b.multiplierBadge === 'string' ? b.multiplierBadge : undefined,
+        gaugePct: typeof b.gaugePct === 'number' ? b.gaugePct : undefined,
       };
     });
   }

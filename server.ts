@@ -16,11 +16,14 @@ import {
   RENDERS_DIR,
   STORAGE_DIR,
   TAKES_DIR,
+  hydrateSavedProjectsFromRepo,
   initStorage,
 } from './src/server/storageManager';
 import { seedFlagshipProjectIfMissing } from './src/server/seedFlagshipProject';
 import { createStudioRouter } from './src/server/studioRouter';
 import { createSocialRouter } from './src/server/socialRouter';
+import { createBatchRouter } from './src/server/batchRouter';
+import { createSyncRouter } from './src/server/syncRouter';
 import { startSocialScheduler } from './src/server/socialPublisher';
 import { readTregSession, syncTregConnections } from './src/server/tregClient';
 
@@ -66,6 +69,7 @@ async function ensureRenderedMp4(): Promise<string> {
 async function startServer() {
   initStorage();
   seedFlagshipProjectIfMissing();
+  hydrateSavedProjectsFromRepo();
 
   const app = express();
   app.use(express.json({ limit: '25mb' }));
@@ -86,6 +90,8 @@ async function startServer() {
 
   app.use(createStudioRouter());
   app.use(createSocialRouter());
+  app.use(createBatchRouter(PORT));
+  app.use(createSyncRouter());
 
   // Read or download the live CSV table of researched & produced Shorts (video-agent/shorts-topics.csv)
   app.get('/api/topics-csv', (req, res) => {
@@ -231,6 +237,8 @@ async function startServer() {
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
+    app.use('/video', express.static(path.resolve(__dirname, 'public/video')));
+    app.use('/audio', express.static(path.resolve(__dirname, 'public/audio')));
     app.use(express.static(distDir, { index: false }));
     app.get('*', (_req, res) => {
       res.setHeader('Cache-Control', 'no-store');

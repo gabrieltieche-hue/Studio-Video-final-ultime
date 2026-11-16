@@ -6,6 +6,7 @@ import {
   Download,
   ExternalLink,
   Film,
+  Layers,
   Loader2,
   Search,
   Sparkles,
@@ -38,10 +39,12 @@ const STATUS_BADGE: Record<TopicStatus, string> = {
 
 interface TopicResearchViewProps {
   onCreateProjectFromTopic?: (row: TopicCsvRow) => Promise<void>;
+  onOpenBatch?: () => void;
 }
 
 export const TopicResearchView: React.FC<TopicResearchViewProps> = ({
   onCreateProjectFromTopic,
+  onOpenBatch,
 }) => {
   const [rows, setRows] = useState<TopicCsvRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,7 +203,17 @@ export const TopicResearchView: React.FC<TopicResearchViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onOpenBatch && (
+              <button
+                type="button"
+                onClick={onOpenBatch}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#258EFF] hover:opacity-90 text-xs font-bold text-white transition-opacity whitespace-nowrap cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5" aria-hidden="true" />
+                Créer en masse
+              </button>
+            )}
             <a
               href="/api/topics-csv?format=csv"
               download="shorts-topics.csv"

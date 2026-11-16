@@ -46,6 +46,7 @@ export interface RenderVersion {
   outputMp4?: string;
   contactSheetUrl?: string;
   audioTrackUrl?: string;
+  hasMp4?: boolean;
 }
 
 export interface StudioWorkspaceState {
@@ -128,6 +129,7 @@ export interface ShortProject {
   };
   speakerVideoUrl?: string;
   audioTrackUrl?: string;
+  hasMp4?: boolean;
   currentVersion: string;
   versions: RenderVersion[];
   transcript: WhisperWord[];

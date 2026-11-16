@@ -613,7 +613,7 @@ Propose un branding unifié cohérent en français en JSON strict avec exactemen
 - tiktokBio (1 phrase percutante, STRICTEMENT <= 78 caractères)`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-4-hydrogen',
         contents: prompt,
         config: { responseMimeType: 'application/json' },
       });

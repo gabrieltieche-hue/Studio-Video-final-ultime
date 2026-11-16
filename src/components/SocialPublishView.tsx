@@ -4,7 +4,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Cloud,
   Copy,
   ExternalLink,
   Loader2,
@@ -460,32 +459,27 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         </div>
       </div>
 
-      {/* 24/7 Hosting & Environment Diagnostics Strip */}
+      {/* Calm Publication Readiness & Optional 24/7 Automation Drawer */}
       {hosting && (
-        <div
-          className={`rounded-2xl border p-3.5 space-y-2.5 text-xs ${
-            hosting.isAlwaysOn
-              ? 'bg-[#059669]/[0.06] border-[#059669]/25'
-              : 'bg-[#D97706]/[0.06] border-[#D97706]/25'
-          }`}
-        >
+        <div className="rounded-2xl border border-[#E3DED3] bg-[#FCFBF8] p-3.5 space-y-2.5 text-xs shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-start sm:items-center gap-2.5">
-              {hosting.isAlwaysOn ? (
-                <Server className="w-4 h-4 text-[#059669] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
-              ) : (
-                <Cloud className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
-              )}
+              <Server
+                className={`w-4 h-4 shrink-0 mt-0.5 sm:mt-0 ${
+                  hosting.isAlwaysOn ? 'text-[#059669]' : 'text-[#258EFF]'
+                }`}
+                aria-hidden="true"
+              />
               <div>
                 <div className="font-bold text-[#14161B]">
                   {hosting.isAlwaysOn
-                    ? `Serveur 24h/24 actif (${hosting.environment}) · Publication autonome même tablette éteinte`
-                    : 'Aperçu Google AI Studio (mise en veille si tablette éteinte)'}
+                    ? 'Prêt à publier 24h/24 · Publication autonome active'
+                    : 'Prêt à publier · Synchronisé avec votre studio 24h/24'}
                 </div>
                 <p className="text-[11px] text-[#5C5F68]">
                   {hosting.isAlwaysOn
-                    ? `Volume persistant : ${hosting.storageDir} · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé absente'}`
-                    : `AI Studio et Railway sont deux serveurs séparés : pour publier tablette éteinte (et autoriser Instagram Reels), programmez directement sur votre URL Railway · ElevenLabs : ${hosting.elevenLabsConfigured ? 'actif' : 'clé absente'}.`}
+                    ? 'Les vidéos synchronisées et vos publications planifiées tournent en continu, même appareil éteint.'
+                    : 'Programmez vos Shorts ici normalement. La synchronisation GitHub et Railway garde vos vidéos accessibles partout.'}
                 </p>
               </div>
             </div>
@@ -499,7 +493,7 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
                   className="h-8 px-3 rounded-lg bg-[#258EFF] hover:bg-[#14161B] text-[11px] font-bold text-white inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                  Ouvrir mon Railway 24/7
+                  Ouvrir Railway
                 </a>
               )}
               <button
@@ -508,7 +502,7 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
                 aria-expanded={showDeployGuide}
                 className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
-                Déploiement 24/7
+                Automatisation 24h/24 (Optionnel)
                 {showDeployGuide ? (
                   <ChevronUp className="w-3.5 h-3.5" />
                 ) : (
@@ -518,43 +512,42 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
             </div>
           </div>
 
-          {!hosting.isAlwaysOn && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
-              <label
-                htmlFor="railway-shortcut-input"
-                className="text-[11px] font-semibold text-[#14161B] whitespace-nowrap"
-              >
-                Lien de votre serveur Railway :
-              </label>
-              <input
-                id="railway-shortcut-input"
-                type="url"
-                value={railwayUrlInput}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setRailwayUrlInput(val);
-                  try {
-                    window.localStorage.setItem('studio_short_railway_url', val);
-                  } catch {
-                    // ignore storage error
-                  }
-                }}
-                placeholder="https://studio-video-....up.railway.app"
-                className="flex-1 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
-              />
-            </div>
-          )}
-
           {showDeployGuide && (
             <div className="pt-3 border-t border-[#E3DED3] space-y-3 text-[11px] text-[#14161B]">
+              {!hosting.isAlwaysOn && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <label
+                    htmlFor="railway-shortcut-input"
+                    className="text-[11px] font-semibold text-[#14161B] whitespace-nowrap"
+                  >
+                    URL de votre serveur Railway :
+                  </label>
+                  <input
+                    id="railway-shortcut-input"
+                    type="url"
+                    value={railwayUrlInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setRailwayUrlInput(val);
+                      try {
+                        window.localStorage.setItem('studio_short_railway_url', val);
+                      } catch {
+                        // ignore storage error
+                      }
+                    }}
+                    placeholder="https://votre-app.up.railway.app"
+                    className="flex-1 h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1.5">
                   <div className="font-bold">1. Déployer le dépôt sur Railway</div>
                   <p className="text-[#5C5F68]">
-                    Cliquez ci-dessous → <span className="font-semibold">Deploy from GitHub repo</span>{' '}
+                    Dans Railway → <span className="font-semibold">Deploy from GitHub repo</span>{' '}
                     → choisissez <span className="font-mono">Studio-Video-final-ultime</span>. Le{' '}
-                    <span className="font-mono">Dockerfile</span> et <span className="font-mono">railway.json</span>{' '}
-                    installent Node 22 + FFmpeg automatiquement.
+                    <span className="font-mono">Dockerfile</span> installe Node 22, Chromium et FFmpeg.
                   </p>
                   <a
                     href="https://railway.com/new"
@@ -563,23 +556,22 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
                     className="h-7 px-2.5 rounded-lg bg-[#14161B] hover:bg-[#258EFF] text-white font-semibold inline-flex items-center gap-1 whitespace-nowrap transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" aria-hidden="true" />
-                    Ouvrir Railway (New Project)
+                    Ouvrir Railway
                   </a>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
                   <div className="font-bold">2. Volume /app/storage + Domaine</div>
                   <p className="text-[#5C5F68]">
-                    Dans Railway : clic droit sur le service → <span className="font-semibold">Attach Volume</span>{' '}
+                    Sur le service Railway : <span className="font-semibold">Attach Volume</span>{' '}
                     sur <span className="font-mono">/app/storage</span>, puis{' '}
-                    <span className="font-semibold">Settings → Networking → Generate Domain</span> (indispensable pour Instagram Reels).
+                    <span className="font-semibold">Settings → Networking → Generate Domain</span>.
                   </p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white border border-[#E3DED3] space-y-1">
-                  <div className="font-bold">3. Endpoint Cron externe (optionnel)</div>
-                  <p className="text-[#5C5F68] break-all">
-                    Sur Railway le serveur tourne déjà 24h/24. Bonus sécurité :{' '}
-                    <span className="font-mono">deploy/github-cron-wakeup.yml</span> ou ping sur{' '}
-                    <span className="font-mono">{hosting.cronEndpoint}</span>.
+                  <div className="font-bold">3. Synchronisation directe</div>
+                  <p className="text-[#5C5F68]">
+                    Une fois l&apos;URL Railway enregistrée dans le bloc Synchroniser de l&apos;accueil,
+                    vos nouveaux Shorts et MP4 sont envoyés en 1 clic.
                   </p>
                 </div>
               </div>
@@ -589,10 +581,10 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <div className="font-bold text-xs text-[#14161B]">
-                      Bloc Variables Railway prêt à coller (Variables → Raw Editor)
+                      Variables Railway prêtes à coller (Variables → Raw Editor)
                     </div>
                     <p className="text-[11px] text-[#5C5F68]">
-                      Incluez votre session Treg actuelle pour que YouTube, Instagram et TikTok soient déjà connectés au premier démarrage sur Railway.
+                      Incluez votre session Treg actuelle pour que YouTube, Instagram et TikTok soient prêts dès le démarrage.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap shrink-0">
@@ -613,7 +605,7 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
                           await navigator.clipboard.writeText(railwayEnvBlock);
                           setCopiedRailwayEnv(true);
                           setTimeout(() => setCopiedRailwayEnv(false), 2000);
-                          handleNotify('Variables Railway copiées — collez dans Variables → Raw Editor.');
+                          handleNotify('Variables Railway copiées.');
                         } catch {
                           handleNotify('Sélectionnez le bloc ci-dessous et copiez manuellement.', true);
                         }
@@ -678,8 +670,6 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         projects={projects}
         activeProject={activeProject}
         accounts={accounts}
-        hosting={hosting}
-        railwayUrl={/^https?:\/\//i.test(railwayUrlInput.trim()) ? railwayUrlInput.trim() : undefined}
         onSchedule={handleSchedule}
       />
 

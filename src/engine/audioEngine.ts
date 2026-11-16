@@ -7,6 +7,8 @@ import { DEFAULT_PLAYBACK_SPEED, MusicBedId, SFX_EVENTS, SfxEvent } from '../dat
  *   to boost energy and retention while keeping Brian baritone French narration clear
  * - Exposes getMasterTime(speed) locked directly to AudioContext.currentTime so voice, captions, and UI never drift
  */
+const DEFAULT_VOICE_URL = '/audio/voice/short-interdiction-15-ans-fr.mp3';
+
 class ShortAudioEngine {
   private ctx: AudioContext | null = null;
   private musicGain: GainNode | null = null;
@@ -15,7 +17,9 @@ class ShortAudioEngine {
   private musicSource: AudioBufferSourceNode | null = null;
   private voiceSource: AudioBufferSourceNode | null = null;
   private musicBuffers: Partial<Record<MusicBedId, AudioBuffer>> = {};
-  private voiceBuffer: AudioBuffer | null = null;
+  private voiceBuffersByUrl: Record<string, AudioBuffer> = {};
+  private activeVoiceUrl: string = DEFAULT_VOICE_URL;
+  private activeSfxEvents: SfxEvent[] = SFX_EVENTS;
   private sfxBuffers: Record<string, AudioBuffer> = {};
   private currentBed: MusicBedId = 'upbeat';
   private playbackSpeed = DEFAULT_PLAYBACK_SPEED;
@@ -59,6 +63,33 @@ class ShortAudioEngine {
     return this.ctx;
   }
 
+  async ensureVoiceUrlLoaded(url: string): Promise<void> {
+    if (!url || this.voiceBuffersByUrl[url]) return;
+    try {
+      const ctx = this.ensureContext();
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const buf = await res.arrayBuffer();
+      this.voiceBuffersByUrl[url] = await ctx.decodeAudioData(buf);
+    } catch {
+      // ignore decode failures in headless/restricted environments
+    }
+  }
+
+  async setProjectAudio(opts: {
+    voiceUrl?: string;
+    musicBed?: MusicBedId;
+    sfxEvents?: SfxEvent[];
+  }): Promise<void> {
+    const nextVoice = opts.voiceUrl || DEFAULT_VOICE_URL;
+    this.activeVoiceUrl = nextVoice;
+    if (opts.musicBed) {
+      this.currentBed = opts.musicBed;
+    }
+    this.activeSfxEvents = opts.sfxEvents ? [...opts.sfxEvents].sort((a, b) => a.at - b.at) : SFX_EVENTS;
+    await this.ensureVoiceUrlLoaded(nextVoice);
+  }
+
   async preload(): Promise<void> {
     if (this.loadingPromise) return this.loadingPromise;
     this.loadingPromise = (async () => {
@@ -85,16 +116,7 @@ class ShortAudioEngine {
         const bedNames: MusicBedId[] = ['upbeat', 'groove', 'analytical', 'clockwork', 'chill'];
 
         await Promise.all([
-          (async () => {
-            try {
-              const res = await fetch('/audio/voice/short-interdiction-15-ans-fr.mp3');
-              if (!res.ok) return;
-              const buf = await res.arrayBuffer();
-              this.voiceBuffer = await ctx.decodeAudioData(buf);
-            } catch {
-              // ignore decode failures in restricted environments
-            }
-          })(),
+          this.ensureVoiceUrlLoaded(DEFAULT_VOICE_URL),
           ...sfxNames.map(async (name) => {
             try {
               const res = await fetch(`/audio/sfx/${name}.mp3`);
@@ -170,6 +192,7 @@ class ShortAudioEngine {
     this.playbackSpeed = speed;
     const ctx = this.ensureContext();
     await this.preload();
+    await this.ensureVoiceUrlLoaded(this.activeVoiceUrl);
     if (ctx.state === 'suspended') {
       await ctx.resume().catch(() => {});
     }
@@ -213,11 +236,12 @@ class ShortAudioEngine {
   }
 
   private startVoice(t: number, speed: number) {
-    if (!this.ctx || !this.voiceGain || !this.voiceBuffer) return;
+    const voiceBuf = this.voiceBuffersByUrl[this.activeVoiceUrl];
+    if (!this.ctx || !this.voiceGain || !voiceBuf) return;
     this.stopVoice();
-    if (t >= this.voiceBuffer.duration - 0.05) return;
+    if (t >= voiceBuf.duration - 0.05) return;
     const src = this.ctx.createBufferSource();
-    src.buffer = this.voiceBuffer;
+    src.buffer = voiceBuf;
     src.playbackRate.value = speed;
     src.connect(this.voiceGain);
     src.start(0, Math.max(0, t));
@@ -256,8 +280,8 @@ class ShortAudioEngine {
 
   resetTriggersBefore(t: number) {
     this.lastFiredIndex = -1;
-    for (let i = 0; i < SFX_EVENTS.length; i++) {
-      if (SFX_EVENTS[i].at < t - 0.05) {
+    for (let i = 0; i < this.activeSfxEvents.length; i++) {
+      if (this.activeSfxEvents[i].at < t - 0.05) {
         this.lastFiredIndex = i;
       }
     }
@@ -267,8 +291,8 @@ class ShortAudioEngine {
     if (!this.ctx || !this.sfxGain) return;
 
     if (this.sfxEnabled) {
-      for (let i = 0; i < SFX_EVENTS.length; i++) {
-        const ev = SFX_EVENTS[i];
+      for (let i = 0; i < this.activeSfxEvents.length; i++) {
+        const ev = this.activeSfxEvents[i];
         if (i > this.lastFiredIndex && ev.at >= prevT && ev.at <= nextT + 0.05) {
           this.lastFiredIndex = i;
           this.playSfx(ev);

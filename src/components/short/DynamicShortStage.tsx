@@ -1,14 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { resolveBrollAsset } from '../../data/brollLibrary';
+import { CREATOR_PROFILE, type LookPreset } from '../../data/shortSpec';
 import {
   buildCaptionChunks,
   clamp,
   getActiveCaptionChunk,
+  getLayoutSeam,
+  leave,
   seg,
   spring,
   type WordCue,
 } from '../../engine/math';
-import { buildDynamicBeatsFromProject } from '../../engine/transcriptUtils';
-import { CREATOR_PROFILE, type LookPreset } from '../../data/shortSpec';
+import { buildDynamicBeatsFromProject, type DynamicBeat } from '../../engine/transcriptUtils';
+import type { DynamicIconKind } from '../../types/batch';
 import type { ShortProject } from '../../types/studio';
 
 interface DynamicShortStageProps {
@@ -16,6 +20,1200 @@ interface DynamicShortStageProps {
   t: number;
   look: LookPreset;
   showSafeZones: boolean;
+  renderMode?: boolean;
+}
+
+const SHARDS = [
+  { x: -290, y: -170, r: -34, w: 118, h: 82, color: '#14161B' },
+  { x: 260, y: -190, r: 28, w: 108, h: 78, color: '#258EFF' },
+  { x: -320, y: 75, r: -44, w: 98, h: 90, color: '#E1306C' },
+  { x: 300, y: 88, r: 38, w: 112, h: 82, color: '#F59E0B' },
+  { x: -160, y: 195, r: -22, w: 90, h: 70, color: '#14161B' },
+  { x: 170, y: 190, r: 34, w: 100, h: 76, color: '#258EFF' },
+  { x: -20, y: -210, r: 16, w: 68, h: 50, color: '#DC2626' },
+  { x: 52, y: 215, r: -18, w: 76, h: 52, color: '#DC2626' },
+];
+
+function BeatVectorIcon({
+  kind = 'ai',
+  size = 54,
+  color = '#FFFFFF',
+}: {
+  kind?: DynamicIconKind;
+  size?: number;
+  color?: string;
+}) {
+  const s = String(size);
+  if (kind === 'calendar') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="3" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <path d="M8 15l2.5 2.5L16 12.5" />
+      </svg>
+    );
+  }
+  if (kind === 'clock') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <polyline points="12 7 12 12 15.5 14" />
+      </svg>
+    );
+  }
+  if (kind === 'euro') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 6.5a7 7 0 1 0 0 11" />
+        <line x1="4" y1="10" x2="14" y2="10" />
+        <line x1="4" y1="14" x2="13" y2="14" />
+      </svg>
+    );
+  }
+  if (kind === 'law') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v18" />
+        <path d="M5 7h14" />
+        <path d="M3 14l2.5-7L8 14a2.8 2.8 0 0 1-5 0z" />
+        <path d="M16 14l2.5-7L21 14a2.8 2.8 0 0 1-5 0z" />
+        <path d="M8 21h8" />
+      </svg>
+    );
+  }
+  if (kind === 'chart') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18" />
+        <path d="M7 15l4-4 4 3 5-7" />
+        <circle cx="20" cy="7" r="1.5" fill={color} />
+      </svg>
+    );
+  }
+  if (kind === 'terminal') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="3" />
+        <polyline points="7 10 10 13 7 16" />
+        <line x1="12" y1="16" x2="17" y2="16" />
+      </svg>
+    );
+  }
+  if (kind === 'phone') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="6" y="2" width="12" height="20" rx="2.5" />
+        <line x1="10" y1="18" x2="14" y2="18" />
+      </svg>
+    );
+  }
+  if (kind === 'lock') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
+    );
+  }
+  if (kind === 'rocket') {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+        <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+      </svg>
+    );
+  }
+  // Default: AI Neural Spark
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="5" width="14" height="14" rx="3" />
+      <path d="M9 9h6v6H9z" />
+      <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
+    </svg>
+  );
+}
+
+function animateStatValue(rawStat: string | undefined, progress: number): string {
+  const s = String(rawStat || '80 %');
+  const m = s.match(/^([^\d\-+]*)([\-+]?\d+(?:[.,]\d+)?)(.*)$/);
+  if (!m) return s;
+  const prefix = m[1] || '';
+  const numStr = m[2].replace(',', '.');
+  const suffix = m[3] || '';
+  const target = Number(numStr);
+  if (!Number.isFinite(target)) return s;
+  const val = target * progress;
+  const hasDecimal = numStr.includes('.');
+  const formatted = hasDecimal ? val.toFixed(1).replace('.', ',') : String(Math.round(val));
+  return `${prefix}${formatted}${suffix}`;
+}
+
+function renderDynamicBeatScene(
+  beat: DynamicBeat,
+  localT: number,
+  beatSpan: number,
+  look: LookPreset
+) {
+  const vType = beat.visualType || 'hook_shatter';
+  const enter = beat.index === 1 && localT < 0.05 ? 1 : spring(localT, 14);
+  const exit = leave(localT, beatSpan, 0.24);
+  const iconKind: DynamicIconKind = beat.iconKind || 'ai';
+
+  // 1. HOOK SHATTER (2-Act Transformation around ~2.0–2.4s so viewers never see 7 static seconds!)
+  if (vType === 'hook_shatter' || vType === 'hook_stat') {
+    const splitAt = clamp(beatSpan * 0.46, 1.45, 2.35);
+    const exploded = localT >= splitAt;
+    const scanBeam = (localT * 190) % 270;
+    const hitP = seg(localT, splitAt, splitAt + 0.72);
+    const stampP = spring(localT - splitAt, 22);
+    const shockP = seg(localT, splitAt, splitAt + 0.65);
+    const statP = spring(localT - (splitAt + 0.48), 16);
+    const shakeAmt =
+      localT >= splitAt && localT <= splitAt + 0.46
+        ? Math.sin((localT - splitAt) * 90) * (1 - seg(localT, splitAt, splitAt + 0.46)) * 14
+        : 0;
+
+    const kpi1 = beat.subStats?.[0] || { value: beat.statValue || '80 %', label: beat.statLabel || 'Impact mesuré' };
+    const kpi2 = beat.subStats?.[1] || { value: '×4', label: 'Plus rapide' };
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translate(${shakeAmt.toFixed(1)}px, ${(-30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        {/* Top alert kicker strip */}
+        <div
+          className="w-full rounded-[22px] px-[26px] py-[15px] border flex items-center justify-between mb-[20px]"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: exploded ? '#DC2626' : look.line,
+            borderWidth: exploded ? '2.5px' : '1.5px',
+            boxShadow: '0 16px 36px -12px rgba(20,22,27,0.14)',
+          }}
+        >
+          <div className="flex items-center gap-[14px] min-w-0">
+            <span
+              className="w-[16px] h-[16px] rounded-full shrink-0"
+              style={{
+                backgroundColor: exploded ? '#DC2626' : look.accent,
+                transform: `scale(${(0.85 + 0.25 * Math.abs(Math.sin(localT * 6))).toFixed(2)})`,
+              }}
+            />
+            <span
+              className="text-[30px] font-extrabold tracking-[-0.02em] truncate"
+              style={{ color: look.ink, fontFamily: look.fontDisplay }}
+            >
+              {beat.title}
+            </span>
+          </div>
+          <span
+            className="text-[26px] font-mono font-bold tabular-nums shrink-0 ml-[12px]"
+            style={{ color: exploded ? '#DC2626' : look.accent }}
+          >
+            {exploded ? (beat.stampWord || 'BASCULE') : beat.screenLabel}
+          </span>
+        </div>
+
+        {/* Central Kinetic Stage */}
+        <div className="relative w-full h-[435px] flex items-center justify-center">
+          {/* Shockwave rings */}
+          {exploded && shockP < 1 && (
+            <>
+              <div
+                className="absolute rounded-full border-[7px]"
+                style={{
+                  width: `${240 + shockP * 580}px`,
+                  height: `${240 + shockP * 580}px`,
+                  borderColor: look.accent,
+                  opacity: (1 - shockP) * 0.72,
+                }}
+              />
+              <div
+                className="absolute rounded-full border-[5px] border-dashed"
+                style={{
+                  width: `${170 + shockP * 440}px`,
+                  height: `${170 + shockP * 440}px`,
+                  borderColor: '#DC2626',
+                  opacity: (1 - shockP) * 0.6,
+                  transform: `rotate(${(shockP * 45).toFixed(1)}deg)`,
+                }}
+              />
+            </>
+          )}
+
+          {/* Act 1: 3 Animated Visual Cards + Red Laser Scan */}
+          {localT < splitAt + 0.1 && (
+            <div
+              className="relative w-full flex items-center justify-center gap-[22px]"
+              style={{
+                opacity: !exploded ? 1 : 1 - seg(localT, splitAt, splitAt + 0.1),
+                transform: `scale(${(1 - 0.04 * seg(localT, 0.2, splitAt)).toFixed(3)})`,
+              }}
+            >
+              {[
+                { bg: '#14161B', fg: '#FFFFFF', label: 'Avant', sub: 'Manuel', rot: -4, kind: iconKind },
+                { bg: look.sheet, fg: look.ink, label: beat.statValue || '80 %', sub: 'Signal 2026', rot: 0, kind: 'chart' as DynamicIconKind, main: true },
+                { bg: look.accent, fg: look.onAccent, label: 'Auto', sub: 'IA Direct', rot: 4, kind: 'rocket' as DynamicIconKind },
+              ].map((card, idx) => (
+                <div
+                  key={idx}
+                  className="relative rounded-[32px] flex flex-col items-center justify-center gap-[12px] border overflow-hidden"
+                  style={{
+                    width: card.main ? '252px' : '220px',
+                    height: card.main ? '272px' : '244px',
+                    backgroundColor: card.bg,
+                    borderColor: card.main ? look.line : 'rgba(255,255,255,0.16)',
+                    boxShadow: '0 24px 48px -14px rgba(20,22,27,0.22)',
+                    transform: `rotate(${(card.rot + Math.sin(localT * 3 + idx) * 1.6).toFixed(2)}deg) translateY(${(card.main ? -10 : 4 * Math.cos(localT * 3 + idx)).toFixed(1)}px)`,
+                  }}
+                >
+                  <div
+                    className="w-[82px] h-[82px] rounded-[22px] flex items-center justify-center"
+                    style={{ backgroundColor: card.main ? `${look.accent}18` : 'rgba(255,255,255,0.14)' }}
+                  >
+                    <BeatVectorIcon kind={card.kind} size={46} color={card.main ? look.accent : card.fg} />
+                  </div>
+                  <div
+                    className="text-[40px] font-extrabold leading-none tracking-tight tabular-nums"
+                    style={{ color: card.fg, fontFamily: look.fontDisplay }}
+                  >
+                    {card.label}
+                  </div>
+                  <div
+                    className="text-[22px] font-semibold opacity-80"
+                    style={{ color: card.fg }}
+                  >
+                    {card.sub}
+                  </div>
+                  {/* Scanning laser line */}
+                  <div
+                    className="absolute inset-x-0 h-[4px] opacity-75"
+                    style={{ top: `${((scanBeam + idx * 80) % 270).toFixed(0)}px`, backgroundColor: '#DC2626' }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Act 2: Flying Shards + Slamming Verdict Stamp */}
+          {exploded &&
+            SHARDS.map((s, idx) => (
+              <div
+                key={idx}
+                className="absolute rounded-[14px]"
+                style={{
+                  width: `${s.w}px`,
+                  height: `${s.h}px`,
+                  backgroundColor: s.color,
+                  opacity: clamp(1 - seg(localT, splitAt + 0.35, splitAt + 0.8), 0, 1),
+                  transform: `translate(${(s.x * hitP).toFixed(1)}px, ${(s.y * hitP).toFixed(1)}px) rotate(${(s.r * hitP).toFixed(1)}deg) scale(${(1 - 0.3 * hitP).toFixed(3)})`,
+                  boxShadow: '0 12px 24px rgba(20,22,27,0.16)',
+                }}
+              />
+            ))}
+
+          {exploded && (
+            <div
+              className="absolute px-[46px] py-[28px] rounded-[30px] border-[6px] flex flex-col items-center text-center"
+              style={{
+                backgroundColor: look.sheet,
+                borderColor: look.accent,
+                opacity: clamp(stampP * 3, 0, 1),
+                transform: `translateY(${(-22 * clamp(seg(localT, splitAt + 0.4, splitAt + 0.9), 0, 1)).toFixed(1)}px) scale(${(1.26 - 0.26 * stampP).toFixed(3)}) rotate(-2deg)`,
+                boxShadow: '0 32px 60px -16px rgba(20,22,27,0.32)',
+              }}
+            >
+              <div
+                className="text-[74px] font-extrabold leading-none tracking-[-0.04em] uppercase"
+                style={{ color: look.ink, fontFamily: look.fontDisplay }}
+              >
+                {beat.stampWord || 'BASCULE'}{' '}
+                <span style={{ color: look.accent }}>{beat.statValue || '80 %'}</span>
+              </div>
+              <div className="text-[30px] font-semibold mt-[10px]" style={{ color: look.ink2 }}>
+                {beat.statLabel || 'Chiffre clé mesuré en 2026'}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Telemetry Strip (Act 1) or Double KPI Cards (Act 2) */}
+        {!exploded || localT < splitAt + 0.45 ? (
+          <div
+            className="w-full mt-[10px] rounded-[24px] px-[28px] py-[20px] border grid grid-cols-3 gap-[16px]"
+            style={{
+              backgroundColor: look.sheet,
+              borderColor: look.line,
+              boxShadow: '0 18px 36px -14px rgba(20,22,27,0.12)',
+              opacity: localT < splitAt ? 1 : 1 - seg(localT, splitAt, splitAt + 0.45),
+            }}
+          >
+            <div className="flex flex-col">
+              <span className="text-[22px] font-semibold" style={{ color: look.ink3 }}>Signal</span>
+              <span className="text-[30px] font-extrabold truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                {beat.statValue || '80 %'}
+              </span>
+            </div>
+            <div className="flex flex-col border-l pl-[16px]" style={{ borderColor: look.line }}>
+              <span className="text-[22px] font-semibold" style={{ color: look.ink3 }}>Mécanisme</span>
+              <span className="text-[30px] font-extrabold truncate" style={{ color: look.accent, fontFamily: look.fontDisplay }}>
+                Temps réel
+              </span>
+            </div>
+            <div className="flex flex-col border-l pl-[16px]" style={{ borderColor: look.line }}>
+              <span className="text-[22px] font-semibold" style={{ color: look.ink3 }}>Statut</span>
+              <span className="text-[30px] font-extrabold" style={{ color: '#DC2626', fontFamily: look.fontDisplay }}>
+                EN COURS
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="w-full mt-[10px] grid grid-cols-2 gap-[22px]"
+            style={{
+              opacity: clamp(statP * 2, 0, 1),
+              transform: `translateY(${(24 * (1 - statP)).toFixed(1)}px)`,
+            }}
+          >
+            {[kpi1, kpi2].map((kpi, idx) => (
+              <div
+                key={idx}
+                className="px-[28px] py-[20px] rounded-[26px] border flex items-center gap-[18px]"
+                style={{
+                  backgroundColor: look.sheet,
+                  borderColor: look.line,
+                  boxShadow: '0 22px 44px -14px rgba(20,22,27,0.14)',
+                }}
+              >
+                <span
+                  className="text-[66px] font-extrabold leading-none tracking-[-0.04em] tabular-nums shrink-0"
+                  style={{ color: idx === 0 ? look.accent : look.ink, fontFamily: look.fontDisplay }}
+                >
+                  {kpi.value}
+                </span>
+                <div className="text-[26px] font-bold leading-tight min-w-0" style={{ color: look.ink }}>
+                  {kpi.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 2. COUNTER FLIP (Rolling counter + diagonal slash + animated dashed SVG connector + Before/After UI switch)
+  if (vType === 'counter_flip') {
+    const countP = seg(localT, 0.2, Math.min(2.1, beatSpan * 0.45));
+    const strikeP = seg(localT, Math.min(2.3, beatSpan * 0.48), Math.min(2.9, beatSpan * 0.6));
+    const flowDash = (localT * 64) % 24;
+    const switched = localT >= Math.min(2.4, beatSpan * 0.52);
+    const rippleP = seg(localT, Math.min(2.4, beatSpan * 0.52), Math.min(3.1, beatSpan * 0.72));
+    const animatedStat = animateStatValue(beat.statValue || '80 %', countP);
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[16px]">
+          <div className="flex items-center gap-[14px]">
+            <div
+              className="w-[46px] h-[46px] rounded-[14px] flex items-center justify-center"
+              style={{ backgroundColor: look.accent, color: look.onAccent }}
+            >
+              <BeatVectorIcon kind={iconKind} size={26} color={look.onAccent} />
+            </div>
+            <span className="text-[34px] font-extrabold tracking-[-0.02em]" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </span>
+          </div>
+          <span
+            className="px-[16px] py-[6px] rounded-[12px] text-[24px] font-mono font-bold border"
+            style={{ backgroundColor: look.sheet, borderColor: look.line, color: look.ink2 }}
+          >
+            {beat.screenLabel}
+          </span>
+        </div>
+
+        {/* Big Counter Card */}
+        <div
+          className="w-full rounded-[32px] px-[38px] py-[30px] border flex items-center justify-between"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: look.line,
+            boxShadow: '0 24px 48px -16px rgba(20,22,27,0.16)',
+          }}
+        >
+          <div className="min-w-0">
+            <div className="text-[32px] font-extrabold leading-tight" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.statLabel || 'Ancien réflexe'}
+            </div>
+            <div className="w-[320px] h-[10px] rounded-full mt-[16px] overflow-hidden" style={{ backgroundColor: look.paper }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.round(countP * 85)}%`, backgroundColor: look.accent }} />
+            </div>
+          </div>
+          <div className="relative flex items-baseline shrink-0">
+            <span
+              className="text-[106px] font-extrabold leading-none tracking-[-0.04em] tabular-nums"
+              style={{ color: look.ink, fontFamily: look.fontDisplay }}
+            >
+              {animatedStat}
+            </span>
+            {strikeP > 0 && (
+              <div
+                className="absolute left-0 top-[52%] h-[6px] rounded-full"
+                style={{
+                  width: `${(210 * strikeP).toFixed(1)}px`,
+                  backgroundColor: '#DC2626',
+                  transform: 'rotate(-13deg)',
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Animated SVG telemetry flow connector */}
+        <div className="h-[34px] w-full flex items-center justify-center">
+          <svg width="240" height="34" viewBox="0 0 240 34">
+            <line
+              x1="120"
+              y1="2"
+              x2="120"
+              y2="32"
+              stroke={look.accent}
+              strokeWidth="4"
+              strokeDasharray="6 6"
+              strokeDashoffset={-flowDash}
+            />
+            <circle cx="120" cy="17" r="6" fill={switched ? '#059669' : look.accent} />
+          </svg>
+        </div>
+
+        {/* Interactive Before -> After Card */}
+        <div
+          className="relative w-full rounded-[32px] p-[32px] border"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: switched ? '#059669' : look.line,
+            borderWidth: switched ? '2.5px' : '1.5px',
+            boxShadow: '0 28px 56px -18px rgba(20,22,27,0.2)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-[18px]">
+            <span className="text-[32px] font-extrabold" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {switched ? (beat.comparisonRight?.label || 'Nouvelle norme') : (beat.comparisonLeft?.label || 'Avant')}
+            </span>
+            <span
+              className="text-[26px] font-bold px-[16px] py-[6px] rounded-[12px]"
+              style={{
+                backgroundColor: switched ? '#059669' : look.paper,
+                color: switched ? '#FFFFFF' : look.ink2,
+              }}
+            >
+              {switched ? 'Activé ✓' : 'Obsolète'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-[18px]">
+            <div className="flex-1 rounded-[20px] px-[24px] py-[16px] border flex items-center justify-between" style={{ backgroundColor: look.paper, borderColor: look.line }}>
+              <span className="text-[28px] font-medium" style={{ color: look.ink2 }}>Impact</span>
+              <span className="text-[42px] font-extrabold tabular-nums" style={{ color: switched ? '#059669' : look.ink, fontFamily: look.fontDisplay }}>
+                {switched ? (beat.comparisonRight?.value || '2 min') : (beat.comparisonLeft?.value || '45 min')}
+              </span>
+            </div>
+            <div
+              className="relative px-[30px] py-[18px] rounded-[20px] text-[30px] font-bold shrink-0"
+              style={{
+                backgroundColor: switched ? '#059669' : look.ink,
+                color: '#FFFFFF',
+              }}
+            >
+              {switched ? 'Basculé' : 'Basculer'}
+              {switched && rippleP < 1 && (
+                <span
+                  className="absolute inset-0 rounded-[20px] border-4"
+                  style={{
+                    borderColor: '#059669',
+                    transform: `scale(${(1 + rippleP * 0.45).toFixed(2)})`,
+                    opacity: 1 - rippleP,
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. TIMELINE STEPS (4-node horizontal kinetic timeline + SVG card + slanted verdict stamp)
+  if (vType === 'timeline_steps') {
+    const steps = (beat.steps && beat.steps.length >= 3 ? beat.steps : ['Capture', 'Analyse', 'Synthèse', 'Envoyé']).slice(0, 4);
+    const fillProg = seg(localT, 0.2, beatSpan * 0.78);
+    const stamped = localT >= beatSpan * 0.62;
+    const stampP = spring(localT - beatSpan * 0.62, 22);
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        {/* 4-Step Animated Timeline Strip */}
+        <div
+          className="w-full rounded-[24px] px-[28px] py-[20px] border mb-[20px]"
+          style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 14px 30px -12px rgba(20,22,27,0.12)' }}
+        >
+          <div className="relative flex items-center justify-between">
+            <div className="absolute left-[24px] right-[24px] top-[16px] h-[5px] rounded-full" style={{ backgroundColor: look.paper }}>
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${(fillProg * 100).toFixed(1)}%`, backgroundColor: stamped ? '#059669' : look.accent }}
+              />
+            </div>
+            {steps.map((label, idx) => {
+              const reached = fillProg >= idx / Math.max(1, steps.length - 1);
+              const isLast = idx === steps.length - 1 && reached;
+              return (
+                <div key={label + idx} className="relative z-10 flex flex-col items-center gap-[8px]">
+                  <div
+                    className="w-[34px] h-[34px] rounded-full border-4 flex items-center justify-center"
+                    style={{
+                      backgroundColor: isLast ? '#059669' : reached ? look.accent : look.sheet,
+                      borderColor: isLast ? '#059669' : reached ? look.accent : look.line,
+                    }}
+                  >
+                    {reached && <span className="w-[10px] h-[10px] rounded-full bg-white" />}
+                  </div>
+                  <span
+                    className="text-[24px] font-extrabold tracking-[-0.01em]"
+                    style={{ color: isLast ? '#059669' : reached ? look.ink : look.ink3, fontFamily: look.fontDisplay }}
+                  >
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Central Illustrated Process Card */}
+        <div
+          className="relative w-full rounded-[34px] p-[38px] border overflow-hidden"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: stamped ? '#059669' : look.line,
+            borderWidth: stamped ? '2.5px' : '1.5px',
+            boxShadow: '0 28px 56px -18px rgba(20,22,27,0.18)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-[24px]">
+            <div>
+              <div className="text-[24px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+                {beat.screenLabel}
+              </div>
+              <div className="text-[54px] font-extrabold leading-[1.06] mt-[6px]" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                {beat.title}
+              </div>
+            </div>
+            <div
+              className="w-[96px] h-[96px] rounded-[26px] flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${look.accent}18` }}
+            >
+              <BeatVectorIcon kind={iconKind} size={52} color={look.accent} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-[16px]">
+            {steps.map((st, idx) => {
+              const active = fillProg >= idx / Math.max(1, steps.length - 1);
+              return (
+                <div
+                  key={idx}
+                  className="rounded-[20px] px-[22px] py-[18px] border flex items-center gap-[14px]"
+                  style={{
+                    backgroundColor: active ? look.paper : '#FFFFFF',
+                    borderColor: active ? look.accent : look.line,
+                    opacity: active ? 1 : 0.45,
+                  }}
+                >
+                  <span
+                    className="w-[38px] h-[38px] rounded-[12px] flex items-center justify-center text-[22px] font-mono font-extrabold shrink-0"
+                    style={{
+                      backgroundColor: active ? look.accent : look.line,
+                      color: active ? '#FFFFFF' : look.ink2,
+                    }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <span className="text-[28px] font-bold truncate" style={{ color: look.ink }}>
+                    {st}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div
+            className="mt-[22px] rounded-[20px] px-[28px] py-[18px] flex items-center justify-between transition-colors"
+            style={{
+              backgroundColor: '#14161B',
+              color: '#FFFFFF',
+              transform: stamped ? `scale(${(0.95 + stampP * 0.05).toFixed(3)})` : undefined,
+            }}
+          >
+            <div className="flex items-center gap-[12px]">
+              <span
+                className="w-[12px] h-[12px] rounded-full"
+                style={{ backgroundColor: stamped ? '#34D399' : look.accent }}
+              />
+              <span className="text-[28px] font-bold">
+                {stamped ? 'Pipeline automatique actif' : 'Exécution temps réel'}
+              </span>
+            </div>
+            <span
+              className="text-[26px] font-mono font-extrabold tabular-nums"
+              style={{ color: stamped ? '#34D399' : '#60A5FA' }}
+            >
+              {stamped ? (beat.stampWord || 'VALIDÉ ✓') : `${Math.max(1, Math.min(4, Math.ceil(fillProg * 4)))}/4`}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. GAUGE (Full-paper 2-row composition: Live Scrolling Feed + 270° Speedometer Needle + 3 Pillar Cards + Dark Insight Ticker)
+  if (vType === 'gauge') {
+    const gaugeTarget = clamp(beat.gaugePct ?? 88, 15, 99) / 100;
+    const gaugeP = seg(localT, 0.25, Math.max(1.8, beatSpan * 0.72));
+    const gaugeVal = gaugeTarget * (1 - Math.pow(1 - gaugeP, 2.2));
+    const needleAngle = -135 + gaugeVal * 270;
+    const scrollOffset = (localT * 185) % 210;
+    const rowP = spring(localT - 0.55, 14);
+    const pillars = (beat.bullets && beat.bullets.length > 0
+      ? beat.bullets
+      : ['Zéro friction', 'Décision directe', 'Impact mesuré']
+    ).slice(0, 3);
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(36 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full text-center mb-[24px]">
+          <div className="text-[30px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+            {beat.screenLabel}
+          </div>
+          <div
+            className="text-[82px] font-extrabold leading-[1.02] tracking-[-0.04em] mt-[6px]"
+            style={{ color: look.ink, fontFamily: look.fontDisplay }}
+          >
+            {beat.title}
+          </div>
+        </div>
+
+        {/* Dual Module Row */}
+        <div className="w-full grid grid-cols-2 gap-[22px] items-stretch">
+          {/* Left: Scrolling Live AI Feed */}
+          <div
+            className="rounded-[30px] p-[26px] border flex flex-col"
+            style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 24px 48px -18px rgba(20,22,27,0.16)' }}
+          >
+            <div className="flex items-center justify-between mb-[14px]">
+              <span className="text-[28px] font-bold" style={{ color: look.ink }}>Flux en direct</span>
+              <span className="text-[24px] font-mono font-bold" style={{ color: look.accent }}>LIVE</span>
+            </div>
+            <div className="relative h-[490px] rounded-[22px] overflow-hidden border" style={{ backgroundColor: '#14161B', borderColor: look.line }}>
+              <div style={{ transform: `translateY(${-scrollOffset.toFixed(1)}px)` }}>
+                {[0, 1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className="mx-[16px] my-[14px] h-[160px] rounded-[18px] p-[18px] flex flex-col justify-between border border-white/10"
+                    style={{ backgroundColor: idx % 2 === 0 ? '#1E222B' : '#232834' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-[10px]">
+                        <div className="w-[26px] h-[26px] rounded-full" style={{ backgroundColor: look.accent }} />
+                        <div className="w-[115px] h-[12px] rounded-full bg-white/30" />
+                      </div>
+                      <div className="w-[42px] h-[12px] rounded-full bg-white/20" />
+                    </div>
+                    <div className="space-y-[10px]">
+                      <div className="w-[84%] h-[16px] rounded-full bg-white/75" />
+                      <div className="w-[60%] h-[12px] rounded-full bg-white/35" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-x-0 bottom-0 h-[84px] bg-gradient-to-t from-[#14161B] to-transparent" />
+            </div>
+          </div>
+
+          {/* Right: Tachometer Needle Gauge */}
+          <div
+            className="rounded-[30px] p-[26px] border flex flex-col items-center justify-between"
+            style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 24px 48px -18px rgba(20,22,27,0.16)' }}
+          >
+            <div className="w-full text-[28px] font-bold" style={{ color: look.ink }}>
+              {beat.statLabel || 'Indice mesuré'}
+            </div>
+            <div className="relative w-[300px] h-[300px] flex items-center justify-center">
+              <svg width="300" height="300" viewBox="0 0 360 360">
+                <circle
+                  cx="180"
+                  cy="180"
+                  r="138"
+                  fill="none"
+                  stroke={look.line}
+                  strokeWidth="26"
+                  strokeLinecap="round"
+                  strokeDasharray="650 1000"
+                  transform="rotate(135 180 180)"
+                />
+                <circle
+                  cx="180"
+                  cy="180"
+                  r="138"
+                  fill="none"
+                  stroke={look.accent}
+                  strokeWidth="26"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(gaugeVal * 650).toFixed(1)} 1000`}
+                  transform="rotate(135 180 180)"
+                />
+                {Array.from({ length: 21 }).map((_, i) => {
+                  const ang = (-135 + (i / 20) * 270) * (Math.PI / 180) - Math.PI / 2;
+                  const r1 = 104;
+                  const r2 = i % 5 === 0 ? 118 : 112;
+                  return (
+                    <line
+                      key={i}
+                      x1={180 + Math.cos(ang) * r1}
+                      y1={180 + Math.sin(ang) * r1}
+                      x2={180 + Math.cos(ang) * r2}
+                      y2={180 + Math.sin(ang) * r2}
+                      stroke={look.ink3}
+                      strokeWidth={i % 5 === 0 ? 4 : 2}
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
+                <g transform={`rotate(${needleAngle.toFixed(1)} 180 180)`}>
+                  <line x1="180" y1="194" x2="180" y2="70" stroke={look.ink} strokeWidth="9" strokeLinecap="round" />
+                  <circle cx="180" cy="180" r="16" fill={look.ink} />
+                </g>
+              </svg>
+              <div className="absolute bottom-[18px] text-center">
+                <div
+                  className="text-[68px] font-extrabold leading-none tracking-[-0.04em] tabular-nums"
+                  style={{ color: look.ink, fontFamily: look.fontDisplay }}
+                >
+                  {Math.round(gaugeVal * 100)}
+                  <span style={{ color: look.accent }}>%</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-[26px] font-semibold" style={{ color: look.ink2 }}>Impact confirmé</div>
+          </div>
+        </div>
+
+        {/* 3 Pillar Strip */}
+        <div
+          className="w-full grid grid-cols-3 gap-[16px] mt-[20px]"
+          style={{ opacity: clamp(0.35 + rowP * 0.65, 0, 1), transform: `translateY(${(18 * (1 - rowP)).toFixed(1)}px)` }}
+        >
+          {pillars.map((txt, i) => (
+            <div
+              key={i}
+              className="rounded-[22px] px-[20px] py-[18px] border"
+              style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 16px 32px -14px rgba(20,22,27,0.12)' }}
+            >
+              <div className="flex items-center justify-between mb-[6px]">
+                <span className="text-[20px] font-mono font-bold" style={{ color: look.accent }}>0{i + 1}</span>
+                <span className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: look.accent }} />
+              </div>
+              <div className="text-[27px] font-extrabold leading-tight" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                {txt}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Lower Dark Insight Bar right above captions */}
+        <div
+          className="w-full mt-[18px] rounded-[22px] px-[26px] py-[20px] flex items-center justify-between"
+          style={{ backgroundColor: look.ink, color: '#FFFFFF', boxShadow: '0 18px 38px -14px rgba(20,22,27,0.22)' }}
+        >
+          <div className="flex items-center gap-[14px]">
+            <span className="w-[14px] h-[14px] rounded-full shrink-0" style={{ backgroundColor: look.accent }} />
+            <span className="text-[26px] font-bold">Accélération mesurée sur le terrain</span>
+          </div>
+          <span className="text-[24px] font-mono font-bold text-[#60A5FA]">2026</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. COMPARISON BARS (Fullscreen 2-row high-density bars + multiplier + bottom telemetry cards)
+  if (vType === 'comparison_bars') {
+    const left = beat.comparisonLeft || { label: 'Avant', value: '45 min', ratio: 0.85 };
+    const right = beat.comparisonRight || { label: 'Avec IA', value: '2 min', ratio: 0.22 };
+    const b1 = spring(localT - 0.15, 13);
+    const b2 = spring(localT - 0.45, 11);
+    const bottomP = spring(localT - 0.85, 14);
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-end justify-between mb-[24px]">
+          <div>
+            <div className="text-[28px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+              {beat.screenLabel}
+            </div>
+            <div
+              className="text-[74px] font-extrabold leading-none tracking-[-0.04em] mt-[8px]"
+              style={{ color: look.ink, fontFamily: look.fontDisplay }}
+            >
+              {beat.title}
+            </div>
+          </div>
+
+          <div
+            className="px-[28px] py-[16px] rounded-[24px] border text-right"
+            style={{ backgroundColor: look.sheet, borderColor: look.accent, borderWidth: '2px', boxShadow: '0 20px 40px -14px rgba(20,22,27,0.14)' }}
+          >
+            <div className="text-[22px] font-semibold" style={{ color: look.ink3 }}>Ratio</div>
+            <div
+              className="text-[56px] font-extrabold leading-none tabular-nums"
+              style={{ color: look.accent, fontFamily: look.fontDisplay }}
+            >
+              {beat.multiplierBadge || '×4'}
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="w-full rounded-[34px] p-[44px] border space-y-[44px]"
+          style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 30px 60px -18px rgba(20,22,27,0.18)' }}
+        >
+          <div>
+            <div className="flex items-center justify-between mb-[12px]">
+              <span className="text-[34px] font-bold" style={{ color: look.ink2, fontFamily: look.fontDisplay }}>
+                {left.label}
+              </span>
+              <span className="text-[38px] font-extrabold tabular-nums" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                {left.value}
+              </span>
+            </div>
+            <div className="h-[72px] rounded-[20px] overflow-hidden" style={{ backgroundColor: look.paper }}>
+              <div
+                className="h-full rounded-[20px]"
+                style={{ width: `${clamp(left.ratio * b1 * 100, 8, 100).toFixed(1)}%`, backgroundColor: look.ink3 }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-[12px]">
+              <span className="text-[34px] font-bold" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                {right.label}
+              </span>
+              <span className="text-[42px] font-extrabold tabular-nums" style={{ color: look.accent, fontFamily: look.fontDisplay }}>
+                {right.value}
+              </span>
+            </div>
+            <div className="h-[72px] rounded-[20px] overflow-hidden" style={{ backgroundColor: look.paper }}>
+              <div
+                className="h-full rounded-[20px]"
+                style={{ width: `${clamp(right.ratio * b2 * 100, 8, 100).toFixed(1)}%`, backgroundColor: look.accent }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Lower KPI / Insight bar filling full-paper height cleanly */}
+        <div
+          className="w-full mt-[22px] rounded-[26px] px-[32px] py-[24px] flex items-center justify-between"
+          style={{
+            backgroundColor: look.ink,
+            color: '#FFFFFF',
+            opacity: clamp(0.4 + bottomP * 0.6, 0, 1),
+            transform: `translateY(${(18 * (1 - bottomP)).toFixed(1)}px)`,
+          }}
+        >
+          <div>
+            <div className="text-[22px] font-mono uppercase text-[#9CA3AF]">Gain cumulé</div>
+            <div className="text-[34px] font-extrabold">{beat.statLabel || 'Temps récupéré chaque semaine'}</div>
+          </div>
+          <div className="text-[54px] font-extrabold font-mono text-[#60A5FA] tabular-nums">
+            {beat.statValue || '+11 h'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 6. TOGGLES SWITCH (3 animated system switches flipping sequentially + action strip)
+  if (vType === 'toggles_switch' || vType === 'key_points') {
+    const items =
+      beat.toggles && beat.toggles.length > 0
+        ? beat.toggles.slice(0, 3)
+        : (beat.bullets || ['Règle 1 activée', 'Synthèse automatique', 'Suivi en direct']).slice(0, 3).map((b) => ({
+            label: b,
+            before: 'MANUEL',
+            after: 'AUTO',
+            activeAfter: true,
+          }));
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[20px]">
+          <span className="text-[54px] font-extrabold leading-none tracking-tight" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+            {beat.title}
+          </span>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[24px] font-mono font-bold border" style={{ backgroundColor: look.sheet, borderColor: look.line, color: look.accent }}>
+            {beat.screenLabel}
+          </span>
+        </div>
+
+        <div className="w-full space-y-[18px]">
+          {items.map((item, idx) => {
+            const flipAt = Math.min(beatSpan - 0.6, 0.5 + idx * 0.72);
+            const flipped = localT >= flipAt;
+            const slideAnim = spring(localT - flipAt, 16);
+            const knobPos = flipped ? 54 * slideAnim : 0;
+
+            return (
+              <div
+                key={idx}
+                className="w-full rounded-[26px] border-2 px-[30px] py-[24px] flex items-center justify-between gap-[20px]"
+                style={{
+                  backgroundColor: look.sheet,
+                  borderColor: flipped ? (item.activeAfter ? '#059669' : '#DC2626') : look.line,
+                  boxShadow: '0 20px 40px -16px rgba(20,22,27,0.14)',
+                }}
+              >
+                <div className="min-w-0">
+                  <div className="text-[33px] font-extrabold leading-tight truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                    {item.label}
+                  </div>
+                  <div
+                    className="text-[23px] font-mono font-bold mt-[4px]"
+                    style={{ color: flipped ? (item.activeAfter ? '#059669' : '#DC2626') : look.ink3 }}
+                  >
+                    {flipped ? item.after : item.before}
+                  </div>
+                </div>
+
+                {/* Animated iOS-style switch */}
+                <div
+                  className="relative w-[108px] h-[54px] rounded-full shrink-0 p-[5px]"
+                  style={{
+                    backgroundColor: flipped ? (item.activeAfter ? '#059669' : '#DC2626') : look.line,
+                  }}
+                >
+                  <div
+                    className="w-[44px] h-[44px] rounded-full bg-white shadow"
+                    style={{ transform: `translateX(${knobPos.toFixed(1)}px)` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // 7. TERMINAL FLOW (Dark live typing terminal + SVG connector + KPI payoff card)
+  if (vType === 'terminal_flow') {
+    const cmd = beat.terminalCmd || '> agent --sync-2026';
+    const typedLen = Math.floor(cmd.length * seg(localT, 0.15, Math.min(1.4, beatSpan * 0.35)));
+    const outLines = beat.terminalOut || ['✓ Gain hebdo confirmé', '✓ Temps libéré', '✓ Priorités claires'];
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[18px]">
+          <span className="text-[54px] font-extrabold leading-none" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+            {beat.title}
+          </span>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[24px] font-mono font-bold border" style={{ backgroundColor: look.sheet, borderColor: look.line, color: look.accent }}>
+            {beat.screenLabel}
+          </span>
+        </div>
+
+        {/* Dark Terminal */}
+        <div
+          className="w-full rounded-[30px] p-[34px] border border-white/10"
+          style={{ backgroundColor: '#14161B', boxShadow: '0 28px 56px -18px rgba(20,22,27,0.28)' }}
+        >
+          <div className="flex items-center gap-[10px] mb-[20px]">
+            <span className="w-[14px] h-[14px] rounded-full bg-[#EF4444]" />
+            <span className="w-[14px] h-[14px] rounded-full bg-[#F59E0B]" />
+            <span className="w-[14px] h-[14px] rounded-full bg-[#10B981]" />
+            <span className="ml-[12px] text-[22px] font-mono text-white/45">engine.ia — bash</span>
+          </div>
+
+          <div className="text-[32px] font-mono font-bold text-[#60A5FA] mb-[20px]">
+            {cmd.slice(0, typedLen)}
+            <span className="inline-block w-[14px] h-[30px] bg-white/80 ml-[6px] align-middle" />
+          </div>
+
+          <div className="space-y-[12px]">
+            {outLines.slice(0, 3).map((line, idx) => {
+              const showAt = Math.min(beatSpan * 0.72, 1.1 + idx * 0.55);
+              const lineP = spring(localT - showAt, 15);
+              return (
+                <div
+                  key={idx}
+                  className="text-[30px] font-mono font-semibold text-white/95 rounded-[14px] px-[20px] py-[12px] bg-white/5"
+                  style={{
+                    opacity: localT >= showAt ? clamp(lineP * 1.4, 0, 1) : 0.12,
+                    transform: `translateX(${((1 - lineP) * 18).toFixed(1)}px)`,
+                  }}
+                >
+                  {line}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom Payoff Card */}
+        <div
+          className="w-full mt-[20px] rounded-[26px] border px-[32px] py-[22px] flex items-center justify-between"
+          style={{ backgroundColor: look.sheet, borderColor: look.accent, borderWidth: '2px' }}
+        >
+          <div className="flex items-center gap-[16px]">
+            <div className="w-[56px] h-[56px] rounded-[16px] flex items-center justify-center" style={{ backgroundColor: `${look.accent}18` }}>
+              <BeatVectorIcon kind={iconKind} size={32} color={look.accent} />
+            </div>
+            <span className="text-[30px] font-bold" style={{ color: look.ink }}>
+              {beat.statLabel || 'Résultat mesuré'}
+            </span>
+          </div>
+          <span className="text-[60px] font-extrabold font-mono tabular-nums" style={{ color: look.accent, fontFamily: look.fontDisplay }}>
+            {beat.statValue || '+38 %'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // 8. CTA CARD (Animated @alex.decode subscribe button + bell + soundwaves)
+  const clickAt = Math.min(1.1, beatSpan * 0.35);
+  const clicked = localT >= clickAt;
+  const waveP = seg(localT, clickAt, clickAt + 0.85);
+  const bellShake = clicked && localT < clickAt + 0.65 ? Math.sin((localT - clickAt) * 35) * 14 : 0;
+
+  return (
+    <div
+      className="w-full flex flex-col items-center justify-center pt-[70px]"
+      style={{
+        opacity: clamp(enter * 2.8, 0, 1) * exit,
+        transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
+      }}
+    >
+      <div className="text-[30px] font-mono font-bold uppercase tracking-wider mb-[18px]" style={{ color: look.accent }}>
+        {beat.screenLabel || 'PROCHAIN ÉPISODE'}
+      </div>
+      <div
+        className="text-[68px] font-extrabold text-center leading-[1.04] mb-[40px]"
+        style={{ color: look.ink, fontFamily: look.fontDisplay }}
+      >
+        {beat.title}
+      </div>
+
+      <div
+        className="relative w-full rounded-[34px] border-2 px-[42px] py-[40px] flex items-center justify-between gap-[24px]"
+        style={{
+          backgroundColor: '#14161B',
+          borderColor: clicked ? '#059669' : '#2A2E37',
+          boxShadow: '0 32px 64px -18px rgba(20,22,27,0.34)',
+        }}
+      >
+        <div className="flex items-center gap-[24px] min-w-0">
+          <div
+            className="w-[92px] h-[92px] rounded-[24px] flex items-center justify-center text-[46px] font-extrabold shrink-0"
+            style={{ backgroundColor: look.accent, color: look.onAccent, fontFamily: look.fontDisplay }}
+          >
+            {CREATOR_PROFILE.initial}
+          </div>
+          <div className="min-w-0">
+            <div className="text-[40px] font-extrabold text-white truncate" style={{ fontFamily: look.fontDisplay }}>
+              {beat.statValue || CREATOR_PROFILE.handle}
+            </div>
+            <div className="text-[25px] text-[#9CA3AF] truncate">
+              {beat.statLabel || CREATOR_PROFILE.tagline}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative flex items-center gap-[14px] shrink-0">
+          <div
+            className="px-[34px] py-[20px] rounded-[20px] text-[30px] font-extrabold"
+            style={{
+              backgroundColor: clicked ? '#059669' : look.accent,
+              color: '#FFFFFF',
+            }}
+          >
+            {clicked ? 'Abonné ✓' : 'S’abonner'}
+          </div>
+          <div
+            className="w-[62px] h-[62px] rounded-[18px] bg-white/10 flex items-center justify-center"
+            style={{ transform: `rotate(${bellShake.toFixed(1)}deg)` }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={clicked ? '#34D399' : '#FFFFFF'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          {clicked && waveP < 1 && (
+            <span
+              className="absolute inset-0 rounded-[20px] border-4 pointer-events-none"
+              style={{
+                borderColor: '#059669',
+                transform: `scale(${(1 + waveP * 0.4).toFixed(2)})`,
+                opacity: 1 - waveP,
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
@@ -23,11 +1221,16 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
   t,
   look,
   showSafeZones,
+  renderMode = false,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [scale, setScale] = useState(0.32);
+  const [scale, setScale] = useState(renderMode ? 1 : 0.32);
 
   useEffect(() => {
+    if (renderMode) {
+      setScale(1);
+      return;
+    }
     const el = containerRef.current;
     if (!el) return;
     const update = () => {
@@ -38,11 +1241,28 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
     const obs = new ResizeObserver(update);
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [renderMode]);
 
   const beats = useMemo(() => buildDynamicBeatsFromProject(project), [project]);
   const activeBeat =
     beats.find((b) => t >= b.from && t < b.to) || beats[beats.length - 1];
+
+  const layoutKeys = useMemo<Array<[number, number]>>(
+    () =>
+      beats.map((b) => [
+        b.from,
+        b.layout === 'fullscreen' ? 1920 : 1160,
+      ]),
+    [beats]
+  );
+
+  const seam = getLayoutSeam(t, layoutKeys, 0.34);
+  const brollAsset = resolveBrollAsset(
+    activeBeat.brollKey,
+    project.topicCategory,
+    project.title,
+    activeBeat.index
+  );
 
   const wordCues: WordCue[] = useMemo(
     () =>
@@ -62,131 +1282,169 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
 
   const beatLocalT = Math.max(0, t - activeBeat.from);
   const beatSpan = Math.max(0.5, activeBeat.to - activeBeat.from);
-  const enter = activeBeat.index === 1 && beatLocalT < 0.05 ? 1 : spring(beatLocalT, 12);
-  const cardOpacity =
-    activeBeat.index === 1 && beatLocalT < 0.05 ? 1 : 0.8 + 0.2 * seg(beatLocalT, 0, 0.2);
-  const progress = clamp((t / Math.max(1, project.duration || 45)) * 100, 0, 100);
-  const beatProgress = clamp((beatLocalT / beatSpan) * 100, 0, 100);
+  const gridShiftY = (t * 20) % 44;
+  const gridShiftX = Math.sin(t * 0.28) * 14;
+  const drift = 1 + (t % 4) * 0.008;
+
+  // Unified caption Y coordinate matched to ShortCaptions.tsx
+  let captionTopY = 1130;
+  if (seam >= 1650) captionTopY = 1365;
+  else if (seam <= 300) captionTopY = 1230;
+  else captionTopY = seam - 24;
+  const overVideo = seam <= 600;
 
   return (
     <div
       ref={containerRef}
       data-testid="dynamic-short-stage"
-      className="relative w-full h-full aspect-[9/16] rounded-[20px] overflow-hidden border border-[#E3DED3] bg-[#F1EEE6] select-none"
+      className={
+        renderMode
+          ? 'relative w-[1080px] h-[1920px] overflow-hidden bg-[#F1EEE6] select-none'
+          : 'relative w-full h-full aspect-[9/16] rounded-[20px] overflow-hidden border border-[#E3DED3] bg-[#F1EEE6] select-none'
+      }
     >
       <div
         style={{
           width: '1080px',
           height: '1920px',
-          transform: `scale(${scale})`,
+          transform: renderMode ? undefined : `scale(${scale})`,
           transformOrigin: 'top left',
           backgroundColor: look.paper,
         }}
         className="relative overflow-hidden"
       >
+        {/* Paper Grain */}
         {look.grain && <div className="absolute inset-0 paper-grain opacity-85 pointer-events-none" />}
 
-        {/* Subtle ambient blue aura */}
-        <div
-          className="absolute w-[820px] h-[820px] rounded-full blur-[36px] pointer-events-none"
-          style={{
-            left: `${(130 + Math.sin(t * 0.45) * 280).toFixed(1)}px`,
-            top: `${(-60 + Math.cos(t * 0.35) * 200).toFixed(1)}px`,
-            background:
-              'radial-gradient(circle, rgba(37,142,255,0.20) 0%, rgba(96,165,250,0.08) 45%, rgba(37,142,255,0) 72%)',
-          }}
-        />
-
-        {/* Top Editorial Meta Strip */}
-        <div className="relative z-20 px-[64px] pt-[120px] flex items-center justify-between text-[#5C5F68]">
-          <div className="flex items-center gap-[16px]">
-            <span
-              className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center text-[24px] font-extrabold text-white"
-              style={{ backgroundColor: look.accent, fontFamily: look.fontDisplay }}
-            >
-              {CREATOR_PROFILE.initial}
-            </span>
-            <div>
-              <div className="text-[28px] font-bold text-[#14161B] leading-tight">
-                {project.topicCategory || 'Studio Short'}
-              </div>
-              <div className="text-[22px] font-mono text-[#5C5F68]">
-                {project.currentVersion} · Beat {activeBeat.index}/{beats.length}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-[24px] font-mono font-bold text-[#14161B] tabular-nums">
-            {t.toFixed(1)}s / {(project.duration || 45).toFixed(1)}s
-          </div>
-        </div>
-
-        {/* Main Motion Card */}
-        <div
-          className="relative z-20 mx-[64px] mt-[56px] rounded-[36px] border-2 p-[56px] shadow-xl"
-          style={{
-            backgroundColor: look.sheet,
-            borderColor: look.line,
-            transform: `translateY(${((1 - enter) * 42).toFixed(1)}px) scale(${(0.95 + enter * 0.05).toFixed(3)})`,
-            opacity: cardOpacity,
-          }}
-        >
-          <div className="flex items-center justify-between mb-[28px]">
-            <span
-              className="text-[26px] font-mono font-bold uppercase tracking-[0.08em]"
-              style={{ color: look.accent }}
-            >
-              {activeBeat.screenLabel}
-            </span>
-            <span className="text-[24px] font-mono text-[#5C5F68] tabular-nums">
-              {Math.round(beatProgress)}%
-            </span>
-          </div>
-
-          <h2
-            className="text-[64px] font-extrabold leading-[1.08] tracking-tight mb-[32px]"
-            style={{ color: look.ink, fontFamily: look.fontDisplay }}
-          >
-            {activeBeat.index === 1 ? project.title : activeBeat.title}
-          </h2>
-
-          <p className="text-[36px] leading-[1.42] font-medium text-[#5C5F68]">
-            {activeBeat.spokenLine || project.hookText || 'Aperçu du scénario en cours.'}
-          </p>
-
-          {/* Beat Progress Gauge */}
-          <div className="mt-[44px] h-[12px] w-full rounded-full bg-[#EAE7DF] overflow-hidden">
+        {/* Dot-matrix grid + 3 drifting ambient sky-blue glows (no top bar!) */}
+        {seam > 200 && (
+          <div className="absolute inset-x-0 top-0 overflow-hidden pointer-events-none" style={{ height: `${seam.toFixed(1)}px` }}>
             <div
-              className="h-full rounded-full transition-none"
+              className="absolute inset-0 opacity-28"
               style={{
-                width: `${progress.toFixed(1)}%`,
-                backgroundColor: look.accent,
+                backgroundImage: `radial-gradient(${look.ink3} 1.5px, transparent 1.5px)`,
+                backgroundSize: '44px 44px',
+                backgroundPosition: `${gridShiftX.toFixed(1)}px ${gridShiftY.toFixed(1)}px`,
+              }}
+            />
+
+            <div
+              className="absolute w-[840px] h-[840px] rounded-full blur-[34px]"
+              style={{
+                left: `${(120 + Math.sin(t * 0.48) * 320).toFixed(1)}px`,
+                top: `${(-90 + Math.cos(t * 0.34) * 260).toFixed(1)}px`,
+                background:
+                  'radial-gradient(circle, rgba(37,142,255,0.22) 0%, rgba(96,165,250,0.09) 42%, rgba(37,142,255,0) 72%)',
+                transform: `scale(${(1 + 0.08 * Math.sin(t * 0.62)).toFixed(3)})`,
+              }}
+            />
+            <div
+              className="absolute w-[720px] h-[720px] rounded-full blur-[38px]"
+              style={{
+                left: `${(220 + Math.cos(t * 0.39 + 1.4) * 340).toFixed(1)}px`,
+                top: `${(seam * 0.42 - 120 + Math.sin(t * 0.3 + 0.7) * 240).toFixed(1)}px`,
+                background:
+                  'radial-gradient(circle, rgba(56,189,248,0.18) 0%, rgba(147,197,253,0.07) 48%, rgba(56,189,248,0) 74%)',
+                transform: `scale(${(1 + 0.07 * Math.cos(t * 0.5)).toFixed(3)})`,
+              }}
+            />
+            <div
+              className="absolute w-[580px] h-[580px] rounded-full blur-[30px]"
+              style={{
+                left: `${(240 + Math.sin(t * 0.27 + 2.5) * 280).toFixed(1)}px`,
+                top: `${(160 + Math.sin(t * 0.44 + 1.1) * 290).toFixed(1)}px`,
+                background:
+                  'radial-gradient(circle, rgba(37,142,255,0.14) 0%, rgba(191,219,254,0.05) 52%, rgba(37,142,255,0) 76%)',
               }}
             />
           </div>
+        )}
+
+        {/* Lower Split-Screen B-Roll / Illustrated Motion Panel (bleeds cleanly below seam) */}
+        {seam < 1918 && (
+          <div
+            className="absolute inset-x-0 bottom-0 overflow-hidden z-10"
+            style={{
+              top: `${seam.toFixed(1)}px`,
+              borderTopLeftRadius: seam > 20 ? '36px' : '0px',
+              borderTopRightRadius: seam > 20 ? '36px' : '0px',
+              boxShadow: seam > 20 ? '0 -24px 52px rgba(20, 22, 27, 0.22)' : 'none',
+            }}
+          >
+            <img
+              src={brollAsset.src}
+              alt={activeBeat.brollCaption || brollAsset.defaultCaption}
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover"
+              style={{
+                transform: `scale(${(1.03 * drift).toFixed(4)})`,
+                transformOrigin: 'center center',
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/22 to-black/38" />
+
+            {/* Live HUD reticle + pulsing indicator on B-Roll */}
+            {seam > 300 && (
+              <div className="absolute bottom-[64px] left-[56px] right-[180px] flex items-center justify-between text-white/95">
+                <div className="flex items-center gap-[14px]">
+                  <span
+                    className="w-[14px] h-[14px] rounded-full"
+                    style={{
+                      backgroundColor: look.accent,
+                      transform: `scale(${(0.85 + 0.3 * Math.abs(Math.sin(t * 4.5))).toFixed(2)})`,
+                    }}
+                  />
+                  <div className="text-[30px] font-bold tracking-[-0.01em] drop-shadow">
+                    {activeBeat.brollCaption || brollAsset.defaultCaption}
+                  </div>
+                </div>
+                <span className="text-[26px] font-mono font-bold text-white/80 tabular-nums">
+                  {t.toFixed(1)} s
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Upper Kinetic Motion Stage (z-20, zero top progress bars, right-rail safe pr-[148px]) */}
+        <div className="relative z-20 w-full h-full pt-[192px] pl-[58px] pr-[148px] pointer-events-none">
+          {renderDynamicBeatScene(activeBeat, beatLocalT, beatSpan, look)}
         </div>
 
-        {/* Unified 4-word Captions Block */}
+        {/* Unified 4-word Captions Capsule on seam (z-30, zero word-by-word boxes) */}
         {activeChunk && (
           <div
-            className="absolute inset-x-0 z-30 flex justify-center px-[56px] pointer-events-none"
-            style={{ top: '1120px' }}
+            className="absolute inset-x-0 flex justify-center items-center px-[56px] pointer-events-none z-30"
+            style={{ top: `${captionTopY.toFixed(1)}px`, transform: 'translateY(-50%)' }}
           >
             <div
-              className="px-[34px] py-[18px] rounded-[22px] shadow-lg flex flex-wrap items-center justify-center gap-x-[14px]"
+              className="inline-flex flex-wrap items-baseline justify-center gap-x-[15px] px-[38px] py-[18px] rounded-[24px] border max-w-[920px]"
               style={{
-                backgroundColor: look.ink,
+                backgroundColor: overVideo ? 'rgba(20, 22, 27, 0.86)' : 'rgba(252, 251, 248, 0.96)',
+                borderColor: overVideo ? 'rgba(255, 255, 255, 0.14)' : look.line,
+                boxShadow: '0 18px 42px -12px rgba(20, 22, 27, 0.24)',
               }}
             >
               {activeChunk.words.map((w, idx) => {
-                const isSpoken = idx === activeChunk.activeIndex;
+                const isActive = idx === activeChunk.activeIndex;
+                const isPast = idx < activeChunk.activeIndex;
+                const highlightColor = overVideo ? '#5EA8FF' : look.accent;
+                const baseColor = overVideo
+                  ? isPast
+                    ? '#FFFFFF'
+                    : 'rgba(255, 255, 255, 0.72)'
+                  : isPast
+                    ? look.ink
+                    : look.ink2;
+
                 return (
                   <span
                     key={`${w.text}-${idx}`}
-                    className="text-[46px] font-extrabold leading-tight"
+                    className="font-extrabold leading-[1.12] tracking-[-0.03em]"
                     style={{
                       fontFamily: look.fontDisplay,
-                      color: isSpoken ? look.accent : '#FFFFFF',
+                      fontSize: '66px',
+                      color: isActive || w.emph ? highlightColor : baseColor,
                     }}
                   >
                     {w.text}
@@ -197,23 +1455,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
           </div>
         )}
 
-        {/* Bottom Editorial Context Card */}
-        <div
-          className="absolute inset-x-[64px] bottom-[150px] z-20 rounded-[28px] border p-[40px]"
-          style={{
-            backgroundColor: '#14161B',
-            borderColor: '#2A2E37',
-          }}
-        >
-          <div className="text-[22px] font-mono uppercase tracking-wider text-[#9CA3AF] mb-[12px]">
-            {project.mode === 'split_screen_clips' ? 'Zone Rush Facecam (9:16)' : 'Contexte & Sources'}
-          </div>
-          <div className="text-[32px] font-bold text-white leading-snug line-clamp-2">
-            {project.hookText || project.title}
-          </div>
-        </div>
-
-        {/* Safe Zones Overlay */}
+        {/* Safe Zones Overlay (Studio inspection only) */}
         {showSafeZones && (
           <div className="absolute inset-0 z-40 pointer-events-none">
             <div className="absolute inset-x-0 top-0 h-[220px] bg-red-500/18 border-b-2 border-dashed border-red-500 flex items-end justify-center pb-[18px]">
@@ -226,6 +1468,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                 Zone exclue bas · 420 px
               </span>
             </div>
+            <div className="absolute right-0 top-[900px] bottom-[420px] w-[140px] bg-amber-500/20 border-l-2 border-dashed border-amber-500" />
           </div>
         )}
       </div>

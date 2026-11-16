@@ -211,3 +211,98 @@ test('detectAndRemoveSilences does not collapse a completely silent track', { sk
   assert.equal(analysis.totalSilencesRemoved, 0);
   assert.ok(analysis.adjustedDuration >= 2.8);
 });
+
+test('mirrorProjectToRepo and hydrateSavedProjectsFromRepo restore projects, media, and MP4 disk status cleanly', () => {
+  const repoProjectsDir = path.join(tempRoot, 'repo-data', 'saved-projects');
+  const repoMediaDir = path.join(tempRoot, 'repo-data', 'saved-media');
+  const repoVideosDir = path.join(tempRoot, 'repo-public', 'video', 'renders');
+
+  const proj: ShortProject = {
+    id: 'proj-mirror-test',
+    slug: 'mirror-test',
+    title: 'Mirror Persistence Test',
+    mode: 'faceless_explainer',
+    platform: 'youtube_shorts',
+    status: 'ready',
+    duration: 32,
+    fps: 25,
+    resolution: { width: 1080, height: 1920 },
+    audioTrackUrl: '/storage/projects/proj-mirror-test/voice_v1.mp3',
+    currentVersion: 'v1',
+    versions: [
+      {
+        version: 'v1',
+        createdAt: '2026-11-16T00:00:00Z',
+        status: 'done',
+        duration: 32,
+        fps: 25,
+        notes: 'v1 ok',
+        outputMp4: '/renders/mirror-test_v1.mp4',
+        contactSheetUrl: '/renders/mirror-test_v1_contact.jpg',
+      },
+    ],
+    transcript: [{ id: 'w-1', word: 'Test', start: 0.1, end: 0.4, confidence: 0.99 }],
+    motionTrack: [],
+    layoutTrack: [],
+    sfxTrack: [],
+    musicTrack: { trackName: 'upbeat', volume: 0.24, ducking: true },
+    feedbacks: [],
+    motionComponents: {},
+    contactSheet: [],
+    styleProfile: {
+      name: 'Papier signature',
+      fontFamily: 'Bricolage Grotesque',
+      accentColor: '#258EFF',
+      textColor: '#14161B',
+      cardBg: '#FCFBF8',
+      captionsPosition: 'bottom',
+      visualBeatsTarget: 8,
+    },
+  };
+
+  storage.saveProject(proj, { skipMirror: true });
+  const projDir = path.join(storage.PROJECTS_DIR, proj.id);
+  fs.writeFileSync(path.join(projDir, 'voice_v1.mp3'), Buffer.alloc(2048, 1));
+  fs.writeFileSync(path.join(storage.RENDERS_DIR, 'mirror-test_v1_thumb.jpg'), Buffer.alloc(2048, 2));
+  const renderedMp4 = path.join(storage.RENDERS_DIR, 'mirror-test_v1.mp4');
+  fs.writeFileSync(renderedMp4, Buffer.alloc(4096, 3));
+
+  const enrichedBefore = storage.withProjectMediaStatus(proj);
+  assert.equal(enrichedBefore.hasMp4, true);
+  assert.equal(enrichedBefore.versions[0].hasMp4, true);
+
+  storage.mirrorProjectToRepo(proj, {
+    repoProjectsDir,
+    repoMediaDir,
+    repoVideosDir,
+    force: true,
+  });
+
+  assert.ok(fs.existsSync(path.join(repoProjectsDir, `${proj.id}.json`)));
+  assert.ok(fs.existsSync(path.join(repoMediaDir, proj.id, 'voice_v1.mp3')));
+  assert.ok(fs.existsSync(path.join(repoMediaDir, proj.id, 'mirror-test_v1_thumb.jpg')));
+  assert.ok(fs.existsSync(path.join(repoVideosDir, 'mirror-test_v1.mp4')));
+
+  // Simulate wiped local storage container and verify startup hydration restores everything
+  fs.rmSync(projDir, { recursive: true, force: true });
+  fs.rmSync(renderedMp4, { force: true });
+  fs.rmSync(path.join(storage.RENDERS_DIR, 'mirror-test_v1_thumb.jpg'), { force: true });
+  assert.equal(storage.getProject(proj.id), null);
+
+  const hydrated = storage.hydrateSavedProjectsFromRepo({
+    repoProjectsDir,
+    repoMediaDir,
+    repoVideosDir,
+  });
+  assert.equal(hydrated.restoredProjects, 1);
+  assert.ok(hydrated.restoredMedia >= 3);
+
+  const restored = storage.getProject(proj.id);
+  assert.ok(restored);
+  assert.equal(storage.withProjectMediaStatus(restored!).hasMp4, true);
+  assert.ok(fs.existsSync(path.join(projDir, 'voice_v1.mp3')));
+  assert.ok(fs.existsSync(renderedMp4));
+
+  storage.deleteProject(proj.id);
+});
+

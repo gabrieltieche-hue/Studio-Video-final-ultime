@@ -1,0 +1,1671 @@
+{
+  "id": "proj-interdiction-15-ans",
+  "slug": "short-interdiction-15-ans",
+  "title": "Interdire les réseaux avant 15 ans",
+  "mode": "faceless_explainer",
+  "platform": "youtube_shorts",
+  "status": "ready",
+  "duration": 57,
+  "fps": 25,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "isFlagshipReactStage": true,
+  "audioTrackUrl": "/audio/voice/short-interdiction-15-ans-fr.mp3",
+  "currentVersion": "v1",
+  "versions": [
+    {
+      "version": "v1",
+      "createdAt": "2026-11-16T13:29:33.795Z",
+      "status": "done",
+      "duration": 53.77,
+      "fps": 25,
+      "notes": "Version validée · Voix Brian FR 1.06× · Bright Groove (-12.5 dB) · 8 beats · Halos bleus animés",
+      "platform": "youtube_shorts",
+      "outputMp4": "/video/short-interdiction-15-ans.mp4",
+      "hasMp4": true
+    }
+  ],
+  "transcript": [
+    {
+      "id": "w-1",
+      "word": "On",
+      "start": 0.035,
+      "end": 0.139,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-2",
+      "word": "a",
+      "start": 0.197,
+      "end": 0.221,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-3",
+      "word": "voulu",
+      "start": 0.267,
+      "end": 0.453,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-4",
+      "word": "interdire",
+      "start": 0.488,
+      "end": 0.894,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-5",
+      "word": "les",
+      "start": 0.917,
+      "end": 1.01,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-6",
+      "word": "réseaux",
+      "start": 1.045,
+      "end": 1.37,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-7",
+      "word": "avant",
+      "start": 1.405,
+      "end": 1.625,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-8",
+      "word": "15",
+      "start": 1.649,
+      "end": 1.892,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-9",
+      "word": "ans.",
+      "start": 1.985,
+      "end": 2.252,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-10",
+      "word": "Mais",
+      "start": 2.694,
+      "end": 2.833,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-11",
+      "word": "la",
+      "start": 2.856,
+      "end": 2.926,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-12",
+      "word": "loi",
+      "start": 2.972,
+      "end": 3.135,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-13",
+      "word": "vient",
+      "start": 3.17,
+      "end": 3.379,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-14",
+      "word": "d'exploser,",
+      "start": 3.437,
+      "end": 4.319,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-15",
+      "word": "et",
+      "start": 4.598,
+      "end": 4.714,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-16",
+      "word": "le",
+      "start": 4.748,
+      "end": 4.83,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-17",
+      "word": "vrai",
+      "start": 4.865,
+      "end": 5.062,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-18",
+      "word": "piège",
+      "start": 5.097,
+      "end": 5.41,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-19",
+      "word": "est",
+      "start": 5.433,
+      "end": 5.503,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-20",
+      "word": "ailleurs.",
+      "start": 5.584,
+      "end": 6.072,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-21",
+      "word": "En",
+      "start": 6.397,
+      "end": 6.606,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-22",
+      "word": "Australie,",
+      "start": 6.664,
+      "end": 7.129,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-23",
+      "word": "la",
+      "start": 7.152,
+      "end": 7.233,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-24",
+      "word": "loi",
+      "start": 7.291,
+      "end": 7.477,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-25",
+      "word": "bloque",
+      "start": 7.523,
+      "end": 7.779,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-26",
+      "word": "les",
+      "start": 7.814,
+      "end": 7.906,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-27",
+      "word": "moins",
+      "start": 7.941,
+      "end": 8.127,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-28",
+      "word": "de",
+      "start": 8.162,
+      "end": 8.266,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-29",
+      "word": "16",
+      "start": 8.348,
+      "end": 8.58,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-30",
+      "word": "ans",
+      "start": 8.731,
+      "end": 8.858,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-31",
+      "word": "depuis",
+      "start": 8.893,
+      "end": 9.16,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-32",
+      "word": "fin",
+      "start": 9.207,
+      "end": 9.416,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-33",
+      "word": "deux",
+      "start": 9.532,
+      "end": 9.683,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-34",
+      "word": "mille",
+      "start": 9.718,
+      "end": 9.88,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-35",
+      "word": "vingt-cinq.",
+      "start": 9.915,
+      "end": 10.553,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-36",
+      "word": "Résultat",
+      "start": 11.157,
+      "end": 11.761,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-37",
+      "word": ":",
+      "start": 11.889,
+      "end": 11.958,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-38",
+      "word": "85",
+      "start": 12.132,
+      "end": 12.817,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-39",
+      "word": "pour",
+      "start": 12.899,
+      "end": 13.061,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-40",
+      "word": "cent",
+      "start": 13.131,
+      "end": 13.328,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-41",
+      "word": "des",
+      "start": 13.363,
+      "end": 13.468,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-42",
+      "word": "ados",
+      "start": 13.537,
+      "end": 13.769,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-43",
+      "word": "contournent",
+      "start": 13.792,
+      "end": 14.268,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-44",
+      "word": "déjà",
+      "start": 14.292,
+      "end": 14.547,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-45",
+      "word": "le",
+      "start": 14.582,
+      "end": 14.652,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-46",
+      "word": "filtre",
+      "start": 14.721,
+      "end": 15.046,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-47",
+      "word": "en",
+      "start": 15.081,
+      "end": 15.244,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-48",
+      "word": "4",
+      "start": 15.337,
+      "end": 15.487,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-49",
+      "word": "secondes.",
+      "start": 15.511,
+      "end": 15.975,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-50",
+      "word": "En",
+      "start": 16.416,
+      "end": 16.567,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-51",
+      "word": "France,",
+      "start": 16.614,
+      "end": 16.962,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-52",
+      "word": "l'interdiction",
+      "start": 16.985,
+      "end": 17.659,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-53",
+      "word": "a",
+      "start": 17.693,
+      "end": 17.717,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-54",
+      "word": "été",
+      "start": 17.763,
+      "end": 17.914,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-55",
+      "word": "votée",
+      "start": 17.972,
+      "end": 18.227,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-56",
+      "word": "en",
+      "start": 18.251,
+      "end": 18.297,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-57",
+      "word": "juillet",
+      "start": 18.355,
+      "end": 18.703,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-58",
+      "word": "deux",
+      "start": 18.82,
+      "end": 18.959,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-59",
+      "word": "mille",
+      "start": 18.994,
+      "end": 19.156,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-60",
+      "word": "vingt-six.",
+      "start": 19.191,
+      "end": 19.888,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-61",
+      "word": "Un",
+      "start": 20.213,
+      "end": 20.329,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-62",
+      "word": "mois",
+      "start": 20.352,
+      "end": 20.468,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-63",
+      "word": "plus",
+      "start": 20.491,
+      "end": 20.619,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-64",
+      "word": "tard,",
+      "start": 20.642,
+      "end": 20.991,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-65",
+      "word": "le",
+      "start": 21.142,
+      "end": 21.246,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-66",
+      "word": "Conseil",
+      "start": 21.292,
+      "end": 21.594,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-67",
+      "word": "constitutionnel",
+      "start": 21.629,
+      "end": 22.349,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-68",
+      "word": "l'a",
+      "start": 22.407,
+      "end": 22.488,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-69",
+      "word": "censurée.",
+      "start": 22.535,
+      "end": 23.15,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-70",
+      "word": "Car",
+      "start": 23.591,
+      "end": 23.754,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-71",
+      "word": "le",
+      "start": 23.8,
+      "end": 23.87,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-72",
+      "word": "vrai",
+      "start": 23.916,
+      "end": 24.09,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-73",
+      "word": "problème",
+      "start": 24.137,
+      "end": 24.508,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-74",
+      "word": "n'est",
+      "start": 24.532,
+      "end": 24.659,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-75",
+      "word": "pas",
+      "start": 24.683,
+      "end": 24.834,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-76",
+      "word": "l'âge.",
+      "start": 24.857,
+      "end": 25.321,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-77",
+      "word": "C'est",
+      "start": 25.495,
+      "end": 25.693,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-78",
+      "word": "le",
+      "start": 25.716,
+      "end": 25.809,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-79",
+      "word": "design",
+      "start": 25.878,
+      "end": 26.262,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-80",
+      "word": "addictif",
+      "start": 26.285,
+      "end": 26.749,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-81",
+      "word": "caché",
+      "start": 26.796,
+      "end": 27.028,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-82",
+      "word": "dans",
+      "start": 27.063,
+      "end": 27.179,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-83",
+      "word": "les",
+      "start": 27.202,
+      "end": 27.295,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-84",
+      "word": "feeds.",
+      "start": 27.33,
+      "end": 27.759,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-85",
+      "word": "Avant",
+      "start": 28.201,
+      "end": 28.444,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-86",
+      "word": "l'algorithme",
+      "start": 28.479,
+      "end": 29.164,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-87",
+      "word": "infini,",
+      "start": 29.187,
+      "end": 30.07,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-88",
+      "word": "les",
+      "start": 30.221,
+      "end": 30.383,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-89",
+      "word": "ados",
+      "start": 30.464,
+      "end": 30.673,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-90",
+      "word": "y",
+      "start": 30.697,
+      "end": 30.732,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-91",
+      "word": "passaient",
+      "start": 30.801,
+      "end": 31.126,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-92",
+      "word": "45",
+      "start": 31.242,
+      "end": 31.718,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-93",
+      "word": "minutes",
+      "start": 31.788,
+      "end": 32.09,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-94",
+      "word": "par",
+      "start": 32.136,
+      "end": 32.31,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-95",
+      "word": "jour.",
+      "start": 32.369,
+      "end": 32.786,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-96",
+      "word": "Aujourd'hui,",
+      "start": 33.112,
+      "end": 33.68,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-97",
+      "word": "c'est",
+      "start": 33.704,
+      "end": 33.866,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-98",
+      "word": "3",
+      "start": 33.936,
+      "end": 34.11,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-99",
+      "word": "heures",
+      "start": 34.191,
+      "end": 34.423,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-100",
+      "word": "42.",
+      "start": 34.632,
+      "end": 35.341,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-101",
+      "word": "Presque",
+      "start": 35.944,
+      "end": 36.304,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-102",
+      "word": "cinq",
+      "start": 36.374,
+      "end": 36.606,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-103",
+      "word": "fois",
+      "start": 36.664,
+      "end": 36.838,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-104",
+      "word": "plus.",
+      "start": 36.862,
+      "end": 37.338,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-105",
+      "word": "L'Europe",
+      "start": 37.663,
+      "end": 38.057,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-106",
+      "word": "change",
+      "start": 38.081,
+      "end": 38.382,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-107",
+      "word": "donc",
+      "start": 38.406,
+      "end": 38.603,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-108",
+      "word": "de",
+      "start": 38.649,
+      "end": 38.731,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-109",
+      "word": "stratégie",
+      "start": 38.766,
+      "end": 39.462,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-110",
+      "word": ":",
+      "start": 39.485,
+      "end": 39.509,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-111",
+      "word": "ne",
+      "start": 39.752,
+      "end": 39.892,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-112",
+      "word": "plus",
+      "start": 39.95,
+      "end": 40.136,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-113",
+      "word": "bloquer",
+      "start": 40.159,
+      "end": 40.449,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-114",
+      "word": "les",
+      "start": 40.472,
+      "end": 40.577,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-115",
+      "word": "jeunes,",
+      "start": 40.635,
+      "end": 41.064,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-116",
+      "word": "mais",
+      "start": 41.308,
+      "end": 41.459,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-117",
+      "word": "couper",
+      "start": 41.494,
+      "end": 41.796,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-118",
+      "word": "le",
+      "start": 41.831,
+      "end": 41.912,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-119",
+      "word": "scroll",
+      "start": 41.959,
+      "end": 42.319,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-120",
+      "word": "infini,",
+      "start": 42.411,
+      "end": 43.201,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-121",
+      "word": "l'autoplay",
+      "start": 43.48,
+      "end": 44.199,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-122",
+      "word": "et",
+      "start": 44.478,
+      "end": 44.629,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-123",
+      "word": "les",
+      "start": 44.652,
+      "end": 44.733,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-124",
+      "word": "notifs",
+      "start": 44.757,
+      "end": 45.093,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-125",
+      "word": "la",
+      "start": 45.117,
+      "end": 45.186,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-126",
+      "word": "nuit.",
+      "start": 45.233,
+      "end": 45.593,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-127",
+      "word": "Parce",
+      "start": 46.103,
+      "end": 46.324,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-128",
+      "word": "qu'une",
+      "start": 46.347,
+      "end": 46.545,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-129",
+      "word": "case",
+      "start": 46.568,
+      "end": 46.823,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-130",
+      "word": "à",
+      "start": 46.846,
+      "end": 46.87,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-131",
+      "word": "cocher",
+      "start": 46.939,
+      "end": 47.311,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-132",
+      "word": "se",
+      "start": 47.369,
+      "end": 47.462,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-133",
+      "word": "contourne",
+      "start": 47.531,
+      "end": 47.938,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-134",
+      "word": "en",
+      "start": 47.961,
+      "end": 48.019,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-135",
+      "word": "dix",
+      "start": 48.089,
+      "end": 48.274,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-136",
+      "word": "secondes.",
+      "start": 48.298,
+      "end": 48.89,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-137",
+      "word": "Alors",
+      "start": 49.331,
+      "end": 49.691,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-138",
+      "word": "qu'un",
+      "start": 49.726,
+      "end": 49.865,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-139",
+      "word": "design",
+      "start": 49.935,
+      "end": 50.306,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-140",
+      "word": "sobre",
+      "start": 50.388,
+      "end": 50.817,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-141",
+      "word": "coupe",
+      "start": 50.887,
+      "end": 51.154,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-142",
+      "word": "l'addiction",
+      "start": 51.177,
+      "end": 51.572,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-143",
+      "word": "à",
+      "start": 51.607,
+      "end": 51.63,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-144",
+      "word": "la",
+      "start": 51.653,
+      "end": 51.723,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-145",
+      "word": "source.",
+      "start": 51.792,
+      "end": 52.28,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-146",
+      "word": "Abonne-toi",
+      "start": 52.721,
+      "end": 53.36,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-147",
+      "word": "pour",
+      "start": 53.406,
+      "end": 53.534,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-148",
+      "word": "ne",
+      "start": 53.58,
+      "end": 53.638,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-149",
+      "word": "rien",
+      "start": 53.696,
+      "end": 53.94,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-150",
+      "word": "rater",
+      "start": 53.975,
+      "end": 54.254,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-151",
+      "word": "des",
+      "start": 54.288,
+      "end": 54.37,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-152",
+      "word": "prochains",
+      "start": 54.393,
+      "end": 54.718,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-153",
+      "word": "décryptages",
+      "start": 54.753,
+      "end": 55.345,
+      "confidence": 0.99,
+      "isCut": false
+    },
+    {
+      "id": "w-154",
+      "word": "tech.",
+      "start": 55.368,
+      "end": 55.775,
+      "confidence": 0.99,
+      "isCut": false
+    }
+  ],
+  "motionTrack": [
+    {
+      "id": "beat-1",
+      "componentId": "comp-hook-shatter",
+      "name": "1. Hook Shatter",
+      "start": 0,
+      "end": 6.24,
+      "type": "card",
+      "color": "#059669"
+    },
+    {
+      "id": "beat-2",
+      "componentId": "comp-hook-shatter",
+      "name": "2. Bilan Australie",
+      "start": 6.24,
+      "end": 16.2,
+      "type": "typography",
+      "color": "#059669"
+    },
+    {
+      "id": "beat-3",
+      "componentId": "comp-hook-shatter",
+      "name": "3. Censure France",
+      "start": 16.2,
+      "end": 23.38,
+      "type": "typography",
+      "color": "#059669"
+    },
+    {
+      "id": "beat-4",
+      "componentId": "comp-algo-gauge",
+      "name": "4. Design & Jauge",
+      "start": 23.38,
+      "end": 27.98,
+      "type": "counter",
+      "color": "#258EFF"
+    },
+    {
+      "id": "beat-5",
+      "componentId": "comp-algo-gauge",
+      "name": "5. Barres ×4,9",
+      "start": 27.98,
+      "end": 37.5,
+      "type": "chart",
+      "color": "#258EFF"
+    },
+    {
+      "id": "beat-6",
+      "componentId": "comp-algo-gauge",
+      "name": "6. Toggles KIDS Act",
+      "start": 37.5,
+      "end": 45.85,
+      "type": "typography",
+      "color": "#059669"
+    },
+    {
+      "id": "beat-7",
+      "componentId": "comp-kids-act",
+      "name": "7. Verdict Punch-in",
+      "start": 45.85,
+      "end": 52.5,
+      "type": "typography",
+      "color": "#14161B"
+    },
+    {
+      "id": "beat-8",
+      "componentId": "comp-kids-act",
+      "name": "8. CTA Abonnement",
+      "start": 52.5,
+      "end": 57,
+      "type": "typography",
+      "color": "#14161B"
+    }
+  ],
+  "layoutTrack": [
+    {
+      "id": "layout-1",
+      "layout": "split",
+      "start": 0,
+      "end": 6.24
+    },
+    {
+      "id": "layout-2",
+      "layout": "split",
+      "start": 6.24,
+      "end": 16.2
+    },
+    {
+      "id": "layout-3",
+      "layout": "split",
+      "start": 16.2,
+      "end": 23.38
+    },
+    {
+      "id": "layout-4",
+      "layout": "fullscreen",
+      "start": 23.38,
+      "end": 27.98
+    },
+    {
+      "id": "layout-5",
+      "layout": "fullscreen",
+      "start": 27.98,
+      "end": 37.5
+    },
+    {
+      "id": "layout-6",
+      "layout": "split",
+      "start": 37.5,
+      "end": 45.85
+    },
+    {
+      "id": "layout-7",
+      "layout": "fullscreen",
+      "start": 45.85,
+      "end": 52.5
+    },
+    {
+      "id": "layout-8",
+      "layout": "fullscreen",
+      "start": 52.5,
+      "end": 57
+    }
+  ],
+  "sfxTrack": [
+    {
+      "id": "sfx-1",
+      "sound": "glass-shatter",
+      "start": 3.44,
+      "volume": 0.52
+    },
+    {
+      "id": "sfx-2",
+      "sound": "impact-boom",
+      "start": 3.44,
+      "volume": 0.42
+    },
+    {
+      "id": "sfx-3",
+      "sound": "thud",
+      "start": 12.13,
+      "volume": 0.46
+    },
+    {
+      "id": "sfx-4",
+      "sound": "tap",
+      "start": 15.34,
+      "volume": 0.44
+    },
+    {
+      "id": "sfx-5",
+      "sound": "thud",
+      "start": 22.54,
+      "volume": 0.5
+    },
+    {
+      "id": "sfx-6",
+      "sound": "zhhh",
+      "start": 23.38,
+      "volume": 0.38
+    },
+    {
+      "id": "sfx-7",
+      "sound": "pop",
+      "start": 25.88,
+      "volume": 0.44
+    },
+    {
+      "id": "sfx-8",
+      "sound": "riser",
+      "start": 33.9,
+      "volume": 0.28
+    },
+    {
+      "id": "sfx-9",
+      "sound": "impact-boom",
+      "start": 34.63,
+      "volume": 0.4
+    },
+    {
+      "id": "sfx-10",
+      "sound": "tap",
+      "start": 42.1,
+      "volume": 0.42
+    },
+    {
+      "id": "sfx-11",
+      "sound": "tap",
+      "start": 43.55,
+      "volume": 0.42
+    },
+    {
+      "id": "sfx-12",
+      "sound": "bell",
+      "start": 44.85,
+      "volume": 0.36
+    },
+    {
+      "id": "sfx-13",
+      "sound": "thud",
+      "start": 48.05,
+      "volume": 0.46
+    },
+    {
+      "id": "sfx-14",
+      "sound": "pop",
+      "start": 49.9,
+      "volume": 0.4
+    },
+    {
+      "id": "sfx-15",
+      "sound": "tap",
+      "start": 53.2,
+      "volume": 0.42
+    },
+    {
+      "id": "sfx-16",
+      "sound": "pop-back",
+      "start": 53.5,
+      "volume": 0.4
+    },
+    {
+      "id": "sfx-17",
+      "sound": "bell",
+      "start": 53.55,
+      "volume": 0.38
+    }
+  ],
+  "musicTrack": {
+    "trackName": "Bright_Corporate_Groove_8c962467.mp3",
+    "volume": 0.24,
+    "ducking": true
+  },
+  "feedbacks": [],
+  "motionComponents": {
+    "comp-hook-shatter": {
+      "id": "comp-hook-shatter",
+      "name": "hook_shatter_counter",
+      "description": "Carte Limite d’âge -15 ans + explosion 3.44s + badge 85 % / 63 %",
+      "width": 1080,
+      "height": 960,
+      "fps": 25,
+      "hasAlpha": true,
+      "tRange": [
+        0,
+        1
+      ],
+      "code": "window.setT = function(t) {\n  const card = document.getElementById('hook-card');\n  const badge = document.getElementById('stat-badge');\n  if (card) {\n    const scale = t < 0.55 ? 0.92 + 0.08 * t : 1 + Math.sin((t - 0.55) * 28) * 0.025;\n    card.style.transform = `scale(${scale.toFixed(3)})`;\n  }\n  if (badge) {\n    badge.innerText = Math.round(Math.min(85, t * 110)) + ' %';\n  }\n};"
+    },
+    "comp-algo-gauge": {
+      "id": "comp-algo-gauge",
+      "name": "algo_addiction_gauge",
+      "description": "Jauge radiale Design Addictif 0 → 92 % + score de rétention",
+      "width": 1080,
+      "height": 1920,
+      "fps": 25,
+      "hasAlpha": true,
+      "tRange": [
+        0,
+        1
+      ],
+      "code": "window.setT = function(t) {\n  const badge = document.getElementById('stat-badge');\n  const bars = document.querySelectorAll('.chart-bar');\n  if (badge) badge.innerText = Math.round(Math.min(92, t * 96)) + ' %';\n  bars.forEach((b, i) => {\n    const p = Math.max(0, Math.min(1, t * 1.4 - i * 0.12));\n    b.style.height = Math.round(p * [42, 68, 95, 130, 175, 210][i]) + 'px';\n  });\n};"
+    },
+    "comp-kids-act": {
+      "id": "comp-kids-act",
+      "name": "kids_act_switches",
+      "description": "3 interrupteurs système coupés sur les mots exacts (scroll, autoplay, notifs)",
+      "width": 1080,
+      "height": 960,
+      "fps": 25,
+      "hasAlpha": true,
+      "tRange": [
+        0,
+        1
+      ],
+      "code": "window.setT = function(t) {\n  const pills = document.querySelectorAll('.toggle-item');\n  pills.forEach((el, idx) => {\n    const active = t >= (idx + 1) * 0.25;\n    el.style.opacity = active ? '1' : '0.45';\n    el.style.transform = active ? 'translateX(0px)' : 'translateX(-12px)';\n  });\n};"
+    }
+  },
+  "contactSheet": [
+    {
+      "frameIndex": 1,
+      "timestamp": 2.81,
+      "timeFormatted": "00:02.81",
+      "title": "Frame #1 · Hook Shatter",
+      "qcCheck": "pass",
+      "notes": "UI Limite d’âge -15 ans + explosion 3.44s + double preuve 85 % / 63 % + barre décret",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 2,
+      "timestamp": 10.72,
+      "timeFormatted": "00:10.72",
+      "title": "Frame #2 · Bilan Australie",
+      "qcCheck": "pass",
+      "notes": "Counter 0→85 % barré + connecteur SVG + UI sélecteur année 2012→2004",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 3,
+      "timestamp": 19.43,
+      "timeFormatted": "00:19.43",
+      "title": "Frame #3 · Censure France",
+      "qcCheck": "pass",
+      "notes": "Timeline parlementaire animée + décision Conseil constitutionnel + tampon CENSURÉ",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 4,
+      "timestamp": 25.45,
+      "timeFormatted": "00:25.45",
+      "title": "Frame #4 · Design & Jauge",
+      "qcCheck": "pass",
+      "notes": "zhhh + bascule plein papier + feed infini + jauge 0→92 % + 3 leviers d’addiction",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 5,
+      "timestamp": 32.26,
+      "timeFormatted": "00:32.26",
+      "title": "Frame #5 · Barres ×4,9",
+      "qcCheck": "pass",
+      "notes": "Barres 2015 vs 2026 + accolade ×4,9 + chrono 0h45→3h42 + coût attentionnel annuel",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 6,
+      "timestamp": 41.26,
+      "timeFormatted": "00:41.26",
+      "title": "Frame #6 · Toggles KIDS Act",
+      "qcCheck": "pass",
+      "notes": "3 interrupteurs système coupés sur les mots exacts (scroll, autoplay, notifs)",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 7,
+      "timestamp": 48.84,
+      "timeFormatted": "00:48.84",
+      "title": "Frame #7 · Verdict Punch-in",
+      "qcCheck": "pass",
+      "notes": "Zoom punch-in 1.12x + double carte verre dépoli + connecteur énergétique",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 8,
+      "timestamp": 54.52,
+      "timeFormatted": "00:54.52",
+      "title": "Frame #8 · CTA Abonnement",
+      "qcCheck": "pass",
+      "notes": "Carte abonné animée : clic S’abonner → Abonné ✓ + cloche activée + ondes",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 9,
+      "timestamp": 2.81,
+      "timeFormatted": "00:02.81",
+      "title": "Frame #9 · Hook Shatter",
+      "qcCheck": "pass",
+      "notes": "UI Limite d’âge -15 ans + explosion 3.44s + double preuve 85 % / 63 % + barre décret",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 10,
+      "timestamp": 10.72,
+      "timeFormatted": "00:10.72",
+      "title": "Frame #10 · Bilan Australie",
+      "qcCheck": "pass",
+      "notes": "Counter 0→85 % barré + connecteur SVG + UI sélecteur année 2012→2004",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 11,
+      "timestamp": 19.43,
+      "timeFormatted": "00:19.43",
+      "title": "Frame #11 · Censure France",
+      "qcCheck": "pass",
+      "notes": "Timeline parlementaire animée + décision Conseil constitutionnel + tampon CENSURÉ",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    },
+    {
+      "frameIndex": 12,
+      "timestamp": 25.45,
+      "timeFormatted": "00:25.45",
+      "title": "Frame #12 · Design & Jauge",
+      "qcCheck": "pass",
+      "notes": "zhhh + bascule plein papier + feed infini + jauge 0→92 % + 3 leviers d’addiction",
+      "previewUrl": "/renders/short-interdiction-15-ans_v1_contact.jpg"
+    }
+  ],
+  "styleProfile": {
+    "name": "Papier signature (@alex.decode)",
+    "fontFamily": "\"Bricolage Grotesque\", sans-serif",
+    "accentColor": "#258EFF",
+    "textColor": "#14161B",
+    "cardBg": "#FCFBF8",
+    "captionsPosition": "bottom",
+    "visualBeatsTarget": 8
+  },
+  "editSpec": {
+    "voiceId": "nPczCjzI2devNBz1zQrb",
+    "speed": 1.06,
+    "music": "Bright_Corporate_Groove_8c962467.mp3",
+    "musicGainUnderVoice": 0.24,
+    "ambientBlueOrbs": true,
+    "topProgressChrome": false,
+    "beatsCount": 8
+  },
+  "hasMp4": true
+}

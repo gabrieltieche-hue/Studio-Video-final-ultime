@@ -2,6 +2,10 @@ FROM node:22-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    chromium \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    git \
     ca-certificates \
     curl \
   && rm -rf /var/lib/apt/lists/*
@@ -21,9 +25,10 @@ RUN npm run build
 ENV NODE_ENV=production \
     PORT=3000 \
     STORAGE_DIR=/app/storage \
-    ALWAYS_ON_SERVER=true
+    ALWAYS_ON_SERVER=true \
+    CHROME_EXE=/usr/bin/chromium
 
-RUN mkdir -p /app/storage/social /app/storage/renders
+RUN mkdir -p /app/storage/social /app/storage/renders /app/storage/projects
 
 EXPOSE 3000
 
