@@ -101,7 +101,7 @@ async function main() {
         stdio: 'inherit',
         env: gitAuthEnv,
       });
-      execFileSync('git', ['reset', '--soft', 'origin/main'], { cwd: ROOT_DIR });
+      execFileSync('git', ['reset', '--mixed', 'origin/main'], { cwd: ROOT_DIR });
     } else {
       const remoteCheck = spawnSync('git', ['remote', 'get-url', 'origin'], {
         cwd: ROOT_DIR,
