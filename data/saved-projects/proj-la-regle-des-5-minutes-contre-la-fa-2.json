@@ -1,0 +1,1604 @@
+{
+  "id": "proj-la-regle-des-5-minutes-contre-la-fa-2",
+  "slug": "la-regle-des-5-minutes-contre-la-fa-2",
+  "title": "La règle des 5 minutes contre la fatigue numérique",
+  "topicCategory": "Conseils de vie",
+  "hookText": "5 minutes sans écran suffisent-elles vraiment à reposer ton cerveau ?",
+  "mode": "faceless_explainer",
+  "platform": "youtube_shorts",
+  "status": "ready",
+  "duration": 47.48,
+  "fps": 25,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "currentVersion": "v1",
+  "versions": [
+    {
+      "version": "v1",
+      "createdAt": "2026-11-16T15:42:15.405Z",
+      "status": "done",
+      "duration": 47.48,
+      "fps": 25,
+      "notes": "Créé en masse · Mythe vs Réalité · Look Papier signature",
+      "hasMp4": false
+    }
+  ],
+  "transcript": [
+    {
+      "id": "w-1",
+      "word": "Couper",
+      "start": 0.08,
+      "end": 0.455,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-2",
+      "word": "ton",
+      "start": 0.488,
+      "end": 0.676,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-3",
+      "word": "téléphone",
+      "start": 0.692,
+      "end": 1.255,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-4",
+      "word": "5",
+      "start": 1.304,
+      "end": 1.679,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-5",
+      "word": "minutes",
+      "start": 1.712,
+      "end": 2.15,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-6",
+      "word": "ne",
+      "start": 2.188,
+      "end": 2.313,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-7",
+      "word": "repose",
+      "start": 2.324,
+      "end": 2.699,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-8",
+      "word": "absolument",
+      "start": 2.732,
+      "end": 3.357,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-9",
+      "word": "pas",
+      "start": 3.412,
+      "end": 3.6,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-10",
+      "word": "ton",
+      "start": 3.616,
+      "end": 3.804,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-11",
+      "word": "cerveau.",
+      "start": 3.82,
+      "end": 4.32,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-12",
+      "word": "D'abord,",
+      "start": 4.364,
+      "end": 4.864,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-13",
+      "word": "on",
+      "start": 4.908,
+      "end": 5.033,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-14",
+      "word": "croit",
+      "start": 5.044,
+      "end": 5.357,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-15",
+      "word": "qu'une",
+      "start": 5.384,
+      "end": 5.759,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-16",
+      "word": "micro-pause",
+      "start": 5.792,
+      "end": 6.48,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-17",
+      "word": "efface",
+      "start": 6.54,
+      "end": 6.915,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-18",
+      "word": "la",
+      "start": 6.948,
+      "end": 7.073,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-19",
+      "word": "fatigue.",
+      "start": 7.084,
+      "end": 7.584,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-20",
+      "word": "En",
+      "start": 7.628,
+      "end": 7.753,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-21",
+      "word": "réalité,",
+      "start": 7.764,
+      "end": 8.264,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-22",
+      "word": "l'attention",
+      "start": 8.308,
+      "end": 8.996,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-23",
+      "word": "met",
+      "start": 9.056,
+      "end": 9.243,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-24",
+      "word": "23",
+      "start": 9.26,
+      "end": 9.635,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-25",
+      "word": "minutes",
+      "start": 9.668,
+      "end": 10.105,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-26",
+      "word": "à",
+      "start": 10.144,
+      "end": 10.269,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-27",
+      "word": "se",
+      "start": 10.28,
+      "end": 10.405,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-28",
+      "word": "recentrer.",
+      "start": 10.416,
+      "end": 11.041,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-29",
+      "word": "Pourquoi",
+      "start": 11.096,
+      "end": 11.596,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-30",
+      "word": "?",
+      "start": 11.64,
+      "end": 11.765,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-31",
+      "word": "Parce",
+      "start": 11.776,
+      "end": 12.088,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-32",
+      "word": "que",
+      "start": 12.115,
+      "end": 12.303,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-33",
+      "word": "ton",
+      "start": 12.319,
+      "end": 12.507,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-34",
+      "word": "cerveau",
+      "start": 12.523,
+      "end": 12.961,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-35",
+      "word": "garde",
+      "start": 12.999,
+      "end": 13.312,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-36",
+      "word": "en",
+      "start": 13.339,
+      "end": 13.465,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-37",
+      "word": "mémoire",
+      "start": 13.475,
+      "end": 13.913,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-38",
+      "word": "les",
+      "start": 13.951,
+      "end": 14.139,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-39",
+      "word": "notifications",
+      "start": 14.155,
+      "end": 14.969,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-40",
+      "word": "précédentes",
+      "start": 15.039,
+      "end": 15.727,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-41",
+      "word": ":",
+      "start": 15.787,
+      "end": 15.912,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-42",
+      "word": "c'est",
+      "start": 15.923,
+      "end": 16.236,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-43",
+      "word": "le",
+      "start": 16.263,
+      "end": 16.388,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-44",
+      "word": "résidu",
+      "start": 16.399,
+      "end": 16.775,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-45",
+      "word": "d'attention.",
+      "start": 16.807,
+      "end": 17.558,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-46",
+      "word": "Mais",
+      "start": 17.623,
+      "end": 17.873,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-47",
+      "word": "le",
+      "start": 17.895,
+      "end": 18.02,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-48",
+      "word": "vrai",
+      "start": 18.031,
+      "end": 18.281,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-49",
+      "word": "piège,",
+      "start": 18.303,
+      "end": 18.679,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-50",
+      "word": "c'est",
+      "start": 18.711,
+      "end": 19.024,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-51",
+      "word": "que",
+      "start": 19.051,
+      "end": 19.239,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-52",
+      "word": "chaque",
+      "start": 19.255,
+      "end": 19.631,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-53",
+      "word": "micro-pause",
+      "start": 19.663,
+      "end": 20.351,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-54",
+      "word": "de",
+      "start": 20.411,
+      "end": 20.536,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-55",
+      "word": "5",
+      "start": 20.547,
+      "end": 20.922,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-56",
+      "word": "minutes",
+      "start": 20.955,
+      "end": 21.393,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-57",
+      "word": "te",
+      "start": 21.431,
+      "end": 21.556,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-58",
+      "word": "coûte",
+      "start": 21.567,
+      "end": 21.88,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-59",
+      "word": "4",
+      "start": 21.907,
+      "end": 22.282,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-60",
+      "word": "fois",
+      "start": 22.315,
+      "end": 22.565,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-61",
+      "word": "plus",
+      "start": 22.587,
+      "end": 22.837,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-62",
+      "word": "de",
+      "start": 22.859,
+      "end": 22.984,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-63",
+      "word": "temps.",
+      "start": 22.995,
+      "end": 23.37,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-64",
+      "word": "Concrètement,",
+      "start": 23.403,
+      "end": 24.216,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-65",
+      "word": "6",
+      "start": 24.287,
+      "end": 24.662,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-66",
+      "word": "pauses",
+      "start": 24.695,
+      "end": 25.07,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-67",
+      "word": "de",
+      "start": 25.103,
+      "end": 25.228,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-68",
+      "word": "5",
+      "start": 25.239,
+      "end": 25.614,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-69",
+      "word": "minutes",
+      "start": 25.647,
+      "end": 26.085,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-70",
+      "word": "te",
+      "start": 26.123,
+      "end": 26.248,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-71",
+      "word": "font",
+      "start": 26.259,
+      "end": 26.509,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-72",
+      "word": "perdre",
+      "start": 26.531,
+      "end": 26.906,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-73",
+      "word": "2",
+      "start": 26.939,
+      "end": 27.314,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-74",
+      "word": "heures",
+      "start": 27.347,
+      "end": 27.722,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-75",
+      "word": "de",
+      "start": 27.755,
+      "end": 27.88,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-76",
+      "word": "concentration",
+      "start": 27.891,
+      "end": 28.704,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-77",
+      "word": "profonde",
+      "start": 28.775,
+      "end": 29.275,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-78",
+      "word": "par",
+      "start": 29.319,
+      "end": 29.506,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-79",
+      "word": "jour.",
+      "start": 29.523,
+      "end": 29.836,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-80",
+      "word": "Pour",
+      "start": 29.863,
+      "end": 30.113,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-81",
+      "word": "agir",
+      "start": 30.135,
+      "end": 30.385,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-82",
+      "word": "dès",
+      "start": 30.407,
+      "end": 30.594,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-83",
+      "word": "maintenant",
+      "start": 30.611,
+      "end": 31.236,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-84",
+      "word": ":",
+      "start": 31.291,
+      "end": 31.416,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-85",
+      "word": "bloque",
+      "start": 31.427,
+      "end": 31.802,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-86",
+      "word": "90",
+      "start": 31.835,
+      "end": 32.21,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-87",
+      "word": "minutes",
+      "start": 32.243,
+      "end": 32.681,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-88",
+      "word": "sans",
+      "start": 32.719,
+      "end": 32.969,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-89",
+      "word": "écran,",
+      "start": 32.991,
+      "end": 33.366,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-90",
+      "word": "coupe",
+      "start": 33.399,
+      "end": 33.711,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-91",
+      "word": "toutes",
+      "start": 33.739,
+      "end": 34.114,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-92",
+      "word": "les",
+      "start": 34.147,
+      "end": 34.334,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-93",
+      "word": "alertes",
+      "start": 34.351,
+      "end": 34.788,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-94",
+      "word": "et",
+      "start": 34.827,
+      "end": 34.952,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-95",
+      "word": "respire",
+      "start": 34.963,
+      "end": 35.4,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-96",
+      "word": "10",
+      "start": 35.438,
+      "end": 35.814,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-97",
+      "word": "minutes.",
+      "start": 35.846,
+      "end": 36.347,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-98",
+      "word": "Résultat",
+      "start": 36.39,
+      "end": 36.891,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-99",
+      "word": ":",
+      "start": 36.934,
+      "end": 37.06,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-100",
+      "word": "tu",
+      "start": 37.07,
+      "end": 37.196,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-101",
+      "word": "retrouves",
+      "start": 37.206,
+      "end": 37.769,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-102",
+      "word": "un",
+      "start": 37.818,
+      "end": 37.944,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-103",
+      "word": "focus",
+      "start": 37.954,
+      "end": 38.267,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-104",
+      "word": "total,",
+      "start": 38.294,
+      "end": 38.67,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-105",
+      "word": "zéro",
+      "start": 38.702,
+      "end": 38.953,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-106",
+      "word": "fatigue",
+      "start": 38.974,
+      "end": 39.412,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-107",
+      "word": "visuelle",
+      "start": 39.45,
+      "end": 39.951,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-108",
+      "word": "et",
+      "start": 39.994,
+      "end": 40.119,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-109",
+      "word": "une",
+      "start": 40.13,
+      "end": 40.318,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-110",
+      "word": "vraie",
+      "start": 40.334,
+      "end": 40.647,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-111",
+      "word": "clarté",
+      "start": 40.674,
+      "end": 41.05,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-112",
+      "word": "d'esprit.",
+      "start": 41.082,
+      "end": 41.645,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-113",
+      "word": "Envoie",
+      "start": 41.694,
+      "end": 42.07,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-114",
+      "word": "ce",
+      "start": 42.102,
+      "end": 42.227,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-115",
+      "word": "Short",
+      "start": 42.238,
+      "end": 42.551,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-116",
+      "word": "à",
+      "start": 42.578,
+      "end": 42.703,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-117",
+      "word": "un",
+      "start": 42.714,
+      "end": 42.839,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-118",
+      "word": "ami",
+      "start": 42.85,
+      "end": 43.038,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-119",
+      "word": "accro",
+      "start": 43.054,
+      "end": 43.367,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-120",
+      "word": "aux",
+      "start": 43.394,
+      "end": 43.582,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-121",
+      "word": "micro-pauses",
+      "start": 43.598,
+      "end": 44.349,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-122",
+      "word": "et",
+      "start": 44.414,
+      "end": 44.539,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-123",
+      "word": "abonne-toi",
+      "start": 44.55,
+      "end": 45.176,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-124",
+      "word": "pour",
+      "start": 45.23,
+      "end": 45.48,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-125",
+      "word": "protéger",
+      "start": 45.502,
+      "end": 46.003,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-126",
+      "word": "ton",
+      "start": 46.046,
+      "end": 46.234,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-127",
+      "word": "attention.",
+      "start": 46.25,
+      "end": 46.876,
+      "confidence": 0.95
+    }
+  ],
+  "motionTrack": [
+    {
+      "id": "mot-beat-1",
+      "componentId": "comp-beat-1",
+      "name": "Le mythe des 5 minutes",
+      "start": 0,
+      "end": 4.34,
+      "type": "typography",
+      "color": "#258EFF"
+    },
+    {
+      "id": "mot-beat-2",
+      "componentId": "comp-beat-2",
+      "name": "Mythe vs réalité attention",
+      "start": 4.34,
+      "end": 11.07,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-3",
+      "componentId": "comp-beat-3",
+      "name": "Le piège du résidu",
+      "start": 11.07,
+      "end": 17.59,
+      "type": "typography",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-4",
+      "componentId": "comp-beat-4",
+      "name": "Le vrai chiffre clé",
+      "start": 17.59,
+      "end": 23.39,
+      "type": "counter",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-5",
+      "componentId": "comp-beat-5",
+      "name": "Bilan de ta journée",
+      "start": 23.39,
+      "end": 29.85,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-6",
+      "componentId": "comp-beat-6",
+      "name": "3 règles pour récupérer",
+      "start": 29.85,
+      "end": 36.37,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-7",
+      "componentId": "comp-beat-7",
+      "name": "Nouvel équilibre mental",
+      "start": 36.37,
+      "end": 41.67,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-8",
+      "componentId": "comp-beat-8",
+      "name": "Teste dès aujourd'hui",
+      "start": 41.67,
+      "end": 47.48,
+      "type": "rocket",
+      "color": "#059669"
+    }
+  ],
+  "layoutTrack": [
+    {
+      "id": "layout-beat-1",
+      "layout": "split",
+      "start": 0,
+      "end": 4.34
+    },
+    {
+      "id": "layout-beat-2",
+      "layout": "fullscreen",
+      "start": 4.34,
+      "end": 11.07
+    },
+    {
+      "id": "layout-beat-3",
+      "layout": "split",
+      "start": 11.07,
+      "end": 17.59
+    },
+    {
+      "id": "layout-beat-4",
+      "layout": "split",
+      "start": 17.59,
+      "end": 23.39
+    },
+    {
+      "id": "layout-beat-5",
+      "layout": "fullscreen",
+      "start": 23.39,
+      "end": 29.85
+    },
+    {
+      "id": "layout-beat-6",
+      "layout": "split",
+      "start": 29.85,
+      "end": 36.37
+    },
+    {
+      "id": "layout-beat-7",
+      "layout": "fullscreen",
+      "start": 36.37,
+      "end": 41.67
+    },
+    {
+      "id": "layout-beat-8",
+      "layout": "split",
+      "start": 41.67,
+      "end": 47.48
+    }
+  ],
+  "sfxTrack": [
+    {
+      "id": "sfx-hook-shatter",
+      "sound": "glass-shatter",
+      "start": 2.08,
+      "volume": 0.44
+    },
+    {
+      "id": "sfx-hook-boom",
+      "sound": "impact-boom",
+      "start": 2.08,
+      "volume": 0.38
+    },
+    {
+      "id": "sfx-2",
+      "sound": "riser",
+      "start": 4.46,
+      "volume": 0.26
+    },
+    {
+      "id": "sfx-3",
+      "sound": "pop",
+      "start": 11.19,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-4",
+      "sound": "thud",
+      "start": 17.71,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-5",
+      "sound": "tap",
+      "start": 23.51,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-6",
+      "sound": "tap",
+      "start": 29.97,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-7",
+      "sound": "zhhh",
+      "start": 36.49,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8",
+      "sound": "pop-back",
+      "start": 42.32,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8-bell",
+      "sound": "bell",
+      "start": 42.44,
+      "volume": 0.3
+    }
+  ],
+  "musicTrack": {
+    "trackName": "upbeat",
+    "volume": 0.24,
+    "ducking": true
+  },
+  "feedbacks": [],
+  "motionComponents": {},
+  "contactSheet": [],
+  "editSpec": {
+    "lookId": "papier",
+    "blueprintId": "myth_buster",
+    "speed": 1.05,
+    "hookText": "5 minutes sans écran suffisent-elles vraiment à reposer ton cerveau ?",
+    "sources": "",
+    "youtubeTitle": "La règle des 5 minutes contre la fatigue numérique",
+    "caption": "Tu penses que 5 minutes de pause suffisent ? La science de l'attention prouve le contraire. Voici comment vraiment récupérer.",
+    "hashtags": [
+      "#fatigueNumerique",
+      "#attention",
+      "#productivite",
+      "#conseilsDeVie",
+      "#cerveau"
+    ],
+    "beats": [
+      {
+        "id": "beat-1",
+        "blueprintId": "myth_buster",
+        "beatRole": "hook",
+        "title": "Le mythe des 5 minutes",
+        "shortLabel": "Mythe",
+        "screenLabel": "MYTHE",
+        "spokenLine": "Couper ton téléphone 5 minutes ne repose absolument pas ton cerveau.",
+        "visualType": "hook_myth_bust",
+        "layoutHint": "split",
+        "brollKey": "teen_phone",
+        "brollCaption": "Focus · La règle des 5",
+        "iconKind": "clock",
+        "stampWord": "FAUX",
+        "statValue": "5 minutes",
+        "statLabel": "Repère temporel",
+        "hookCards": [
+          {
+            "label": "Avant",
+            "sub": "Ancien réflexe",
+            "iconKind": "clock",
+            "tone": "dark"
+          },
+          {
+            "label": "5 minutes",
+            "sub": "Données 2026",
+            "iconKind": "clock",
+            "tone": "light"
+          },
+          {
+            "label": "En 2026",
+            "sub": "Nouveau standard",
+            "iconKind": "rocket",
+            "tone": "accent"
+          }
+        ],
+        "subStats": [
+          {
+            "value": "20 min",
+            "label": "Pause réelle"
+          },
+          {
+            "value": "25%",
+            "label": "Récupération"
+          }
+        ],
+        "toggles": [
+          {
+            "label": "Écran coupé 5 min",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "quoteText": "On répète partout la même erreur sur la règle des 5, mais les chiffres prouvent l’inverse.",
+        "highlightPhrase": "La règle des 5",
+        "quoteSource": "Données 2026",
+        "comparisonLeft": {
+          "label": "Option classique",
+          "value": "Réflexe subi",
+          "ratio": 0.82
+        },
+        "comparisonRight": {
+          "label": "Nouvelle approche",
+          "value": "5 minutes",
+          "ratio": 0.34
+        },
+        "sfxKind": "glass-shatter",
+        "from": 0,
+        "to": 4.34,
+        "layout": "split"
+      },
+      {
+        "id": "beat-2",
+        "blueprintId": "myth_buster",
+        "beatRole": "context",
+        "title": "Mythe vs réalité attention",
+        "shortLabel": "Réalité",
+        "screenLabel": "RÉALITÉ",
+        "spokenLine": "D'abord, on croit qu'une micro-pause efface la fatigue. En réalité, l'attention met 23 minutes à se recentrer.",
+        "visualType": "comparison_bars",
+        "layoutHint": "fullscreen",
+        "brollKey": "data_analytics",
+        "brollCaption": "Constat · Données 2026",
+        "iconKind": "clock",
+        "statValue": "5 minutes",
+        "statLabel": "Mesuré sur La règle des 5",
+        "subStats": [
+          {
+            "value": "5 min",
+            "label": "Pause de 5 min"
+          },
+          {
+            "value": "23 min",
+            "label": "Focus retrouvé"
+          }
+        ],
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Focus attention",
+          "Application dès cette semaine"
+        ],
+        "steps": [
+          "Situation",
+          "Blocage",
+          "Déclic",
+          "Mesure"
+        ],
+        "toggles": [
+          {
+            "label": "Comparaison temps de pause",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "ledgerRows": [
+          {
+            "label": "Situation actuelle",
+            "value": "Dispersion",
+            "delta": "Friction",
+            "highlight": false
+          },
+          {
+            "label": "Point de rupture",
+            "value": "5 minutes",
+            "delta": "Données 2026",
+            "highlight": true
+          },
+          {
+            "label": "Marges perdues",
+            "value": "Sous-évaluées",
+            "delta": "À corriger",
+            "highlight": false
+          }
+        ],
+        "comparisonLeft": {
+          "label": "Modèle subi",
+          "value": "Coût caché",
+          "ratio": 0.84
+        },
+        "comparisonRight": {
+          "label": "Approche mesurée",
+          "value": "5 minutes",
+          "ratio": 0.28
+        },
+        "sfxKind": "riser",
+        "from": 4.34,
+        "to": 11.07,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-3",
+        "blueprintId": "myth_buster",
+        "beatRole": "mechanism",
+        "title": "Le piège du résidu",
+        "shortLabel": "Mécanisme",
+        "screenLabel": "MÉCANISME",
+        "spokenLine": "Pourquoi ? Parce que ton cerveau garde en mémoire les notifications précédentes : c'est le résidu d'attention.",
+        "visualType": "verdict_quote",
+        "layoutHint": "split",
+        "brollKey": "focus_clockwork",
+        "brollCaption": "Enchaînement réel",
+        "iconKind": "clock",
+        "stampWord": "LOGIQUE",
+        "steps": [
+          "Repérer",
+          "Chiffrer",
+          "Arbitrer",
+          "Stabiliser"
+        ],
+        "toggles": [
+          {
+            "label": "Cerveau saturé par les",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "ledgerRows": [
+          {
+            "label": "Étape 1 · Diagnostic",
+            "value": "Mesure nette",
+            "delta": "Clair"
+          },
+          {
+            "label": "Étape 2 · Arbitrage",
+            "value": "5 minutes",
+            "delta": "Décisif",
+            "highlight": true
+          },
+          {
+            "label": "Étape 3 · Suivi",
+            "value": "Régulier",
+            "delta": "Durable"
+          }
+        ],
+        "quoteText": "Ce n’est pas un détail technique : c’est la structure du calcul qui fait toute la différence.",
+        "highlightPhrase": "la structure du calcul",
+        "quoteSource": "Données 2026",
+        "comparisonLeft": {
+          "label": "Option classique",
+          "value": "Subi",
+          "ratio": 0.86
+        },
+        "comparisonRight": {
+          "label": "Nouvelle approche",
+          "value": "Maîtrisé",
+          "ratio": 0.32
+        },
+        "sfxKind": "pop",
+        "from": 11.07,
+        "to": 17.59,
+        "layout": "split"
+      },
+      {
+        "id": "beat-4",
+        "blueprintId": "myth_buster",
+        "beatRole": "rehook",
+        "title": "Le vrai chiffre clé",
+        "shortLabel": "Re-hook",
+        "screenLabel": "CHIFFRE",
+        "spokenLine": "Mais le vrai piège, c'est que chaque micro-pause de 5 minutes te coûte 4 fois plus de temps.",
+        "visualType": "counter_flip",
+        "layoutHint": "split",
+        "brollKey": "studio",
+        "brollCaption": "Effet cumulé caché",
+        "iconKind": "clock",
+        "statValue": "5 minutes",
+        "statLabel": "Poids de l’effet cumulé",
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Focus attention",
+          "Application dès cette semaine"
+        ],
+        "steps": [
+          "Signal",
+          "Piège",
+          "Ajustement",
+          "Impact"
+        ],
+        "toggles": [
+          {
+            "label": "Coût cognitif multiplié par",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "quoteText": "Ce qui compte n’est pas le chiffre affiché le jour 1, mais l’écart cumulé sur 12 mois.",
+        "highlightPhrase": "l’écart cumulé sur 12 mois",
+        "quoteSource": "La règle des 5",
+        "comparisonLeft": {
+          "label": "Effet jour 1",
+          "value": "Faible",
+          "ratio": 0.28
+        },
+        "comparisonRight": {
+          "label": "Effet 12 mois",
+          "value": "Majeur",
+          "ratio": 0.9
+        },
+        "gaugePct": 84,
+        "sfxKind": "thud",
+        "from": 17.59,
+        "to": 23.39,
+        "layout": "split"
+      },
+      {
+        "id": "beat-5",
+        "blueprintId": "myth_buster",
+        "beatRole": "proof",
+        "title": "Bilan de ta journée",
+        "shortLabel": "Preuve",
+        "screenLabel": "PREUVE",
+        "spokenLine": "Concrètement, 6 pauses de 5 minutes te font perdre 2 heures de concentration profonde par jour.",
+        "visualType": "ledger_breakdown",
+        "layoutHint": "fullscreen",
+        "brollKey": "parliament",
+        "brollCaption": "Comparatif chiffré",
+        "iconKind": "clock",
+        "statValue": "5 minutes",
+        "statLabel": "Différence observée sur La règle des 5",
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Focus attention",
+          "Application dès cette semaine"
+        ],
+        "toggles": [
+          {
+            "label": "Calcul détaillé de la",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "ledgerRows": [
+          {
+            "label": "Référence passive",
+            "value": "Base 100",
+            "delta": "Érodée"
+          },
+          {
+            "label": "Option optimisée",
+            "value": "5 minutes",
+            "delta": "Avantage net",
+            "highlight": true
+          },
+          {
+            "label": "Fiabilité 2026",
+            "value": "Vérifiée",
+            "delta": "Données 2026"
+          }
+        ],
+        "comparisonLeft": {
+          "label": "Option classique",
+          "value": "Coût subi",
+          "ratio": 0.88
+        },
+        "comparisonRight": {
+          "label": "Nouvelle approche",
+          "value": "5 minutes",
+          "ratio": 0.3
+        },
+        "multiplierBadge": "NET",
+        "gaugePct": 86,
+        "sfxKind": "tap",
+        "from": 23.39,
+        "to": 29.85,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-6",
+        "blueprintId": "myth_buster",
+        "beatRole": "action",
+        "title": "3 règles pour récupérer",
+        "shortLabel": "Action",
+        "screenLabel": "ACTION",
+        "spokenLine": "Pour agir dès maintenant : bloque 90 minutes sans écran, coupe toutes les alertes et respire 10 minutes.",
+        "visualType": "checklist_action",
+        "layoutHint": "split",
+        "brollKey": "mobile_attention",
+        "brollCaption": "Mise en application",
+        "iconKind": "clock",
+        "bullets": [
+          "Poser un repère chiffré sur La règle",
+          "Supprimer la friction principale",
+          "Réévaluer au bout de 30 jours"
+        ],
+        "toggles": [
+          {
+            "label": "Checklist d'action immédiate",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "sfxKind": "tap",
+        "from": 29.85,
+        "to": 36.37,
+        "layout": "split"
+      },
+      {
+        "id": "beat-7",
+        "blueprintId": "myth_buster",
+        "beatRole": "payoff",
+        "title": "Nouvel équilibre mental",
+        "shortLabel": "Verdict",
+        "screenLabel": "VERDICT",
+        "spokenLine": "Résultat : tu retrouves un focus total, zéro fatigue visuelle et une vraie clarté d'esprit.",
+        "visualType": "radar_pillars",
+        "layoutHint": "fullscreen",
+        "brollKey": "teen_phone",
+        "brollCaption": "Verdict · Données 2026",
+        "iconKind": "clock",
+        "statValue": "5 minutes",
+        "statLabel": "Avantage cumulé",
+        "subStats": [
+          {
+            "value": "95%",
+            "label": "Focus"
+          },
+          {
+            "value": "90%",
+            "label": "Clarté"
+          },
+          {
+            "value": "88%",
+            "label": "Énergie"
+          }
+        ],
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Focus attention",
+          "Application dès cette semaine"
+        ],
+        "toggles": [
+          {
+            "label": "Équilibre attentionnel",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "ledgerRows": [
+          {
+            "label": "Avant ajustement",
+            "value": "Subi",
+            "delta": "Coût continu"
+          },
+          {
+            "label": "Après réglage",
+            "value": "5 minutes",
+            "delta": "Gain confirmé",
+            "highlight": true
+          }
+        ],
+        "quoteText": "Celui qui ajuste ses paramètres aujourd’hui transforme une contrainte en avantage net.",
+        "highlightPhrase": "en avantage net",
+        "quoteSource": "Données 2026",
+        "comparisonLeft": {
+          "label": "Attendre",
+          "value": "Écart subi",
+          "ratio": 0.85
+        },
+        "comparisonRight": {
+          "label": "Ajuster tôt",
+          "value": "Gain net",
+          "ratio": 0.25
+        },
+        "sfxKind": "zhhh",
+        "from": 36.37,
+        "to": 41.67,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-8",
+        "blueprintId": "myth_buster",
+        "beatRole": "cta",
+        "title": "Teste dès aujourd'hui",
+        "shortLabel": "CTA",
+        "screenLabel": "PARTAGE",
+        "spokenLine": "Envoie ce Short à un ami accro aux micro-pauses et abonne-toi pour protéger ton attention.",
+        "visualType": "cta_card",
+        "layoutHint": "split",
+        "brollKey": "studio",
+        "brollCaption": "Nouveau décryptage bientôt",
+        "iconKind": "clock",
+        "statValue": "@alex.decode",
+        "statLabel": "Conseils de vie · Décryptages 2026",
+        "toggles": [
+          {
+            "label": "Appel à l'action et",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": false
+          }
+        ],
+        "sfxKind": "pop-back",
+        "from": 41.67,
+        "to": 47.48,
+        "layout": "split"
+      }
+    ]
+  },
+  "styleProfile": {
+    "name": "Papier signature",
+    "fontFamily": "Bricolage Grotesque",
+    "accentColor": "#258EFF",
+    "textColor": "#14161B",
+    "cardBg": "#FCFBF8",
+    "captionsPosition": "bottom",
+    "visualBeatsTarget": 8
+  },
+  "hasMp4": false
+}
