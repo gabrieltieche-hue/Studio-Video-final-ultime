@@ -838,8 +838,10 @@ export default function App() {
         }
         const payload: Record<string, unknown> = {
           railwayUrl: cleanRailway,
-          githubRepo: githubRepoInput.trim(),
         };
+        if (githubRepoInput.trim()) {
+          payload.githubRepo = githubRepoInput.trim();
+        }
         if (githubTokenInput.trim()) {
           payload.githubToken = githubTokenInput.trim();
         }

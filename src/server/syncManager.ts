@@ -124,9 +124,25 @@ export function readSyncConfig(): SyncConfigRecord {
     }
   }
 
-  const githubRepo =
+  let githubRepo =
     normalizeGitHubRepo(stored.githubRepo) ||
     normalizeGitHubRepo(process.env.GITHUB_REPO);
+  if (
+    !githubRepo &&
+    process.env.GITHUB_REPO === undefined &&
+    fs.existsSync(path.join(ROOT_DIR, '.git'))
+  ) {
+    const remoteRes = spawnSync('git', ['remote', 'get-url', 'origin'], {
+      cwd: ROOT_DIR,
+      encoding: 'utf-8',
+    });
+    if (remoteRes.status === 0) {
+      githubRepo = normalizeGitHubRepo(remoteRes.stdout.trim());
+    }
+  }
+  if (!githubRepo && process.env.GITHUB_REPO === undefined) {
+    githubRepo = 'gabrieltieche-hue/Studio-Video-final-ultime';
+  }
   const githubToken = (stored.githubToken || process.env.GITHUB_TOKEN || '').trim();
   const railwayUrl =
     normalizeRailwayUrl(stored.railwayUrl) ||
@@ -826,7 +842,13 @@ export async function pushWorkspaceToGitHub(commitMessage?: string): Promise<{
     return pushSavedProjectsViaGitHubApi(cfg);
   }
 
+  spawnSync('git', ['config', '--global', '--add', 'safe.directory', ROOT_DIR], {
+    cwd: ROOT_DIR,
+  });
+
   const safePaths = [
+    'AGENTS.md',
+    'CLAUDE.md',
     'src',
     'data/saved-projects',
     'data/saved-media',
@@ -844,6 +866,7 @@ export async function pushWorkspaceToGitHub(commitMessage?: string): Promise<{
     'vite.config.ts',
     'index.html',
     '.gitignore',
+    '.dockerignore',
     '.env.example',
     'metadata.json',
   ].filter((rel) => fs.existsSync(path.join(ROOT_DIR, rel)));
