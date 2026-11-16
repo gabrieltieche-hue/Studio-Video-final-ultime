@@ -1,14 +1,165 @@
 import type {
   BatchBeatSpec,
   DynamicIconKind,
+  DynamicVisualType,
+  StoryBlueprintId,
   ParsedCustomTopic,
 } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
+import { getBrollSequenceForTopic, isDevOrCodeTopic, type BrollKey } from './brollKeys';
 
 export interface ElevenLabsCharAlignment {
   characters: string[];
   character_start_times_seconds: number[];
   character_end_times_seconds: number[];
+}
+
+export interface StoryBlueprintBeatTemplate {
+  role: NonNullable<BatchBeatSpec['beatRole']>;
+  visualType: DynamicVisualType;
+  layoutHint: 'split' | 'fullscreen';
+  goal: string;
+}
+
+export interface StoryBlueprintSpec {
+  id: StoryBlueprintId;
+  label: string;
+  hookType: DynamicVisualType;
+  beats: StoryBlueprintBeatTemplate[];
+}
+
+export const STORY_BLUEPRINTS: Record<StoryBlueprintId, StoryBlueprintSpec> = {
+  shock_mechanism: {
+    id: 'shock_mechanism',
+    label: 'Choc & Mécanisme',
+    hookType: 'hook_shatter',
+    beats: [
+      { role: 'hook', visualType: 'hook_shatter', layoutHint: 'split', goal: 'Rupture immédiate avec 3 cartes choc + chiffre clé' },
+      { role: 'context', visualType: 'counter_flip', layoutHint: 'split', goal: 'Fait chiffré daté + bascule avant/après' },
+      { role: 'mechanism', visualType: 'timeline_steps', layoutHint: 'split', goal: 'Mécanisme exact en 4 étapes chronologiques' },
+      { role: 'rehook', visualType: 'gauge', layoutHint: 'fullscreen', goal: 'Re-hook mi-vidéo avec indice mesuré + 3 déclencheurs' },
+      { role: 'proof', visualType: 'comparison_bars', layoutHint: 'fullscreen', goal: 'Preuve comparative chiffrée à fort contraste' },
+      { role: 'action', visualType: 'toggles_switch', layoutHint: 'split', goal: '3 réglages ou arbitrages concrets à activer/couper' },
+      { role: 'payoff', visualType: 'verdict_quote', layoutHint: 'split', goal: 'Verdict synthétique + source vérifiable' },
+      { role: 'cta', visualType: 'cta_card', layoutHint: 'split', goal: 'Question débat + appel à s’abonner' },
+    ],
+  },
+  versus_debate: {
+    id: 'versus_debate',
+    label: 'Duel & Arbitrage',
+    hookType: 'hook_vs_battle',
+    beats: [
+      { role: 'hook', visualType: 'hook_vs_battle', layoutHint: 'split', goal: 'Face-à-face direct Option A vs Option B' },
+      { role: 'context', visualType: 'ledger_breakdown', layoutHint: 'fullscreen', goal: 'Ventilation chiffrée ligne par ligne du coût ou rendement' },
+      { role: 'mechanism', visualType: 'comparison_bars', layoutHint: 'fullscreen', goal: 'Comparaison visuelle directe avec multiplicateur' },
+      { role: 'rehook', visualType: 'verdict_quote', layoutHint: 'split', goal: 'Nuance clé que la majorité oublie' },
+      { role: 'proof', visualType: 'radar_pillars', layoutHint: 'fullscreen', goal: 'Score sur 3 critères décisifs du sujet' },
+      { role: 'action', visualType: 'toggles_switch', layoutHint: 'split', goal: '3 critères de bascule pour choisir sans se tromper' },
+      { role: 'payoff', visualType: 'counter_flip', layoutHint: 'split', goal: 'Écart net final chiffré sur 12 mois' },
+      { role: 'cta', visualType: 'cta_card', layoutHint: 'split', goal: 'Demande de camp en commentaire + abonnement' },
+    ],
+  },
+  chronology_actu: {
+    id: 'chronology_actu',
+    label: 'Chronologie & Impact',
+    hookType: 'hook_alert_card',
+    beats: [
+      { role: 'hook', visualType: 'hook_alert_card', layoutHint: 'split', goal: 'Alerte actu datée avec phrase surlignée + chiffre clé' },
+      { role: 'context', visualType: 'timeline_steps', layoutHint: 'split', goal: 'Chronologie des faits en 4 dates/étapes claires' },
+      { role: 'mechanism', visualType: 'ledger_breakdown', layoutHint: 'fullscreen', goal: 'Ce qui change concrètement en chiffres' },
+      { role: 'rehook', visualType: 'verdict_quote', layoutHint: 'split', goal: 'Effet indirect ou clause peu connue' },
+      { role: 'proof', visualType: 'gauge', layoutHint: 'fullscreen', goal: 'Niveau d’impact réel + 3 conséquences immédiates' },
+      { role: 'action', visualType: 'checklist_action', layoutHint: 'split', goal: '3 réflexes concrets à vérifier dès cette semaine' },
+      { role: 'payoff', visualType: 'comparison_bars', layoutHint: 'fullscreen', goal: 'Avant la mesure vs après application' },
+      { role: 'cta', visualType: 'cta_card', layoutHint: 'split', goal: 'Prochain décryptage + abonnement' },
+    ],
+  },
+  myth_buster: {
+    id: 'myth_buster',
+    label: 'Mythe vs Réalité',
+    hookType: 'hook_myth_bust',
+    beats: [
+      { role: 'hook', visualType: 'hook_myth_bust', layoutHint: 'split', goal: 'Idée reçue cassée net dès la première phrase' },
+      { role: 'context', visualType: 'comparison_bars', layoutHint: 'fullscreen', goal: 'Ce qu’on croit vs les chiffres réels' },
+      { role: 'mechanism', visualType: 'verdict_quote', layoutHint: 'split', goal: 'Pourquoi cette croyance est trompeuse' },
+      { role: 'rehook', visualType: 'counter_flip', layoutHint: 'split', goal: 'Le chiffre qui renverse la perspective' },
+      { role: 'proof', visualType: 'ledger_breakdown', layoutHint: 'fullscreen', goal: 'Preuve chiffrée détaillée en 3 lignes' },
+      { role: 'action', visualType: 'checklist_action', layoutHint: 'split', goal: '3 étapes pour corriger le tir immédiatement' },
+      { role: 'payoff', visualType: 'radar_pillars', layoutHint: 'fullscreen', goal: 'Nouvel équilibre sur 3 axes mesurés' },
+      { role: 'cta', visualType: 'cta_card', layoutHint: 'split', goal: 'Partage + abonnement' },
+    ],
+  },
+  deep_dive_playbook: {
+    id: 'deep_dive_playbook',
+    label: 'Méthode & Leviers',
+    hookType: 'hook_stat',
+    beats: [
+      { role: 'hook', visualType: 'hook_stat', layoutHint: 'split', goal: 'Chiffre d’accroche fort + promesse concrète' },
+      { role: 'context', visualType: 'radar_pillars', layoutHint: 'fullscreen', goal: 'Diagnostic sur 3 piliers clés du problème' },
+      { role: 'mechanism', visualType: 'toggles_switch', layoutHint: 'split', goal: 'Ce qu’on coupe vs ce qu’on automatise' },
+      { role: 'rehook', visualType: 'timeline_steps', layoutHint: 'split', goal: 'Séquence d’exécution rapide en 4 temps' },
+      { role: 'proof', visualType: 'gauge', layoutHint: 'fullscreen', goal: 'Taux d’efficacité terrain + 3 gains directs' },
+      { role: 'action', visualType: 'checklist_action', layoutHint: 'split', goal: 'Checklist actionnable en 3 points' },
+      { role: 'payoff', visualType: 'ledger_breakdown', layoutHint: 'fullscreen', goal: 'Bilan chiffré après application' },
+      { role: 'cta', visualType: 'cta_card', layoutHint: 'split', goal: 'Prochain épisode + abonnement' },
+    ],
+  },
+};
+
+const BLUEPRINT_ORDER: StoryBlueprintId[] = [
+  'shock_mechanism',
+  'versus_debate',
+  'chronology_actu',
+  'myth_buster',
+  'deep_dive_playbook',
+];
+
+export function getBlueprintLabel(blueprintId?: StoryBlueprintId): string {
+  if (!blueprintId || !STORY_BLUEPRINTS[blueprintId]) return 'Choc & Mécanisme';
+  return STORY_BLUEPRINTS[blueprintId].label;
+}
+
+export function selectStoryBlueprint(
+  category: string,
+  theme: string,
+  batchIndex = 0,
+  excludeIds?: Set<StoryBlueprintId>
+): StoryBlueprintSpec {
+  const hay = `${category} ${theme}`.toLowerCase();
+
+  let preferred: StoryBlueprintId = 'shock_mechanism';
+  if (/( vs |contre|ou |compar|livret|etf|arbitr|choisir|meilleur)/.test(hay)) {
+    preferred = 'versus_debate';
+  } else if (/(mythe|faux|erreur|piège|arnaque|mensonge|sous-factur|personne ne|arrêt|arret)/.test(hay)) {
+    preferred = 'myth_buster';
+  } else if (/(loi|décret|parlement|censure|janvier|2026|2027|actualit|politique|interdi|taxe|smic|paie)/.test(hay)) {
+    preferred = 'chronology_actu';
+  } else if (/(règle|outil|méthode|comment|astuce|productiv|fatigue|checklist|guide|\b\d+\s+(outil|erreur|règle|étape|habitudes))/i.test(hay)) {
+    preferred = 'deep_dive_playbook';
+  }
+
+  if (excludeIds && excludeIds.size < BLUEPRINT_ORDER.length) {
+    if (!excludeIds.has(preferred)) {
+      return STORY_BLUEPRINTS[preferred];
+    }
+    const startOffset = Math.max(0, BLUEPRINT_ORDER.indexOf(preferred));
+    for (let step = 1; step < BLUEPRINT_ORDER.length; step++) {
+      const candidate = BLUEPRINT_ORDER[(startOffset + step) % BLUEPRINT_ORDER.length];
+      if (!excludeIds.has(candidate)) {
+        return STORY_BLUEPRINTS[candidate];
+      }
+    }
+  }
+
+  const safeIdx = Math.max(0, Math.floor(batchIndex));
+  if (safeIdx === 0) {
+    return STORY_BLUEPRINTS[preferred];
+  }
+
+  // Rotate across blueprints for subsequent items in the same batch so consecutive Shorts never look alike
+  const startOffset = BLUEPRINT_ORDER.indexOf(preferred);
+  const rotatedId = BLUEPRINT_ORDER[(Math.max(0, startOffset) + safeIdx) % BLUEPRINT_ORDER.length];
+  return STORY_BLUEPRINTS[rotatedId];
 }
 
 export function sanitizeScriptText(text: string): string {
@@ -72,6 +223,29 @@ export function parseBulkTopicsInput(rawText: string, maxItems = 20): ParsedCust
   return out;
 }
 
+/**
+ * Estimates spoken token expansion for French TTS (e.g. "2026" -> "deux mille vingt-six", "80 %" -> "quatre-vingts pour cent").
+ */
+export function estimateSpokenWordWeight(line: string): number {
+  const tokens = sanitizeScriptText(line).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return 1;
+  let total = 0;
+  for (const tok of tokens) {
+    if (/^(19|20)\d{2}[.,;:!?]*$/.test(tok)) {
+      total += 3.5;
+    } else if (/^[+-]?\d+(?:[.,]\d+)?[%€$kKmM]*[.,;:!?]*$/.test(tok)) {
+      total += 2.3;
+    } else if (/[%€$/]/.test(tok)) {
+      total += 2.0;
+    } else if (/^[,.;:!?…]+$/.test(tok)) {
+      total += 0.2;
+    } else {
+      total += 1.0;
+    }
+  }
+  return Math.max(1, total);
+}
+
 export function computeProportionalWords(
   text: string,
   durationSec: number
@@ -81,7 +255,11 @@ export function computeProportionalWords(
   if (rawWords.length === 0) return [];
 
   const safeDuration = Math.max(4, durationSec);
-  const weights = rawWords.map((w) => Math.max(2, w.length));
+  const weights = rawWords.map((w) => {
+    if (/^(19|20)\d{2}[.,;:!?]*$/.test(w)) return 10;
+    if (/\d/.test(w)) return Math.max(6, w.length + 3);
+    return Math.max(2, w.length);
+  });
   const totalWeight = weights.reduce((a, b) => a + b, 0);
 
   let cursor = 0.08;
@@ -198,7 +376,12 @@ export function resolveBeatLayout(spec: BatchBeatSpec, index: number, total: num
   if (spec.layoutHint === 'split' || spec.layoutHint === 'fullscreen') {
     return spec.layoutHint;
   }
-  if (spec.visualType === 'gauge' || spec.visualType === 'comparison_bars') {
+  if (
+    spec.visualType === 'gauge' ||
+    spec.visualType === 'comparison_bars' ||
+    spec.visualType === 'ledger_breakdown' ||
+    spec.visualType === 'radar_pillars'
+  ) {
     return 'fullscreen';
   }
   if (index === 0 || index === total - 1) {
@@ -225,10 +408,14 @@ export function assignBeatTimingsAndTranscript(
     return { beats: [], motionTrack: [], sfxTrack: [], durationSec: safeDuration };
   }
 
-  const beatWordCounts = beatsSpec.map((b) =>
-    Math.max(1, sanitizeScriptText(b.spokenLine).split(/\s+/).filter(Boolean).length)
-  );
-  const totalSpecWords = beatWordCounts.reduce((a, b) => a + b, 0);
+  const beatWeights = beatsSpec.map((b) => estimateSpokenWordWeight(b.spokenLine));
+  const totalWeight = beatWeights.reduce((a, b) => a + b, 0);
+  const cumulativeFractions: number[] = [];
+  let running = 0;
+  for (const w of beatWeights) {
+    running += w;
+    cumulativeFractions.push(running / totalWeight);
+  }
 
   let wordCursor = 0;
   let prevEnd = 0;
@@ -237,32 +424,47 @@ export function assignBeatTimingsAndTranscript(
     const isFirst = idx === 0;
     const isLast = idx === beatsSpec.length - 1;
     const from = isFirst ? 0 : prevEnd;
+    const remainingBeats = beatsSpec.length - 1 - idx;
 
     let to: number;
     if (isLast) {
       to = safeDuration;
-    } else if (words.length > 0) {
-      const targetWordIdx = Math.min(
-        words.length - 1,
-        Math.max(
-          wordCursor,
-          Math.round(((wordCursor + beatWordCounts[idx]) / totalSpecWords) * words.length) - 1
-        )
-      );
+    } else if (words.length >= beatsSpec.length) {
+      const idealIdx = Math.round(cumulativeFractions[idx] * words.length) - 1;
+      const minIdx = Math.min(words.length - 1 - remainingBeats, wordCursor);
+      const maxIdx = Math.max(minIdx, words.length - 1 - remainingBeats);
+      const searchStart = Math.max(minIdx, idealIdx - 4);
+      const searchEnd = Math.min(maxIdx, idealIdx + 4);
+
+      let bestIdx = Math.max(minIdx, Math.min(maxIdx, idealIdx));
+      let bestScore = -Infinity;
+
+      for (let k = searchStart; k <= searchEnd; k++) {
+        const tok = words[k].word;
+        const nextStart = k + 1 < words.length ? words[k + 1].start : safeDuration;
+        const pauseGap = nextStart - words[k].end;
+        let score = -Math.abs(k - idealIdx) * 3.5;
+        if (/[.!?…]$/.test(tok)) score += 100;
+        else if (/[,;:]$/.test(tok)) score += 45;
+        if (pauseGap >= 0.16) score += 35;
+        else if (pauseGap >= 0.08) score += 14;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = k;
+        }
+      }
+
       const nextWordStart =
-        targetWordIdx + 1 < words.length ? words[targetWordIdx + 1].start : safeDuration;
-      const boundary = (words[targetWordIdx].end + nextWordStart) / 2;
-      const minStep = isFirst ? 2.4 : 1.4;
-      to = Number(
-        Math.max(
-          from + minStep,
-          Math.min(safeDuration - (beatsSpec.length - 1 - idx) * 1.4, boundary)
-        ).toFixed(2)
-      );
-      wordCursor = targetWordIdx + 1;
+        bestIdx + 1 < words.length ? words[bestIdx + 1].start : safeDuration;
+      const boundary = (words[bestIdx].end + nextWordStart) / 2;
+      const minStep = isFirst ? 2.2 : 1.5;
+      const maxAllowedTo = safeDuration - remainingBeats * 1.5;
+      to = Number(Math.max(from + minStep, Math.min(maxAllowedTo, boundary)).toFixed(2));
+      wordCursor = bestIdx + 1;
     } else {
-      const weight = beatWordCounts[idx] / totalSpecWords;
-      to = Number(Math.max(from + 1.4, from + safeDuration * weight).toFixed(2));
+      const weight = beatWeights[idx] / totalWeight;
+      const maxAllowedTo = safeDuration - remainingBeats * 1.5;
+      to = Number(Math.max(from + 1.5, Math.min(maxAllowedTo, from + safeDuration * weight)).toFixed(2));
     }
 
     prevEnd = to;
@@ -281,11 +483,18 @@ export function assignBeatTimingsAndTranscript(
   const typeMap: Record<BatchBeatSpec['visualType'], ShortProject['motionTrack'][number]['type']> = {
     hook_shatter: 'typography',
     hook_stat: 'counter',
+    hook_vs_battle: 'typography',
+    hook_myth_bust: 'typography',
+    hook_alert_card: 'card',
     counter_flip: 'counter',
     comparison_bars: 'chart',
     timeline_steps: 'card',
     toggles_switch: 'card',
     terminal_flow: 'card',
+    ledger_breakdown: 'chart',
+    verdict_quote: 'typography',
+    radar_pillars: 'chart',
+    checklist_action: 'card',
     key_points: 'card',
     gauge: 'chart',
     cta_card: 'rocket',
@@ -304,19 +513,28 @@ export function assignBeatTimingsAndTranscript(
   const sfxTrack: ShortProject['sfxTrack'] = [];
   beats.forEach((b, idx) => {
     if (idx === 0) {
-      const act2At = Number(Math.max(1.4, Math.min(2.6, (b.to - b.from) * 0.48)).toFixed(2));
-      sfxTrack.push({
-        id: 'sfx-hook-shatter',
-        sound: 'glass-shatter',
-        start: act2At,
-        volume: 0.46,
-      });
-      sfxTrack.push({
-        id: 'sfx-hook-boom',
-        sound: 'impact-boom',
-        start: act2At,
-        volume: 0.4,
-      });
+      const act2At = Number(Math.max(1.2, Math.min(2.4, (b.to - b.from) * 0.48)).toFixed(2));
+      if (b.visualType === 'hook_shatter' || b.visualType === 'hook_myth_bust') {
+        sfxTrack.push({
+          id: 'sfx-hook-shatter',
+          sound: 'glass-shatter',
+          start: act2At,
+          volume: 0.44,
+        });
+        sfxTrack.push({
+          id: 'sfx-hook-boom',
+          sound: 'impact-boom',
+          start: act2At,
+          volume: 0.38,
+        });
+      } else {
+        sfxTrack.push({
+          id: 'sfx-hook-accent',
+          sound: b.sfxKind || 'impact-boom',
+          start: act2At,
+          volume: 0.38,
+        });
+      }
       return;
     }
 
@@ -331,14 +549,14 @@ export function assignBeatTimingsAndTranscript(
 
     const at =
       idx === beats.length - 1
-        ? Number(Math.min(safeDuration - 0.3, b.from + 0.7).toFixed(2))
+        ? Number(Math.min(safeDuration - 0.3, b.from + 0.65).toFixed(2))
         : Number(Math.max(0.1, b.from + 0.12).toFixed(2));
     if (at < safeDuration - 0.2) {
       sfxTrack.push({
         id: `sfx-${idx + 1}`,
         sound,
         start: at,
-        volume: sound === 'riser' ? 0.26 : 0.36,
+        volume: sound === 'riser' ? 0.26 : 0.34,
       });
     }
     if (idx === beats.length - 1) {
@@ -347,7 +565,7 @@ export function assignBeatTimingsAndTranscript(
         id: `sfx-${idx + 1}-bell`,
         sound: 'bell',
         start: bellAt,
-        volume: 0.32,
+        volume: 0.3,
       });
     }
   });
@@ -380,19 +598,38 @@ function pickTopicIcon(category: string, theme: string): DynamicIconKind {
   const hay = `${category} ${theme}`.toLowerCase();
   if (/(réunion|meeting|calendrier|agenda)/.test(hay)) return 'calendar';
   if (/(ia|ai|agent|code|dev|résumé|llm)/.test(hay)) return 'ai';
-  if (/(euro|salaire|smic|loyer|économie|crédit|banque)/.test(hay)) return 'euro';
-  if (/(loi|parlement|censure|politique|décret)/.test(hay)) return 'law';
-  if (/(temps|heure|minute|productiv)/.test(hay)) return 'clock';
+  if (/(euro|salaire|smic|loyer|économie|crédit|banque|livret|etf|freelance|impôt|taxe)/.test(hay)) return 'euro';
+  if (/(loi|parlement|censure|politique|décret|interdi)/.test(hay)) return 'law';
+  if (/(temps|heure|minute|productiv|fatigue)/.test(hay)) return 'clock';
+  if (/(sécurité|risque|piège|arnaque|protection)/.test(hay)) return 'shield';
   return 'chart';
 }
 
-function pickPrimaryBroll(category: string, theme: string): string {
-  const hay = `${category} ${theme}`.toLowerCase();
-  if (/(réunion|meeting|visio|résumé)/.test(hay)) return 'ai_meetings';
-  if (/(loyer|salaire|smic|banque|crédit|économie|50-30-20)/.test(hay)) return 'economy';
-  if (/(loi|parlement|censure|politique|décret)/.test(hay)) return 'parliament';
-  if (/(ia|code|dev|logiciel|agent)/.test(hay)) return 'tech_code';
-  return 'business';
+export function extractPrimaryTopicStat(theme: string, angle = ''): {
+  stat: string;
+  label: string;
+  hasExplicitNumber: boolean;
+} {
+  const hay = `${theme} ${angle}`;
+  const pct = hay.match(/([+-]?\d{1,3}(?:[.,]\d+)?\s*%)/);
+  if (pct) return { stat: pct[1].replace(/\s+%/, ' %'), label: 'Écart relevé', hasExplicitNumber: true };
+
+  const eur = hay.match(/(\d+(?:[.,]\d+)?\s*(?:€|euros?|k\/mois|k€|M€))/i);
+  if (eur) return { stat: eur[1], label: 'Montant en jeu', hasExplicitNumber: true };
+
+  const mult = hay.match(/(\d+\s*(?:fois|×|x)\b)/i);
+  if (mult) return { stat: mult[1], label: 'Facteur clé', hasExplicitNumber: true };
+
+  const dur = hay.match(/(\d+\s*(?:min|minutes?|heures?|h|jours?|ans?)\b)/i);
+  if (dur) return { stat: dur[1], label: 'Repère temporel', hasExplicitNumber: true };
+
+  return { stat: '2026', label: 'Analyse chiffrée', hasExplicitNumber: false };
+}
+
+function rotateBrolls(baseSeq: BrollKey[], batchIndex: number): BrollKey[] {
+  if (baseSeq.length === 0) return ['business'];
+  const shift = Math.max(0, batchIndex) % baseSeq.length;
+  return [...baseSeq.slice(shift), ...baseSeq.slice(0, shift)];
 }
 
 export function buildFallbackBatchScript(input: {
@@ -401,7 +638,10 @@ export function buildFallbackBatchScript(input: {
   angle?: string;
   hookHint?: string;
   sources?: string;
+  blueprintId?: StoryBlueprintId;
+  batchIndex?: number;
 }): {
+  blueprintId: StoryBlueprintId;
   hookText: string;
   youtubeTitle: string;
   caption: string;
@@ -409,164 +649,270 @@ export function buildFallbackBatchScript(input: {
   beats: BatchBeatSpec[];
 } {
   const cleanTheme = sanitizeScriptText(input.theme);
+  const cleanAngle = sanitizeScriptText(input.angle || '');
   const shortTopic = condenseVisualHeadline(cleanTheme, 4, 30);
-  const pctMatch = cleanTheme.match(/(\d{1,3}\s*%)/);
-  const statVal = pctMatch ? pctMatch[1] : '80 %';
+  const topicStat = extractPrimaryTopicStat(cleanTheme, cleanAngle);
   const iconKind = pickTopicIcon(input.category, cleanTheme);
-  const brollMain = pickPrimaryBroll(input.category, cleanTheme);
+  const isDev = isDevOrCodeTopic(input.category, cleanTheme);
+  const batchIdx = Math.max(0, input.batchIndex || 0);
+
+  const blueprint = input.blueprintId && STORY_BLUEPRINTS[input.blueprintId]
+    ? STORY_BLUEPRINTS[input.blueprintId]
+    : selectStoryBlueprint(input.category, cleanTheme, batchIdx);
+
+  const brollPool = rotateBrolls(getBrollSequenceForTopic(input.category, cleanTheme), batchIdx);
+  const pickBroll = (i: number): BrollKey => brollPool[i % brollPool.length];
+
+  const vsMatch = cleanTheme.match(/(.+?)\s+vs\.?\s+(.+?)(?:\s*:|\s+en\s+\d{4}|$)/i);
+  const sideA = vsMatch ? condenseVisualHeadline(vsMatch[1], 3, 20) : 'Option classique';
+  const sideB = vsMatch ? condenseVisualHeadline(vsMatch[2], 3, 20) : 'Nouvelle approche';
+  const sourceShort = input.sources ? condenseVisualHeadline(input.sources, 3, 26) : 'Données 2026';
+
+  const cleanHookStem = cleanTheme.replace(/\s*[?!.]+\s*$/, '').trim();
+  const isInterrogativeOrClause = /(\?|\b(?:pourquoi|comment|quand|qui|faut-il|peut-on|remplacent-ils|vaut-il|est-ce)\b)/i.test(
+    cleanTheme
+  );
 
   const hookLine = sanitizeScriptText(
     input.hookHint ||
-      `${shortTopic} vient de basculer, et presque personne n'a vu le chiffre.`
+      (blueprint.id === 'versus_debate'
+        ? `${sideA} contre ${sideB} : voici le chiffre que personne ne calcule.`
+        : blueprint.id === 'myth_buster'
+          ? isInterrogativeOrClause
+            ? `${cleanHookStem} ? Les chiffres prouvent l’inverse de ce qu’on répète.`
+            : `On répète partout la même erreur sur ${shortTopic.toLowerCase()}, mais les chiffres prouvent l’inverse.`
+          : blueprint.id === 'chronology_actu'
+            ? isInterrogativeOrClause
+              ? `${cleanHookStem} ? Ce qui vient de basculer change déjà la donne.`
+              : `Ce qui vient de basculer sur ${shortTopic.toLowerCase()} change déjà la donne.`
+            : isInterrogativeOrClause
+              ? `${cleanHookStem} ? Voici l’écart concret qui change tout.`
+              : `${shortTopic} vient de basculer, et cet écart change tout en 2026.`)
   );
 
-  const beats: BatchBeatSpec[] = [
-    {
-      id: 'beat-1',
-      title: shortTopic,
-      shortLabel: 'Hook 2 actes',
-      screenLabel: `${input.category.toUpperCase()} · RUPTURE`,
-      spokenLine: hookLine,
-      visualType: 'hook_shatter',
-      layoutHint: 'split',
-      brollKey: brollMain,
-      brollCaption: 'Signal terrain · 2026',
+  const statDisplay = topicStat.hasExplicitNumber ? topicStat.stat : '×3';
+  const defaultBullets = [
+    `Impact direct sur ${condenseVisualHeadline(shortTopic, 3, 22)}`,
+    cleanAngle ? condenseVisualHeadline(cleanAngle, 4, 28) : 'Vérification chiffrée terrain',
+    'Application dès cette semaine',
+  ];
+
+  const beats: BatchBeatSpec[] = blueprint.beats.map((tpl, idx) => {
+    let vt: DynamicVisualType = tpl.visualType;
+    if (vt === 'terminal_flow' && !isDev) {
+      vt = 'ledger_breakdown';
+    }
+    const brollKey = idx === 7 ? 'studio' : pickBroll(idx);
+    const common = {
+      id: `beat-${idx + 1}`,
+      blueprintId: blueprint.id,
+      beatRole: tpl.role,
+      visualType: vt,
+      layoutHint: tpl.layoutHint,
+      brollKey,
       iconKind,
-      stampWord: 'BASCULE',
-      statValue: statVal,
-      statLabel: 'Impact mesuré',
-      subStats: [
-        { value: statVal, label: 'Déjà touchés' },
-        { value: '×4', label: 'Plus rapide' },
-      ],
-      sfxKind: 'glass-shatter',
-    },
-    {
-      id: 'beat-2',
-      title: 'Le vrai coût caché',
-      shortLabel: 'Compteur',
-      screenLabel: 'CONSTAT CHIFFRÉ',
-      spokenLine:
-        sanitizeScriptText(input.angle || '') ||
-        `En 2026, la majorité continue avec les anciennes méthodes et perd un temps fou.`,
-      visualType: 'counter_flip',
-      layoutHint: 'split',
-      brollKey: brollMain === 'economy' ? 'business' : 'tech_code',
-      brollCaption: 'Ancien modèle bloqué',
-      iconKind,
-      statValue: statVal,
-      statLabel: 'Ancien réflexe dépassé',
-      comparisonLeft: { label: 'Méthode 2022', value: '45 min', ratio: 0.85 },
-      comparisonRight: { label: 'Nouvelle norme', value: '2 min', ratio: 0.25 },
-      sfxKind: 'thud',
-    },
-    {
-      id: 'beat-3',
-      title: 'Comment ça bascule',
-      shortLabel: 'Mécanisme',
-      screenLabel: 'EN 4 ÉTAPES',
-      spokenLine:
-        'Le mécanisme tourne en boucle automatique : capture, tri, synthèse et exécution immédiate.',
-      visualType: 'timeline_steps',
-      layoutHint: 'split',
-      brollKey: brollMain,
-      brollCaption: 'Exécution automatisée',
-      iconKind,
-      steps: ['Capture', 'Analyse', 'Synthèse', 'Action'],
-      stampWord: 'VALIDÉ',
-      sfxKind: 'tap',
-    },
-    {
-      id: 'beat-4',
-      title: 'Le vrai choc',
-      shortLabel: 'Re-hook Jauge',
-      screenLabel: 'EFFET DESIGN',
-      spokenLine:
-        'Le vrai bouleversement ne vient pas de la théorie, mais de la vitesse d’exécution en direct.',
-      visualType: 'gauge',
-      layoutHint: 'fullscreen',
-      gaugePct: 88,
-      statLabel: 'Efficacité mesurée',
-      bullets: [
-        'Zéro friction manuelle',
-        'Décision en direct',
-        'Trace écrite fiable',
-      ],
-      sfxKind: 'zhhh',
-    },
-    {
-      id: 'beat-5',
-      title: 'Avant vs 2026',
-      shortLabel: 'Comparatif',
-      screenLabel: 'ÉCART MESURÉ',
-      spokenLine:
-        'Avant il fallait des heures d’échanges. Aujourd’hui, le bilan complet sort en deux minutes.',
-      visualType: 'comparison_bars',
-      layoutHint: 'fullscreen',
-      comparisonLeft: { label: 'Modèle classique', value: '14 h/sem', ratio: 0.9 },
-      comparisonRight: { label: 'Système optimisé', value: '3 h/sem', ratio: 0.24 },
-      multiplierBadge: '÷4,6',
-      statValue: '+11 h',
-      statLabel: 'Gagnées par semaine',
-      sfxKind: 'riser',
-    },
-    {
-      id: 'beat-6',
-      title: 'Les 3 leviers actifs',
-      shortLabel: 'Toggles',
-      screenLabel: 'PLAN D’ACTION',
-      spokenLine:
-        'Pour en profiter dès cette semaine, il suffit d’activer ces trois réglages simples.',
-      visualType: 'toggles_switch',
-      layoutHint: 'split',
-      brollKey: 'business',
-      brollCaption: 'Mise en place · 5 min',
-      toggles: [
-        { label: 'Réflexes manuels lents', before: 'ACTIF', after: 'COUPÉ', activeAfter: false },
-        { label: 'Synthèse chiffrée auto', before: 'OFF', after: 'ON', activeAfter: true },
-        { label: 'Suivi décisionnel clair', before: 'OFF', after: 'ON', activeAfter: true },
-      ],
-      sfxKind: 'tap',
-    },
-    {
-      id: 'beat-7',
-      title: 'Résultat immédiat',
-      shortLabel: 'Terminal',
-      screenLabel: 'PREUVE TERRAIN',
-      spokenLine:
-        input.sources
-          ? `Selon ${sanitizeScriptText(input.sources)}, l’écart entre ceux qui s’adaptent et les autres explose.`
-          : 'Ceux qui appliquent cette règle dès maintenant prennent une vraie longueur d’avance.',
-      visualType: 'terminal_flow',
-      layoutHint: 'split',
-      brollKey: 'tech_code',
-      brollCaption: 'Déploiement immédiat',
-      terminalCmd: '> analyser --impact-2026',
-      terminalOut: [
-        '✓ Gain hebdo confirmé',
-        '✓ Erreurs divisées par 3',
-        '✓ Priorités verrouillées',
-      ],
-      statValue: '+38 %',
-      statLabel: 'Gain net observé',
-      sfxKind: 'pop',
-    },
-    {
-      id: 'beat-8',
-      title: 'Abonne-toi maintenant',
+    };
+
+    if (idx === 0) {
+      return {
+        ...common,
+        title: shortTopic,
+        shortLabel: blueprint.label,
+        screenLabel: `${input.category.toUpperCase()} · SIGNAL`,
+        spokenLine: hookLine,
+        brollCaption: `Focus · ${shortTopic}`,
+        stampWord: blueprint.id === 'myth_buster' ? 'FAUX' : blueprint.id === 'versus_debate' ? 'DUEL' : 'BASCULE',
+        statValue: statDisplay,
+        statLabel: topicStat.label,
+        hookCards:
+          blueprint.id === 'versus_debate'
+            ? [
+                { label: sideA, sub: 'Réflexe historique', iconKind: 'clock', tone: 'dark' },
+                { label: 'VS', sub: statDisplay, iconKind: 'chart', tone: 'light' },
+                { label: sideB, sub: 'Alternative 2026', iconKind, tone: 'accent' },
+              ]
+            : [
+                { label: 'Avant', sub: 'Ancien réflexe', iconKind: 'clock', tone: 'dark' },
+                { label: statDisplay, sub: sourceShort, iconKind, tone: 'light' },
+                { label: 'En 2026', sub: 'Nouveau standard', iconKind: 'rocket', tone: 'accent' },
+              ],
+        subStats: [
+          { value: statDisplay, label: topicStat.label },
+          { value: sourceShort, label: 'Source terrain' },
+        ],
+        comparisonLeft: { label: sideA, value: 'Réflexe subi', ratio: 0.82 },
+        comparisonRight: { label: sideB, value: statDisplay, ratio: 0.34 },
+        quoteText: hookLine,
+        highlightPhrase: shortTopic,
+        quoteSource: sourceShort,
+        sfxKind: 'glass-shatter',
+      };
+    }
+
+    if (idx === 1) {
+      return {
+        ...common,
+        title: `Le point de départ`,
+        shortLabel: 'Contexte',
+        screenLabel: 'FAIT SOURCE',
+        spokenLine:
+          cleanAngle ||
+          `D’abord, regardons le point de départ : sur ${shortTopic.toLowerCase()}, le coût caché passe souvent inaperçu.`,
+        brollCaption: `Constat · ${sourceShort}`,
+        statValue: statDisplay,
+        statLabel: `Mesuré sur ${shortTopic}`,
+        comparisonLeft: { label: 'Modèle subi', value: 'Coût caché', ratio: 0.84 },
+        comparisonRight: { label: 'Approche mesurée', value: statDisplay, ratio: 0.28 },
+        steps: ['Situation', 'Blocage', 'Déclic', 'Mesure'],
+        ledgerRows: [
+          { label: 'Situation actuelle', value: 'Dispersion', delta: 'Friction', highlight: false },
+          { label: 'Point de rupture', value: statDisplay, delta: sourceShort, highlight: true },
+          { label: 'Marges perdues', value: 'Sous-évaluées', delta: 'À corriger', highlight: false },
+        ],
+        bullets: defaultBullets,
+        sfxKind: 'thud',
+      };
+    }
+
+    if (idx === 2) {
+      return {
+        ...common,
+        title: `Comment ça fonctionne`,
+        shortLabel: 'Mécanisme',
+        screenLabel: 'MÉCANISME',
+        spokenLine: `Concrètement, le basculement vient de l’enchaînement : repérer le goulot, chiffrer l’écart et corriger au bon endroit.`,
+        brollCaption: 'Enchaînement réel',
+        steps: ['Repérer', 'Chiffrer', 'Arbitrer', 'Stabiliser'],
+        stampWord: 'LOGIQUE',
+        comparisonLeft: { label: sideA, value: 'Subi', ratio: 0.86 },
+        comparisonRight: { label: sideB, value: 'Maîtrisé', ratio: 0.32 },
+        ledgerRows: [
+          { label: 'Étape 1 · Diagnostic', value: 'Mesure nette', delta: 'Clair' },
+          { label: 'Étape 2 · Arbitrage', value: statDisplay, delta: 'Décisif', highlight: true },
+          { label: 'Étape 3 · Suivi', value: 'Régulier', delta: 'Durable' },
+        ],
+        quoteText: `Ce n’est pas un détail technique : c’est la structure du calcul qui fait toute la différence.`,
+        highlightPhrase: 'la structure du calcul',
+        quoteSource: sourceShort,
+        toggles: [
+          { label: 'Décision à l’instinct', before: 'ACTIF', after: 'COUPÉ', activeAfter: false },
+          { label: 'Calcul coût réel', before: 'OFF', after: 'ON', activeAfter: true },
+          { label: 'Suivi chiffré', before: 'OFF', after: 'ON', activeAfter: true },
+        ],
+        sfxKind: 'tap',
+      };
+    }
+
+    if (idx === 3) {
+      return {
+        ...common,
+        title: `Le point aveugle`,
+        shortLabel: 'Re-hook',
+        screenLabel: 'CE QU’ON OUBLIE',
+        spokenLine: `Mais le vrai piège n’est pas celui qu’on croit : la majorité regarde le chiffre de surface et rate l’effet cumulé.`,
+        brollCaption: 'Effet cumulé caché',
+        gaugePct: 84,
+        statValue: statDisplay,
+        statLabel: 'Poids de l’effet cumulé',
+        bullets: defaultBullets,
+        steps: ['Signal', 'Piège', 'Ajustement', 'Impact'],
+        quoteText: `Ce qui compte n’est pas le chiffre affiché le jour 1, mais l’écart cumulé sur 12 mois.`,
+        highlightPhrase: 'l’écart cumulé sur 12 mois',
+        quoteSource: shortTopic,
+        comparisonLeft: { label: 'Effet jour 1', value: 'Faible', ratio: 0.28 },
+        comparisonRight: { label: 'Effet 12 mois', value: 'Majeur', ratio: 0.9 },
+        sfxKind: 'zhhh',
+      };
+    }
+
+    if (idx === 4) {
+      return {
+        ...common,
+        title: `L’écart chiffré`,
+        shortLabel: 'Preuve',
+        screenLabel: 'PREUVE TERRAIN',
+        spokenLine: `Quand on met les deux options face à face, la différence devient nette sur la durée et sur le résultat.`,
+        brollCaption: 'Comparatif chiffré',
+        comparisonLeft: { label: `${sideA}`, value: 'Coût subi', ratio: 0.88 },
+        comparisonRight: { label: `${sideB}`, value: statDisplay, ratio: 0.3 },
+        multiplierBadge: 'NET',
+        statValue: statDisplay,
+        statLabel: `Différence observée sur ${shortTopic}`,
+        gaugePct: 86,
+        bullets: defaultBullets,
+        ledgerRows: [
+          { label: 'Référence passive', value: 'Base 100', delta: 'Érodée' },
+          { label: 'Option optimisée', value: statDisplay, delta: 'Avantage net', highlight: true },
+          { label: 'Fiabilité 2026', value: 'Vérifiée', delta: sourceShort },
+        ],
+        sfxKind: 'riser',
+      };
+    }
+
+    if (idx === 5) {
+      return {
+        ...common,
+        title: `3 leviers concrets`,
+        shortLabel: 'Action',
+        screenLabel: 'PLAN D’ACTION',
+        spokenLine: `Pour en tirer parti dès cette semaine, applique ces trois réglages simples dans l’ordre.`,
+        brollCaption: 'Mise en application',
+        toggles: [
+          { label: 'Piloter sans chiffres', before: 'ACTIF', after: 'COUPÉ', activeAfter: false },
+          { label: `Suivre ${condenseVisualHeadline(shortTopic, 2, 18)}`, before: 'OFF', after: 'ON', activeAfter: true },
+          { label: 'Vérifier chaque mois', before: 'OFF', after: 'ON', activeAfter: true },
+        ],
+        bullets: [
+          `Poser un repère chiffré sur ${condenseVisualHeadline(shortTopic, 2, 16)}`,
+          'Supprimer la friction principale',
+          'Réévaluer au bout de 30 jours',
+        ],
+        sfxKind: 'tap',
+      };
+    }
+
+    if (idx === 6) {
+      return {
+        ...common,
+        title: `Le verdict final`,
+        shortLabel: 'Verdict',
+        screenLabel: 'CONCLUSION',
+        spokenLine: input.sources
+          ? `Selon ${sanitizeScriptText(input.sources)}, l’écart se creuse vite entre ceux qui ajustent maintenant et ceux qui attendent.`
+          : `Résultat : ceux qui s’adaptent dès maintenant gardent une longueur d’avance durable.`,
+        brollCaption: `Verdict · ${sourceShort}`,
+        statValue: statDisplay,
+        statLabel: 'Avantage cumulé',
+        quoteText: `Celui qui ajuste ses paramètres aujourd’hui transforme une contrainte en avantage net.`,
+        highlightPhrase: 'en avantage net',
+        quoteSource: sourceShort,
+        ledgerRows: [
+          { label: 'Avant ajustement', value: 'Subi', delta: 'Coût continu' },
+          { label: 'Après réglage', value: statDisplay, delta: 'Gain confirmé', highlight: true },
+        ],
+        comparisonLeft: { label: 'Attendre', value: 'Écart subi', ratio: 0.85 },
+        comparisonRight: { label: 'Ajuster tôt', value: 'Gain net', ratio: 0.25 },
+        bullets: defaultBullets,
+        terminalCmd: isDev ? `> audit --${normalizeTerminalSlug(shortTopic)}` : undefined,
+        terminalOut: isDev
+          ? ['✓ Goulot identifié', '✓ Latence réduite', '✓ Pipeline vérifié']
+          : undefined,
+        sfxKind: 'pop',
+      };
+    }
+
+    return {
+      ...common,
+      title: `Et toi, quel choix ?`,
       shortLabel: 'CTA',
       screenLabel: 'PROCHAIN ÉPISODE',
-      spokenLine:
-        'Abonne-toi pour ne rien rater des prochains décryptages concrets chaque semaine.',
-      visualType: 'cta_card',
-      layoutHint: 'split',
-      brollKey: 'studio',
+      spokenLine: `Dis-moi en commentaire ce que tu en penses, et abonne-toi pour ne pas rater le prochain décryptage.`,
       brollCaption: 'Nouveau décryptage bientôt',
       statValue: '@alex.decode',
-      statLabel: 'Actualité Tech, IA & Décryptages',
+      statLabel: `${input.category} · Décryptages 2026`,
       sfxKind: 'pop-back',
-    },
-  ];
+    };
+  });
 
   const catTag = input.category
     .toLowerCase()
@@ -575,10 +921,23 @@ export function buildFallbackBatchScript(input: {
     .replace(/[^a-z0-9]/g, '');
 
   return {
+    blueprintId: blueprint.id,
     hookText: hookLine,
     youtubeTitle: cleanTheme.slice(0, 58),
-    caption: `${hookLine}\n\nTu l’avais déjà remarqué ? Dis-le en commentaire.`,
-    hashtags: [`#${catTag || 'tech'}`, '#decryptage', '#france', '#shorts'].slice(0, 4),
+    caption: `${hookLine}\n\nQuel est ton avis sur ${shortTopic.toLowerCase()} ? Dis-le en commentaire.`,
+    hashtags: [`#${catTag || 'decryptage'}`, '#actualite', '#france', '#shorts'].slice(0, 4),
     beats,
   };
+}
+
+function normalizeTerminalSlug(text: string): string {
+  return (
+    text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 18) || 'audit-2026'
+  );
 }

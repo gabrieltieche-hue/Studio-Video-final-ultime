@@ -1,8 +1,9 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import fs from 'node:fs';
 import path from 'node:path';
 import { LOOK_PRESETS } from '../data/shortSpec';
 import {
+  STORY_BLUEPRINTS,
   alignmentToWords,
   assignBeatTimingsAndTranscript,
   buildFallbackBatchScript,
@@ -11,8 +12,14 @@ import {
   parseBulkTopicsInput,
   resolveBeatLayout,
   sanitizeScriptText,
+  selectStoryBlueprint,
   type ElevenLabsCharAlignment,
 } from '../engine/batchShortBuilder';
+import {
+  ALL_BROLL_KEYS,
+  getBrollSequenceForTopic,
+  isDevOrCodeTopic,
+} from '../engine/brollKeys';
 import {
   appendSessionToCsv,
   computeCompositeViralScore,
@@ -33,11 +40,11 @@ import type {
   DynamicIconKind,
   DynamicVisualType,
   StartBatchRequest,
+  StoryBlueprintId,
 } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
 import {
   applyVoiceSpeedMp3,
-  probeAudioDurationSec,
   renderDynamicProjectToMp4,
 } from './batchRenderer';
 import { generateAiSocialCopy } from './socialPublisher';
@@ -55,11 +62,75 @@ export const BATCH_JOBS_DIR = path.join(STORAGE_DIR, 'batch-jobs');
 
 const DEFAULT_FREE_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
 const activeCancelledBatchIds = new Set<string>();
+const activeRunningBatchIds = new Set<string>();
 
 function ensureBatchDir() {
   if (!fs.existsSync(BATCH_JOBS_DIR)) {
     fs.mkdirSync(BATCH_JOBS_DIR, { recursive: true });
   }
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} (${Math.round(timeoutMs / 1000)}s)`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function reconcileOrphanedRunningJob(job: BatchJobRecord): BatchJobRecord {
+  if (job.status !== 'running' || activeRunningBatchIds.has(job.id)) {
+    return job;
+  }
+  const updatedMs = Date.parse(job.updatedAt || job.createdAt || '');
+  // Only mark orphaned if not actively running in this process and untouched for > 12s
+  if (Number.isFinite(updatedMs) && Date.now() - updatedMs < 12_000) {
+    return job;
+  }
+
+  let changed = false;
+  let failedCount = 0;
+  let completedCount = 0;
+  const nextItems = job.items.map((it) => {
+    if (it.step === 'done') {
+      completedCount += 1;
+      return it;
+    }
+    if (it.step === 'error') {
+      failedCount += 1;
+      return it;
+    }
+    if (it.step === 'cancelled') return it;
+    changed = true;
+    failedCount += 1;
+    return {
+      ...it,
+      step: 'error' as const,
+      error: 'Lot interrompu par un redémarrage du serveur. Relancez la création.',
+      completedAt: new Date().toISOString(),
+    };
+  });
+
+  if (!changed) return job;
+
+  const reconciled: BatchJobRecord = {
+    ...job,
+    status: completedCount > 0 ? 'partial' : 'failed',
+    currentStepLabel: 'Lot interrompu (redémarrage serveur)',
+    completedCount,
+    failedCount,
+    items: nextItems,
+    completedAt: new Date().toISOString(),
+  };
+  return saveBatchJob(reconciled);
 }
 
 export function saveBatchJob(job: BatchJobRecord): BatchJobRecord {
@@ -82,7 +153,8 @@ export function getBatchJob(batchId: string): BatchJobRecord | null {
   const p = path.join(BATCH_JOBS_DIR, `${safeId}.json`);
   if (!fs.existsSync(p)) return null;
   try {
-    return JSON.parse(fs.readFileSync(p, 'utf-8')) as BatchJobRecord;
+    const parsed = JSON.parse(fs.readFileSync(p, 'utf-8')) as BatchJobRecord;
+    return reconcileOrphanedRunningJob(parsed);
   } catch {
     return null;
   }
@@ -97,7 +169,7 @@ export function listBatchJobs(): BatchJobRecord[] {
       const parsed = JSON.parse(
         fs.readFileSync(path.join(BATCH_JOBS_DIR, file), 'utf-8')
       ) as BatchJobRecord;
-      jobs.push(parsed);
+      jobs.push(reconcileOrphanedRunningJob(parsed));
     } catch {
       // ignore corrupted file
     }
@@ -162,54 +234,59 @@ async function generateBatchTopicsWithGemini(
     : 'Varie les catégories entre IA, Actualité, Business, Politique, Conseils de vie et Tech & Société.';
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: [
-        `Tu es le stratège éditorial d'une chaîne française de YouTube Shorts / Reels / TikTok style @melvynxdev (ton analytique, direct, chiffré, 40-50s).`,
-        `Date du jour : ${today}. ${focusClause}`,
-        `Thèmes déjà produits ou listés (NE PAS RÉPÉTER) :\n${existingList || '(aucun)'}`,
-        `Génère exactement ${safeCount} sujets distincts à très fort potentiel viral en France.`,
-        `Zéro tiret cadratin (pas de —). Chaque hook_propose < 18 mots.`,
-      ].join('\n\n'),
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              categorie: { type: Type.STRING },
-              theme: { type: Type.STRING },
-              angle_viral_fr: { type: Type.STRING },
-              hook_propose: { type: Type.STRING },
-              hook_ecran: { type: Type.STRING },
-              score_viral_fr: { type: Type.INTEGER },
-              score_actualite: { type: Type.INTEGER },
-              score_save_share: { type: Type.INTEGER },
-              tension_emotion: { type: Type.STRING },
-              sources: { type: Type.STRING },
-              slug_short: { type: Type.STRING },
-              raison_selection: { type: Type.STRING },
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: [
+          `Tu es le stratège éditorial d'une chaîne française de YouTube Shorts / Reels / TikTok style @melvynxdev (ton analytique, direct, chiffré, 40-50s).`,
+          `Date du jour : ${today}. ${focusClause}`,
+          `Thèmes déjà produits ou listés (NE PAS RÉPÉTER) :\n${existingList || '(aucun)'}`,
+          `Génère exactement ${safeCount} sujets distincts à très fort potentiel viral en France.`,
+          `Zéro tiret cadratin (pas de —). Chaque hook_propose < 18 mots.`,
+        ].join('\n\n'),
+        config: {
+          tools: [{ googleSearch: {} }],
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                categorie: { type: Type.STRING },
+                theme: { type: Type.STRING },
+                angle_viral_fr: { type: Type.STRING },
+                hook_propose: { type: Type.STRING },
+                hook_ecran: { type: Type.STRING },
+                score_viral_fr: { type: Type.INTEGER },
+                score_actualite: { type: Type.INTEGER },
+                score_save_share: { type: Type.INTEGER },
+                tension_emotion: { type: Type.STRING },
+                sources: { type: Type.STRING },
+                slug_short: { type: Type.STRING },
+                raison_selection: { type: Type.STRING },
+              },
+              required: [
+                'categorie',
+                'theme',
+                'angle_viral_fr',
+                'hook_propose',
+                'hook_ecran',
+                'score_viral_fr',
+                'score_actualite',
+                'score_save_share',
+                'tension_emotion',
+                'sources',
+                'slug_short',
+                'raison_selection',
+              ],
             },
-            required: [
-              'categorie',
-              'theme',
-              'angle_viral_fr',
-              'hook_propose',
-              'hook_ecran',
-              'score_viral_fr',
-              'score_actualite',
-              'score_save_share',
-              'tension_emotion',
-              'sources',
-              'slug_short',
-              'raison_selection',
-            ],
           },
         },
-      },
-    });
+      }),
+      28_000,
+      'Délai recherche sujets Gemini dépassé'
+    );
 
     const parsed = JSON.parse(response.text || '[]') as Array<
       Omit<NewTopicCandidate, 'categorie' | 'plateformes_cibles'> & { categorie: string }
@@ -257,7 +334,11 @@ async function generateBatchTopicsWithGemini(
   }));
 }
 
-export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme' | 'category' | 'angle' | 'hookHint' | 'sources'>): Promise<{
+export async function generateScriptForBatchItem(
+  item: Pick<BatchJobItem, 'theme' | 'category' | 'angle' | 'hookHint' | 'sources' | 'blueprintId'>,
+  batchIndex = 0
+): Promise<{
+  blueprintId: StoryBlueprintId;
   hookText: string;
   youtubeTitle: string;
   caption: string;
@@ -265,40 +346,65 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
   beats: BatchBeatSpec[];
 }> {
   const ai = createGeminiClient();
+  const blueprint =
+    item.blueprintId && STORY_BLUEPRINTS[item.blueprintId]
+      ? STORY_BLUEPRINTS[item.blueprintId]
+      : selectStoryBlueprint(item.category, item.theme, batchIndex);
+
   const fallback = buildFallbackBatchScript({
     theme: item.theme,
     category: item.category,
     angle: item.angle,
     hookHint: item.hookHint,
     sources: item.sources,
+    blueprintId: blueprint.id,
+    batchIndex,
   });
 
   if (!ai) return fallback;
 
+  const isDev = isDevOrCodeTopic(item.category, item.theme);
+  const recommendedBrolls = getBrollSequenceForTopic(item.category, item.theme);
+  const brollListStr = ALL_BROLL_KEYS.join('", "');
+
+  const blueprintLines = blueprint.beats.map((tpl, idx) => {
+    const resolvedVt = tpl.visualType === 'terminal_flow' && !isDev ? 'ledger_breakdown' : tpl.visualType;
+    const defaultBroll = idx === 7 ? 'studio' : recommendedBrolls[idx % recommendedBrolls.length];
+    return `${idx + 1}. role="${tpl.role}" | visualType="${resolvedVt}" | layoutHint="${tpl.layoutHint}" | broll conseillé="${defaultBroll}" — Objectif narratif : ${tpl.goal}`;
+  });
+
   try {
     const prompt = [
-      `Tu es le directeur créatif et scénariste d'une chaîne française YouTube Shorts / Reels / TikTok ultra-dynamique (style @alex.decode / @melvynxdev, haute rétention, zéro blabla, zéro temps mort).`,
+      `Tu es le directeur créatif et scénariste d'une chaîne française YouTube Shorts / Reels / TikTok ultra-dynamique (style @alex.decode / @melvynxdev, haute rétention, narration logique et fluide).`,
       `Sujet : "${item.theme}"`,
       `Catégorie : ${item.category}`,
-      item.angle ? `Angle : ${item.angle}` : '',
-      item.hookHint ? `Idée de hook : ${item.hookHint}` : '',
+      `Angle éditorial imposé pour cette vidéo : ${blueprint.label} (${blueprint.id})`,
+      item.angle ? `Angle précis : ${item.angle}` : '',
+      item.hookHint ? `Piste de hook : ${item.hookHint}` : '',
       item.sources ? `Sources : ${item.sources}` : '',
-      `Écris un script complet de Short français de 105 à 130 mots parlés au total, découpé en EXACTEMENT 8 séquences rapides (3 à 5 s chacune) :`,
-      `Règles impératives de viralité et lisibilité :`,
-      `- INTERDICTION absolue du tiret cadratin (—) et des phrases creuses ("dans cette vidéo", "bonjour").`,
-      `- Chaque champ "title" affiché à l'écran DOIT faire MAXIMUM 4 à 5 mots ultra-percutants (jamais une phrase longue !).`,
-      `- La voix lit "spokenLine" (naturel, oral, direct), mais l'écran N'AFFICHE JAMAIS un long paragraphe : uniquement des visuels animés, chiffres, icônes, barres, jauges, toggles et terminal.`,
-      `- brollKey obligatoire parmi : "ai_meetings", "economy", "tech_code", "business", "parliament", "teen_phone", "studio".`,
-      `- iconKind obligatoire parmi : "ai", "calendar", "chart", "clock", "euro", "law", "lock", "rocket", "terminal", "phone".`,
-      `Structure exacte des 8 séquences :`,
-      `1. visualType: "hook_shatter" (layoutHint: "split") — spokenLine <= 14 mots ! Rupture immédiate + statValue choc (<= 7 chars ex: "80 %", "-28 %"), stampWord (1 mot majuscule ex: "OBSOLÈTE", "BASCULE"), subStats (2 paires valeur/label court), brollKey + brollCaption (3 mots).`,
-      `2. visualType: "counter_flip" (layoutHint: "split") — statValue, statLabel court, comparisonLeft & comparisonRight (avant vs maintenant, ratio 0.15..0.95), brollKey.`,
-      `3. visualType: "timeline_steps" (layoutHint: "split") — steps: exactement 4 mots/étapes courtes (ex: ["Capture", "Analyse", "Synthèse", "Action"]), stampWord, brollKey.`,
-      `4. visualType: "gauge" (layoutHint: "fullscreen") — Re-hook à mi-vidéo ! gaugePct (entier 30..96), statLabel court, bullets: exactement 3 points courts (max 4 mots chacun).`,
-      `5. visualType: "comparison_bars" (layoutHint: "fullscreen") — comparisonLeft & comparisonRight chiffrés (ratio 0.15..0.95), multiplierBadge (ex: "÷4,5" ou "×3,2"), statValue (gain net), statLabel.`,
-      `6. visualType: "toggles_switch" (layoutHint: "split") — toggles: exactement 3 réglages concrets { label (max 4 mots), before ("ACTIF"/"OFF"), after ("COUPÉ"/"ON"), activeAfter (boolean) }, brollKey.`,
-      `7. visualType: "terminal_flow" (layoutHint: "split") — terminalCmd (commande courte style "> audit --ia-2026"), terminalOut: 3 lignes courtes commençant par "✓ ", statValue & statLabel payoff, brollKey.`,
-      `8. visualType: "cta_card" (layoutHint: "split") — appel à s'abonner (@alex.decode), brollKey: "studio", brollCaption: "Prochain décryptage".`,
+      `Écris un script complet de Short français de 105 à 130 mots parlés au total, découpé en EXACTEMENT 8 séquences chronologiques rapides (3 à 5 s chacune).`,
+      `RÈGLES DE CHRONOLOGIE ET DE LOGIQUE STRICTES (TRÈS IMPORTANT) :`,
+      `- Les 8 spokenLine doivent former UNE SEULE histoire continue, claire et logique du début à la fin (Contexte -> Mécanisme -> Re-hook -> Preuve -> Action -> Verdict -> CTA), avec des connecteurs naturels ("D'abord...", "Concrètement...", "Mais le vrai piège...", "Résultat...", "Pour agir dès maintenant...").`,
+      `- INTERDICTION absolue d'inventer des chiffres hors-sujet ou génériques ("45 min vs 2 min", "14 h/sem", etc.). Chaque chiffre, comparaison, ligne de tableau ou toggle doit appartenir 100 % au sujet "${item.theme}".`,
+      `- INTERDICTION absolue du tiret cadratin (—) et des banalités ("dans cette vidéo", "bonjour", "salut à tous").`,
+      `- Chaque champ "title" affiché à l'écran DOIT faire MAXIMUM 4 à 5 mots percutants (jamais une phrase longue).`,
+      `- NE PAS utiliser visualType="terminal_flow" sauf si le sujet concerne explicitement le code ou le développement logiciel.`,
+      `- Varie brollKey à travers les séquences en choisissant parmi : "${brollListStr}" (privilégie pour ce sujet : ${recommendedBrolls.join(', ')}).`,
+      `- iconKind obligatoire parmi : "ai", "calendar", "chart", "clock", "euro", "law", "lock", "rocket", "terminal", "phone", "shield", "warning".`,
+      `STRUCTURE EXACTE DES 8 SÉQUENCES POUR CET ÉPISODE :`,
+      ...blueprintLines,
+      `Champs visuels requis selon chaque visualType :`,
+      `- Pour les hooks (hook_shatter, hook_vs_battle, hook_myth_bust, hook_alert_card, hook_stat) : spokenLine <= 14 mots ! Remplis hookCards (3 cartes courtes {label, sub, tone: "dark"|"light"|"accent"}), statValue (<= 8 chars), statLabel, stampWord (1 mot majuscule), subStats (2 paires), et pour hook_alert_card remplis aussi quoteText + highlightPhrase.`,
+      `- Pour counter_flip : statValue, statLabel, comparisonLeft & comparisonRight chiffrés sur le sujet (ratio 0.15..0.95).`,
+      `- Pour comparison_bars : comparisonLeft & comparisonRight chiffrés sur le sujet, multiplierBadge (ex: "×3", "+240 €", "÷4"), statValue & statLabel.`,
+      `- Pour timeline_steps : steps (4 étapes chronologiques courtes de 1 à 2 mots), stampWord.`,
+      `- Pour gauge : gaugePct (25..96), statLabel, bullets (exactement 3 points concrets max 4 mots chacun).`,
+      `- Pour toggles_switch : toggles (exactement 3 arbitrages {label, before, after, activeAfter}).`,
+      `- Pour ledger_breakdown : ledgerRows (exactement 3 ou 4 lignes chiffrées {label, value, delta, highlight}), statValue & statLabel synthèse.`,
+      `- Pour verdict_quote : quoteText (1 phrase punchy <= 16 mots), highlightPhrase (sous-chaîne exacte de quoteText à surligner), quoteSource, stampWord.`,
+      `- Pour radar_pillars : bullets (3 critères clés max 4 mots), subStats (3 ou 2 paires score/critère), statLabel.`,
+      `- Pour checklist_action : bullets (exactement 3 actions concrètes commençant par un verbe d'action), statValue & statLabel.`,
+      `- Pour cta_card : brollKey="studio", statValue="@alex.decode", question liée au sujet.`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -313,88 +419,121 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-4-hydrogen',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                hookText: { type: Type.STRING },
-                youtubeTitle: { type: Type.STRING },
-                caption: { type: Type.STRING },
-                hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
-                beats: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      title: { type: Type.STRING },
-                      shortLabel: { type: Type.STRING },
-                      screenLabel: { type: Type.STRING },
-                      spokenLine: { type: Type.STRING },
-                      visualType: { type: Type.STRING },
-                      layoutHint: { type: Type.STRING },
-                      brollKey: { type: Type.STRING },
-                      brollCaption: { type: Type.STRING },
-                      iconKind: { type: Type.STRING },
-                      stampWord: { type: Type.STRING },
-                      statValue: { type: Type.STRING },
-                      statLabel: { type: Type.STRING },
-                      subStats: {
-                        type: Type.ARRAY,
-                        items: {
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model: 'gemini-4-hydrogen',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  hookText: { type: Type.STRING },
+                  youtubeTitle: { type: Type.STRING },
+                  caption: { type: Type.STRING },
+                  hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  beats: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        shortLabel: { type: Type.STRING },
+                        screenLabel: { type: Type.STRING },
+                        spokenLine: { type: Type.STRING },
+                        visualType: { type: Type.STRING },
+                        beatRole: { type: Type.STRING },
+                        layoutHint: { type: Type.STRING },
+                        brollKey: { type: Type.STRING },
+                        brollCaption: { type: Type.STRING },
+                        iconKind: { type: Type.STRING },
+                        stampWord: { type: Type.STRING },
+                        statValue: { type: Type.STRING },
+                        statLabel: { type: Type.STRING },
+                        hookCards: {
+                          type: Type.ARRAY,
+                          items: {
+                            type: Type.OBJECT,
+                            properties: {
+                              label: { type: Type.STRING },
+                              sub: { type: Type.STRING },
+                              iconKind: { type: Type.STRING },
+                              tone: { type: Type.STRING },
+                            },
+                          },
+                        },
+                        subStats: {
+                          type: Type.ARRAY,
+                          items: {
+                            type: Type.OBJECT,
+                            properties: {
+                              value: { type: Type.STRING },
+                              label: { type: Type.STRING },
+                            },
+                          },
+                        },
+                        bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        toggles: {
+                          type: Type.ARRAY,
+                          items: {
+                            type: Type.OBJECT,
+                            properties: {
+                              label: { type: Type.STRING },
+                              before: { type: Type.STRING },
+                              after: { type: Type.STRING },
+                              activeAfter: { type: Type.BOOLEAN },
+                            },
+                          },
+                        },
+                        ledgerRows: {
+                          type: Type.ARRAY,
+                          items: {
+                            type: Type.OBJECT,
+                            properties: {
+                              label: { type: Type.STRING },
+                              value: { type: Type.STRING },
+                              delta: { type: Type.STRING },
+                              highlight: { type: Type.BOOLEAN },
+                            },
+                          },
+                        },
+                        quoteText: { type: Type.STRING },
+                        highlightPhrase: { type: Type.STRING },
+                        quoteSource: { type: Type.STRING },
+                        terminalCmd: { type: Type.STRING },
+                        terminalOut: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        comparisonLeft: {
                           type: Type.OBJECT,
                           properties: {
+                            label: { type: Type.STRING },
                             value: { type: Type.STRING },
-                            label: { type: Type.STRING },
+                            ratio: { type: Type.NUMBER },
                           },
                         },
-                      },
-                      bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      steps: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      toggles: {
-                        type: Type.ARRAY,
-                        items: {
+                        comparisonRight: {
                           type: Type.OBJECT,
                           properties: {
                             label: { type: Type.STRING },
-                            before: { type: Type.STRING },
-                            after: { type: Type.STRING },
-                            activeAfter: { type: Type.BOOLEAN },
+                            value: { type: Type.STRING },
+                            ratio: { type: Type.NUMBER },
                           },
                         },
+                        multiplierBadge: { type: Type.STRING },
+                        gaugePct: { type: Type.INTEGER },
                       },
-                      terminalCmd: { type: Type.STRING },
-                      terminalOut: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      comparisonLeft: {
-                        type: Type.OBJECT,
-                        properties: {
-                          label: { type: Type.STRING },
-                          value: { type: Type.STRING },
-                          ratio: { type: Type.NUMBER },
-                        },
-                      },
-                      comparisonRight: {
-                        type: Type.OBJECT,
-                        properties: {
-                          label: { type: Type.STRING },
-                          value: { type: Type.STRING },
-                          ratio: { type: Type.NUMBER },
-                        },
-                      },
-                      multiplierBadge: { type: Type.STRING },
-                      gaugePct: { type: Type.INTEGER },
+                      required: ['title', 'shortLabel', 'screenLabel', 'spokenLine', 'visualType'],
                     },
-                    required: ['title', 'shortLabel', 'screenLabel', 'spokenLine', 'visualType'],
                   },
                 },
+                required: ['hookText', 'youtubeTitle', 'caption', 'hashtags', 'beats'],
               },
-              required: ['hookText', 'youtubeTitle', 'caption', 'hashtags', 'beats'],
             },
-          },
-        });
+          }),
+          22_000,
+          'Délai génération script Gemini dépassé'
+        );
 
         const rawText = (response.text || '{}')
           .trim()
@@ -406,8 +545,14 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
           break;
         }
       } catch (retryErr) {
-        if (attempt === 1) throw retryErr;
-        console.warn('Gemini batch script retry:', retryErr);
+        const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        const isTimeout = /Délai|timeout/i.test(msg);
+        if (attempt === 1 || isTimeout) {
+          console.warn('Gemini batch script fallback:', msg);
+          break;
+        } else {
+          console.warn('Gemini batch script retry:', msg);
+        }
       }
     }
 
@@ -418,23 +563,20 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
     const validVisualTypes: DynamicVisualType[] = [
       'hook_shatter',
       'hook_stat',
+      'hook_vs_battle',
+      'hook_myth_bust',
+      'hook_alert_card',
       'counter_flip',
       'comparison_bars',
       'timeline_steps',
       'toggles_switch',
       'terminal_flow',
+      'ledger_breakdown',
+      'verdict_quote',
+      'radar_pillars',
+      'checklist_action',
       'key_points',
       'gauge',
-      'cta_card',
-    ];
-    const defaultTypes: DynamicVisualType[] = [
-      'hook_shatter',
-      'counter_flip',
-      'timeline_steps',
-      'gauge',
-      'comparison_bars',
-      'toggles_switch',
-      'terminal_flow',
       'cta_card',
     ];
     const validIcons: DynamicIconKind[] = [
@@ -448,35 +590,45 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
       'rocket',
       'terminal',
       'phone',
+      'shield',
+      'warning',
     ];
-    const validBrolls = new Set([
-      'ai_meetings',
-      'economy',
-      'tech_code',
-      'business',
-      'parliament',
-      'teen_phone',
-      'studio',
-    ]);
+    const validBrolls = new Set<string>(ALL_BROLL_KEYS);
 
     const rawBeats = parsed.beats.slice(0, 8);
     const beats: BatchBeatSpec[] = rawBeats.map((b, idx) => {
       const fb = fallback.beats[idx % fallback.beats.length];
-      const vt =
+      const bpTpl = blueprint.beats[idx % blueprint.beats.length];
+      let vt: DynamicVisualType =
         idx === 0
-          ? 'hook_shatter'
+          ? validVisualTypes.includes(b.visualType as DynamicVisualType) &&
+            String(b.visualType).startsWith('hook_')
+            ? (b.visualType as DynamicVisualType)
+            : blueprint.hookType
           : idx === rawBeats.length - 1
             ? 'cta_card'
             : validVisualTypes.includes(b.visualType as DynamicVisualType)
               ? (b.visualType as DynamicVisualType)
-              : defaultTypes[idx % defaultTypes.length];
+              : bpTpl.visualType;
+
+      if (vt === 'terminal_flow' && !isDev) {
+        vt = 'ledger_breakdown';
+      }
 
       const sfxByVt: Partial<Record<DynamicVisualType, BatchBeatSpec['sfxKind']>> = {
         hook_shatter: 'glass-shatter',
+        hook_myth_bust: 'glass-shatter',
+        hook_vs_battle: 'impact-boom',
+        hook_alert_card: 'bell',
+        hook_stat: 'riser',
         counter_flip: 'thud',
         timeline_steps: 'tap',
         gauge: 'zhhh',
         comparison_bars: 'riser',
+        ledger_breakdown: 'tap',
+        verdict_quote: 'pop',
+        radar_pillars: 'zhhh',
+        checklist_action: 'tap',
         toggles_switch: 'tap',
         terminal_flow: 'pop',
         cta_card: 'pop-back',
@@ -494,15 +646,19 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
 
       const brollKey = b.brollKey && validBrolls.has(b.brollKey) ? b.brollKey : fb.brollKey;
       const layoutHint =
-        vt === 'gauge' || vt === 'comparison_bars'
+        vt === 'gauge' || vt === 'comparison_bars' || vt === 'ledger_breakdown' || vt === 'radar_pillars'
           ? 'fullscreen'
           : b.layoutHint === 'fullscreen' || b.layoutHint === 'split'
             ? b.layoutHint
-            : fb.layoutHint || 'split';
+            : bpTpl.layoutHint || 'split';
+
+      const cleanTitle = condenseVisualHeadline(b.title || fb.title, 5, 38);
 
       return {
         id: `beat-${idx + 1}`,
-        title: condenseVisualHeadline(b.title || fb.title, 5, 38),
+        blueprintId: blueprint.id,
+        beatRole: bpTpl.role,
+        title: cleanTitle,
         shortLabel: sanitizeScriptText(b.shortLabel || fb.shortLabel).slice(0, 22),
         screenLabel: sanitizeScriptText(b.screenLabel || fb.screenLabel).toUpperCase().slice(0, 32),
         spokenLine,
@@ -514,9 +670,27 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
         stampWord: b.stampWord ? sanitizeScriptText(b.stampWord).toUpperCase().slice(0, 14) : fb.stampWord,
         statValue: b.statValue ? sanitizeScriptText(b.statValue).slice(0, 16) : fb.statValue,
         statLabel: b.statLabel ? sanitizeScriptText(b.statLabel).slice(0, 44) : fb.statLabel,
+        hookCards:
+          Array.isArray(b.hookCards) && b.hookCards.length >= 2
+            ? b.hookCards.slice(0, 3).map((hc, hcIdx) => ({
+                label: condenseVisualHeadline(hc.label || 'Signal', 3, 18),
+                sub: sanitizeScriptText(hc.sub || '').slice(0, 24),
+                iconKind: validIcons.includes(hc.iconKind as DynamicIconKind)
+                  ? (hc.iconKind as DynamicIconKind)
+                  : iconKind,
+                tone:
+                  hc.tone === 'dark' || hc.tone === 'light' || hc.tone === 'accent'
+                    ? hc.tone
+                    : hcIdx === 0
+                      ? 'dark'
+                      : hcIdx === 1
+                        ? 'light'
+                        : 'accent',
+              }))
+            : fb.hookCards,
         subStats:
           Array.isArray(b.subStats) && b.subStats.length > 0
-            ? b.subStats.slice(0, 2).map((s) => ({
+            ? b.subStats.slice(0, 3).map((s) => ({
                 value: sanitizeScriptText(s.value || '').slice(0, 14),
                 label: sanitizeScriptText(s.label || '').slice(0, 24),
               }))
@@ -538,23 +712,42 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
                 activeAfter: Boolean(t.activeAfter),
               }))
             : fb.toggles,
-        terminalCmd: b.terminalCmd ? sanitizeScriptText(b.terminalCmd).slice(0, 40) : fb.terminalCmd,
+        ledgerRows:
+          Array.isArray(b.ledgerRows) && b.ledgerRows.length > 0
+            ? b.ledgerRows.slice(0, 4).map((r) => ({
+                label: condenseVisualHeadline(r.label || 'Indicateur', 5, 38),
+                value: sanitizeScriptText(r.value || '').slice(0, 16),
+                delta: r.delta ? sanitizeScriptText(r.delta).slice(0, 22) : undefined,
+                highlight: Boolean(r.highlight),
+              }))
+            : fb.ledgerRows,
+        quoteText: b.quoteText ? sanitizeScriptText(b.quoteText).slice(0, 120) : fb.quoteText,
+        highlightPhrase: b.highlightPhrase
+          ? sanitizeScriptText(b.highlightPhrase).slice(0, 48)
+          : fb.highlightPhrase,
+        quoteSource: b.quoteSource ? sanitizeScriptText(b.quoteSource).slice(0, 36) : fb.quoteSource,
+        terminalCmd:
+          vt === 'terminal_flow'
+            ? sanitizeScriptText(b.terminalCmd || fb.terminalCmd || '> audit --2026').slice(0, 40)
+            : undefined,
         terminalOut:
-          Array.isArray(b.terminalOut) && b.terminalOut.length > 0
-            ? b.terminalOut.map((l) => sanitizeScriptText(l).slice(0, 44)).slice(0, 3)
-            : fb.terminalOut,
+          vt === 'terminal_flow'
+            ? (Array.isArray(b.terminalOut) && b.terminalOut.length > 0
+                ? b.terminalOut.map((l) => sanitizeScriptText(l).slice(0, 44)).slice(0, 3)
+                : fb.terminalOut)
+            : undefined,
         comparisonLeft: b.comparisonLeft
           ? {
               label: sanitizeScriptText(b.comparisonLeft.label || 'Avant').slice(0, 26),
-              value: sanitizeScriptText(b.comparisonLeft.value || '45 min').slice(0, 14),
-              ratio: Math.max(0.12, Math.min(1, Number(b.comparisonLeft.ratio) || 0.85)),
+              value: sanitizeScriptText(b.comparisonLeft.value || '').slice(0, 16) || 'Base',
+              ratio: Math.max(0.12, Math.min(1, Number(b.comparisonLeft.ratio) || 0.82)),
             }
           : fb.comparisonLeft,
         comparisonRight: b.comparisonRight
           ? {
               label: sanitizeScriptText(b.comparisonRight.label || 'Après').slice(0, 26),
-              value: sanitizeScriptText(b.comparisonRight.value || '2 min').slice(0, 14),
-              ratio: Math.max(0.12, Math.min(1, Number(b.comparisonRight.ratio) || 0.25)),
+              value: sanitizeScriptText(b.comparisonRight.value || '').slice(0, 16) || 'Optimisé',
+              ratio: Math.max(0.12, Math.min(1, Number(b.comparisonRight.ratio) || 0.28)),
             }
           : fb.comparisonRight,
         multiplierBadge: b.multiplierBadge
@@ -569,6 +762,7 @@ export async function generateScriptForBatchItem(item: Pick<BatchJobItem, 'theme
     });
 
     return {
+      blueprintId: blueprint.id,
       hookText: sanitizeScriptText(parsed.hookText || beats[0].spokenLine),
       youtubeTitle: sanitizeScriptText(parsed.youtubeTitle || item.theme).slice(0, 58),
       caption: sanitizeScriptText(parsed.caption || fallback.caption),
@@ -625,6 +819,7 @@ export async function synthesizeVoiceoverForProject(params: {
             use_speaker_boost: true,
           },
         }),
+        signal: AbortSignal.timeout(25_000),
       });
 
     try {
@@ -697,281 +892,293 @@ function buildUniqueProjectIdentifiers(baseTitle: string, existingProjects: Shor
 }
 
 async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: number) {
-  let job = getBatchJob(batchId);
-  if (!job) return;
+  activeRunningBatchIds.add(batchId);
+  try {
+    let job = getBatchJob(batchId);
+    if (!job) return;
 
-  const scheduleSlots =
-    req.autoSchedule?.enabled && req.autoSchedule.platforms.length > 0
-      ? computeStaggeredScheduleSlots(
-          job.items.length,
-          req.autoSchedule.startAtIso,
-          req.autoSchedule.intervalHours
-        )
-      : [];
+    const scheduleSlots =
+      req.autoSchedule?.enabled && req.autoSchedule.platforms.length > 0
+        ? computeStaggeredScheduleSlots(
+            job.items.length,
+            req.autoSchedule.startAtIso,
+            req.autoSchedule.intervalHours
+          )
+        : [];
 
-  const lookPreset = LOOK_PRESETS[req.lookId] || LOOK_PRESETS.papier;
+    const lookPreset = LOOK_PRESETS[req.lookId] || LOOK_PRESETS.papier;
 
-  for (let i = 0; i < job.items.length; i++) {
-    if (activeCancelledBatchIds.has(batchId)) {
-      for (let k = i; k < job.items.length; k++) {
-        job.items[k] = {
-          ...job.items[k],
-          step: 'cancelled',
-          completedAt: new Date().toISOString(),
-        };
-      }
-      job.status = 'cancelled';
-      job.currentStepLabel = 'Lot annulé par l’utilisateur';
-      job.completedAt = new Date().toISOString();
-      job = saveBatchJob(job);
-      return;
-    }
-
-    const item = job.items[i];
-    try {
-      // 1. Scripting
-      job.items[i] = {
-        ...item,
-        step: 'scripting',
-        progress: 12,
-        startedAt: new Date().toISOString(),
-      };
-      job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Écriture du script IA`;
-      job = saveBatchJob(job);
-
-      const script = await generateScriptForBatchItem(job.items[i]);
-      const fullSpokenText = script.beats.map((b) => b.spokenLine).join(' ');
-
-      if (activeCancelledBatchIds.has(batchId)) continue;
-
-      // 2. Voiceover ElevenLabs
-      job.items[i] = {
-        ...job.items[i],
-        step: 'voiceover',
-        progress: 34,
-      };
-      job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Synthèse vocale FR`;
-      job = saveBatchJob(job);
-
-      const existing = getAllProjects();
-      const { id: projectId, slug } = buildUniqueProjectIdentifiers(item.theme, existing);
-      const projectDir = path.join(PROJECTS_DIR, projectId);
-      fs.mkdirSync(projectDir, { recursive: true });
-
-      const clampedSpeed = Math.min(1.06, Math.max(0.95, Number(req.speed) || 1.05));
-      const voice = await synthesizeVoiceoverForProject({
-        projectDir,
-        fullText: fullSpokenText,
-        speed: clampedSpeed,
-      });
-
-      const timed = assignBeatTimingsAndTranscript(
-        script.beats,
-        voice.words,
-        voice.durationSec
-      );
-
-      const layoutTrack: ShortProject['layoutTrack'] = timed.beats.map((b, bIdx) => ({
-        id: `layout-${b.id}`,
-        layout: resolveBeatLayout(b, bIdx, timed.beats.length),
-        start: b.from,
-        end: b.to,
-      }));
-
-      const project: ShortProject = {
-        id: projectId,
-        slug,
-        title: sanitizeScriptText(item.theme),
-        topicId: item.topicId,
-        topicCategory: item.category,
-        hookText: script.hookText,
-        mode: 'faceless_explainer',
-        platform: 'youtube_shorts',
-        status: req.renderMp4 ? 'rendering' : 'ready',
-        duration: timed.durationSec,
-        fps: 25,
-        resolution: { width: 1080, height: 1920 },
-        audioTrackUrl: voice.audioTrackUrl,
-        currentVersion: 'v1',
-        versions: [
-          {
-            version: 'v1',
-            createdAt: new Date().toISOString(),
-            status: req.renderMp4 ? 'rendering' : 'done',
-            duration: timed.durationSec,
-            fps: 25,
-            notes: `Créé en masse · Look ${lookPreset.label} · ${timed.beats.length} séquences`,
-            audioTrackUrl: voice.audioTrackUrl,
-          },
-        ],
-        transcript: voice.words,
-        motionTrack: timed.motionTrack,
-        layoutTrack,
-        sfxTrack: timed.sfxTrack,
-        musicTrack: {
-          trackName: req.musicTrack || 'upbeat',
-          volume: 0.24,
-          ducking: true,
-        },
-        feedbacks: [],
-        motionComponents: {},
-        contactSheet: [],
-        editSpec: {
-          lookId: req.lookId,
-          speed: clampedSpeed,
-          hookText: script.hookText,
-          sources: item.sources || '',
-          youtubeTitle: script.youtubeTitle,
-          caption: script.caption,
-          hashtags: script.hashtags,
-          beats: timed.beats,
-        },
-        styleProfile: {
-          name: lookPreset.label,
-          fontFamily: lookPreset.fontDisplay.replace(/['"]/g, '').split(',')[0] || 'Bricolage Grotesque',
-          accentColor: lookPreset.accent,
-          textColor: lookPreset.ink,
-          cardBg: lookPreset.sheet,
-          captionsPosition: 'bottom',
-          visualBeatsTarget: timed.beats.length,
-        },
-      };
-
-      saveProject(project);
-
-      if (item.topicId) {
-        try {
-          updateTopicStatus(ROOT_DIR, item.topicId, 'Produit');
-        } catch {
-          // non-fatal if CSV row changed
+    for (let i = 0; i < job.items.length; i++) {
+      if (activeCancelledBatchIds.has(batchId)) {
+        for (let k = i; k < job.items.length; k++) {
+          job.items[k] = {
+            ...job.items[k],
+            step: 'cancelled',
+            completedAt: new Date().toISOString(),
+          };
         }
+        job.status = 'cancelled';
+        job.currentStepLabel = 'Lot annulé par l’utilisateur';
+        job.completedAt = new Date().toISOString();
+        job = saveBatchJob(job);
+        return;
       }
 
-      job.items[i] = {
-        ...job.items[i],
-        projectId: project.id,
-        projectSlug: project.slug,
-        version: 'v1',
-        duration: timed.durationSec,
-        beatsCount: timed.beats.length,
-        progress: 50,
-      };
-      job = saveBatchJob(job);
-
-      // 3. Render real 1080x1920 MP4
-      if (req.renderMp4) {
-        if (activeCancelledBatchIds.has(batchId)) continue;
+      const item = job.items[i];
+      try {
+        // 1. Scripting (with strict 28s timeout so it can never freeze at 12%)
         job.items[i] = {
-          ...job.items[i],
-          step: 'rendering',
-          progress: 55,
+          ...item,
+          step: 'scripting',
+          progress: 12,
+          startedAt: new Date().toISOString(),
         };
-        job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Rendu MP4 1080×1920`;
+        job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Écriture du script IA`;
         job = saveBatchJob(job);
 
-        const rendered = await renderDynamicProjectToMp4({
-          project,
-          version: 'v1',
-          lookId: req.lookId,
-          port,
-          voiceMp3Path: voice.voiceMp3Path,
-          onProgress: (renderPct) => {
-            const latest = getBatchJob(batchId);
-            if (!latest) return;
-            latest.items[i] = {
-              ...latest.items[i],
-              progress: Math.min(92, 52 + Math.round(renderPct * 0.4)),
-            };
-            saveBatchJob(latest);
-          },
+        const script = await generateScriptForBatchItem(job.items[i], i);
+        const fullSpokenText = script.beats.map((b) => b.spokenLine).join(' ');
+
+        if (activeCancelledBatchIds.has(batchId)) continue;
+
+        // 2. Voiceover ElevenLabs
+        job.items[i] = {
+          ...job.items[i],
+          blueprintId: script.blueprintId,
+          step: 'voiceover',
+          progress: 34,
+        };
+        job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Synthèse vocale FR`;
+        job = saveBatchJob(job);
+
+        const existing = getAllProjects();
+        const { id: projectId, slug } = buildUniqueProjectIdentifiers(item.theme, existing);
+        const projectDir = path.join(PROJECTS_DIR, projectId);
+        fs.mkdirSync(projectDir, { recursive: true });
+
+        const clampedSpeed = Math.min(1.06, Math.max(0.95, Number(req.speed) || 1.05));
+        const voice = await synthesizeVoiceoverForProject({
+          projectDir,
+          fullText: fullSpokenText,
+          speed: clampedSpeed,
         });
 
-        project.status = 'ready';
-        project.duration = rendered.duration;
-        project.versions[0] = {
-          ...project.versions[0],
-          status: 'done',
-          duration: rendered.duration,
-          outputMp4: rendered.outputMp4Url,
-          contactSheetUrl: rendered.contactSheetUrl,
+        const timed = assignBeatTimingsAndTranscript(
+          script.beats,
+          voice.words,
+          voice.durationSec
+        );
+
+        const layoutTrack: ShortProject['layoutTrack'] = timed.beats.map((b, bIdx) => ({
+          id: `layout-${b.id}`,
+          layout: resolveBeatLayout(b, bIdx, timed.beats.length),
+          start: b.from,
+          end: b.to,
+        }));
+
+        const project: ShortProject = {
+          id: projectId,
+          slug,
+          title: sanitizeScriptText(item.theme),
+          topicId: item.topicId,
+          topicCategory: item.category,
+          hookText: script.hookText,
+          mode: 'faceless_explainer',
+          platform: 'youtube_shorts',
+          status: req.renderMp4 ? 'rendering' : 'ready',
+          duration: timed.durationSec,
+          fps: 25,
+          resolution: { width: 1080, height: 1920 },
+          audioTrackUrl: voice.audioTrackUrl,
+          currentVersion: 'v1',
+          versions: [
+            {
+              version: 'v1',
+              createdAt: new Date().toISOString(),
+              status: req.renderMp4 ? 'rendering' : 'done',
+              duration: timed.durationSec,
+              fps: 25,
+              notes: `Créé en masse · ${STORY_BLUEPRINTS[script.blueprintId]?.label || script.blueprintId} · Look ${lookPreset.label}`,
+              audioTrackUrl: voice.audioTrackUrl,
+            },
+          ],
+          transcript: voice.words,
+          motionTrack: timed.motionTrack,
+          layoutTrack,
+          sfxTrack: timed.sfxTrack,
+          musicTrack: {
+            trackName: req.musicTrack || 'upbeat',
+            volume: 0.24,
+            ducking: true,
+          },
+          feedbacks: [],
+          motionComponents: {},
+          contactSheet: [],
+          editSpec: {
+            lookId: req.lookId,
+            blueprintId: script.blueprintId,
+            speed: clampedSpeed,
+            hookText: script.hookText,
+            sources: item.sources || '',
+            youtubeTitle: script.youtubeTitle,
+            caption: script.caption,
+            hashtags: script.hashtags,
+            beats: timed.beats,
+          },
+          styleProfile: {
+            name: lookPreset.label,
+            fontFamily: lookPreset.fontDisplay.replace(/['"]/g, '').split(',')[0] || 'Bricolage Grotesque',
+            accentColor: lookPreset.accent,
+            textColor: lookPreset.ink,
+            cardBg: lookPreset.sheet,
+            captionsPosition: 'bottom',
+            visualBeatsTarget: timed.beats.length,
+          },
         };
+
         saveProject(project);
 
+        if (item.topicId) {
+          try {
+            updateTopicStatus(ROOT_DIR, item.topicId, 'Produit');
+          } catch {
+            // non-fatal if CSV row changed
+          }
+        }
+
         job.items[i] = {
           ...job.items[i],
-          duration: rendered.duration,
-          outputMp4Url: rendered.outputMp4Url,
-          thumbnailUrl: rendered.thumbnailUrl,
-          progress: 92,
-        };
-        job = saveBatchJob(job);
-      }
-
-      // 4. Optional Auto-Schedule
-      if (req.autoSchedule?.enabled && req.autoSchedule.platforms.length > 0 && scheduleSlots[i]) {
-        job.items[i] = {
-          ...job.items[i],
-          step: 'scheduling',
-          progress: 95,
-        };
-        job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Planification sociale`;
-        job = saveBatchJob(job);
-
-        const copy = await generateAiSocialCopy(project);
-        const scheduledResult = await createScheduledPostsForProject({
+          blueprintId: script.blueprintId,
           projectId: project.id,
+          projectSlug: project.slug,
           version: 'v1',
-          platforms: req.autoSchedule.platforms,
-          scheduledAt: scheduleSlots[i],
-          youtubeTitle: copy.youtubeTitle || script.youtubeTitle,
-          youtubeDescription: copy.youtubeDescription,
-          caption: copy.caption || script.caption,
-          tiktokCaption: copy.tiktokCaption,
-          hashtags: copy.hashtags || script.hashtags,
-          coverTimestampSec: copy.coverTimestampSec,
-          privacy: req.autoSchedule.privacy || 'public',
-        });
+          duration: timed.durationSec,
+          beatsCount: timed.beats.length,
+          progress: 50,
+        };
+        job = saveBatchJob(job);
+
+        // 3. Render real 1080x1920 MP4
+        if (req.renderMp4) {
+          if (activeCancelledBatchIds.has(batchId)) continue;
+          job.items[i] = {
+            ...job.items[i],
+            step: 'rendering',
+            progress: 55,
+          };
+          job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Rendu MP4 1080×1920`;
+          job = saveBatchJob(job);
+
+          const rendered = await withTimeout(
+            renderDynamicProjectToMp4({
+              project,
+              version: 'v1',
+              lookId: req.lookId,
+              port,
+              voiceMp3Path: voice.voiceMp3Path,
+              onProgress: (renderPct) => {
+                const latest = getBatchJob(batchId);
+                if (!latest) return;
+                latest.items[i] = {
+                  ...latest.items[i],
+                  progress: Math.min(92, 52 + Math.round(renderPct * 0.4)),
+                };
+                saveBatchJob(latest);
+              },
+            }),
+            240_000,
+            'Délai rendu MP4 1080×1920 dépassé'
+          );
+
+          project.status = 'ready';
+          project.duration = rendered.duration;
+          project.versions[0] = {
+            ...project.versions[0],
+            status: 'done',
+            duration: rendered.duration,
+            outputMp4: rendered.outputMp4Url,
+            contactSheetUrl: rendered.contactSheetUrl,
+          };
+          saveProject(project);
+
+          job.items[i] = {
+            ...job.items[i],
+            duration: rendered.duration,
+            outputMp4Url: rendered.outputMp4Url,
+            thumbnailUrl: rendered.thumbnailUrl,
+            progress: 92,
+          };
+          job = saveBatchJob(job);
+        }
+
+        // 4. Optional Auto-Schedule
+        if (req.autoSchedule?.enabled && req.autoSchedule.platforms.length > 0 && scheduleSlots[i]) {
+          job.items[i] = {
+            ...job.items[i],
+            step: 'scheduling',
+            progress: 95,
+          };
+          job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Planification sociale`;
+          job = saveBatchJob(job);
+
+          const copy = await generateAiSocialCopy(project);
+          const scheduledResult = await createScheduledPostsForProject({
+            projectId: project.id,
+            version: 'v1',
+            platforms: req.autoSchedule.platforms,
+            scheduledAt: scheduleSlots[i],
+            youtubeTitle: copy.youtubeTitle || script.youtubeTitle,
+            youtubeDescription: copy.youtubeDescription,
+            caption: copy.caption || script.caption,
+            tiktokCaption: copy.tiktokCaption,
+            hashtags: copy.hashtags || script.hashtags,
+            coverTimestampSec: copy.coverTimestampSec,
+            privacy: req.autoSchedule.privacy || 'public',
+          });
+
+          job.items[i] = {
+            ...job.items[i],
+            scheduledCount: scheduledResult.jobs.length,
+            scheduledAt: scheduleSlots[i],
+          };
+        }
 
         job.items[i] = {
           ...job.items[i],
-          scheduledCount: scheduledResult.jobs.length,
-          scheduledAt: scheduleSlots[i],
+          step: 'done',
+          progress: 100,
+          completedAt: new Date().toISOString(),
         };
+        job.completedCount += 1;
+        job = saveBatchJob(job);
+        triggerAutoSyncInBackground(project.id);
+      } catch (err) {
+        job.items[i] = {
+          ...job.items[i],
+          step: 'error',
+          error: err instanceof Error ? err.message : 'Erreur inconnue pendant la génération',
+          completedAt: new Date().toISOString(),
+        };
+        job.failedCount += 1;
+        job = saveBatchJob(job);
       }
-
-      job.items[i] = {
-        ...job.items[i],
-        step: 'done',
-        progress: 100,
-        completedAt: new Date().toISOString(),
-      };
-      job.completedCount += 1;
-      job = saveBatchJob(job);
-      triggerAutoSyncInBackground(project.id);
-    } catch (err) {
-      job.items[i] = {
-        ...job.items[i],
-        step: 'error',
-        error: err instanceof Error ? err.message : 'Erreur inconnue pendant la génération',
-        completedAt: new Date().toISOString(),
-      };
-      job.failedCount += 1;
-      job = saveBatchJob(job);
     }
-  }
 
-  job.status =
-    job.failedCount === 0
-      ? 'completed'
-      : job.completedCount > 0
-        ? 'partial'
-        : 'failed';
-  job.currentStepLabel =
-    job.status === 'completed'
-      ? `Lot terminé · ${job.completedCount}/${job.totalCount} vidéos prêtes`
-      : `Lot terminé avec ${job.failedCount} erreur(s)`;
-  job.completedAt = new Date().toISOString();
-  saveBatchJob(job);
+    job.status =
+      job.failedCount === 0
+        ? 'completed'
+        : job.completedCount > 0
+          ? 'partial'
+          : 'failed';
+    job.currentStepLabel =
+      job.status === 'completed'
+        ? `Lot terminé · ${job.completedCount}/${job.totalCount} vidéos prêtes`
+        : `Lot terminé avec ${job.failedCount} erreur(s)`;
+    job.completedAt = new Date().toISOString();
+    saveBatchJob(job);
+  } finally {
+    activeRunningBatchIds.delete(batchId);
+  }
 }
 
 export async function startBatchJob(
@@ -1032,7 +1239,7 @@ export async function startBatchJob(
       }));
     }
     if (selectedItems.length === 0) {
-      throw new Error('Aucun sujet disponible dans le CSV. Utilisez Recherche IA ou Liste personnalisée.');
+      throw new Error('Aucun sujet disponible dans le CSV. Utilisez Recherche IA ou Liste libre.');
     }
   } else {
     selectedItems = await generateBatchTopicsWithGemini(req.count || 3, req.focus);
@@ -1041,17 +1248,26 @@ export async function startBatchJob(
   const batchId = `batch-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
   const nowIso = new Date().toISOString();
 
-  const items: BatchJobItem[] = selectedItems.map((src, idx) => ({
-    index: idx + 1,
-    topicId: src.topicId,
-    category: src.category,
-    theme: src.theme,
-    angle: src.angle,
-    hookHint: src.hookHint,
-    sources: src.sources,
-    step: 'queued',
-    progress: 0,
-  }));
+  const usedBlueprintIds = new Set<StoryBlueprintId>();
+  const items: BatchJobItem[] = selectedItems.map((src, idx) => {
+    if (usedBlueprintIds.size >= Object.keys(STORY_BLUEPRINTS).length) {
+      usedBlueprintIds.clear();
+    }
+    const bp = selectStoryBlueprint(src.category, src.theme, idx, usedBlueprintIds);
+    usedBlueprintIds.add(bp.id);
+    return {
+      index: idx + 1,
+      topicId: src.topicId,
+      category: src.category,
+      theme: src.theme,
+      angle: src.angle,
+      hookHint: src.hookHint,
+      sources: src.sources,
+      blueprintId: bp.id,
+      step: 'queued',
+      progress: 0,
+    };
+  });
 
   const clampedSpeed = Math.min(1.06, Math.max(0.95, Number(req.speed) || 1.05));
   const job = saveBatchJob({

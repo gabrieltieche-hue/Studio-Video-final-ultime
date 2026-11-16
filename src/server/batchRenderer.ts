@@ -125,11 +125,29 @@ function launchRenderChrome(chromeExe: string, url: string) {
 
   let msgId = 0;
   let rest = Buffer.alloc(0);
-  const pending = new Map<number, { res: (v: unknown) => void; rej: (e: Error) => void }>();
+  let closed = false;
+  const pending = new Map<number, { res: (v: unknown) => void; rej: (e: Error) => void; timer: NodeJS.Timeout }>();
   let errBuf = '';
+
+  const rejectAllPending = (reason: string) => {
+    closed = true;
+    for (const [id, q] of pending.entries()) {
+      clearTimeout(q.timer);
+      q.rej(new Error(reason));
+      pending.delete(id);
+    }
+  };
 
   proc.stderr?.on('data', (d) => {
     errBuf = (errBuf + d).slice(-2000);
+  });
+
+  proc.once('error', (err) => {
+    rejectAllPending(`Erreur lancement Chromium: ${err.message}`);
+  });
+
+  proc.once('exit', (code, signal) => {
+    rejectAllPending(`Chromium arrêté prématurément (code ${code ?? 'null'}, signal ${signal ?? 'none'}) ${errBuf}`.trim());
   });
 
   proc.stdio[4]!.on('data', (chunk: Buffer) => {
@@ -140,6 +158,7 @@ function launchRenderChrome(chromeExe: string, url: string) {
       buf = buf.subarray(idx + 1);
       if (m.id && pending.has(m.id)) {
         const q = pending.get(m.id)!;
+        clearTimeout(q.timer);
         pending.delete(m.id);
         if (m.error) q.rej(new Error(m.error.message));
         else q.res(m.result);
@@ -154,11 +173,27 @@ function launchRenderChrome(chromeExe: string, url: string) {
     sessionId?: string
   ) =>
     new Promise<T>((res, rej) => {
+      if (closed || proc.killed) {
+        rej(new Error('Session Chromium fermée.'));
+        return;
+      }
       const id = ++msgId;
-      pending.set(id, { res: res as (v: unknown) => void, rej });
-      (proc.stdio[3] as NodeJS.WritableStream).write(
-        JSON.stringify({ id, method, params, sessionId }) + '\0'
-      );
+      const timer = setTimeout(() => {
+        if (pending.has(id)) {
+          pending.delete(id);
+          rej(new Error(`Délai CDP dépassé pour ${method}`));
+        }
+      }, 25_000);
+      pending.set(id, { res: res as (v: unknown) => void, rej, timer });
+      try {
+        (proc.stdio[3] as NodeJS.WritableStream).write(
+          JSON.stringify({ id, method, params, sessionId }) + '\0'
+        );
+      } catch (err) {
+        clearTimeout(timer);
+        pending.delete(id);
+        rej(err instanceof Error ? err : new Error(String(err)));
+      }
     });
 
   const attachWorker = async (targetId: string) => {

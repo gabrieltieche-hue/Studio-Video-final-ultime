@@ -1,19 +1,18 @@
+import aiLabImg from '../assets/images/broll_ai_lab_1794836125445.jpg';
 import aiMeetingsImg from '../assets/images/broll_ai_meetings_1794753158637.jpg';
 import businessStrategyImg from '../assets/images/broll_business_strategy_1794753161377.jpg';
+import dataAnalyticsImg from '../assets/images/broll_data_analytics_1794836122643.jpg';
 import economyFinanceImg from '../assets/images/broll_economy_finance_1794753160047.jpg';
+import focusClockworkImg from '../assets/images/broll_focus_clockwork_1794836122551.jpg';
+import mobileAttentionImg from '../assets/images/broll_mobile_attention_1794836123647.jpg';
+import startupTeamImg from '../assets/images/broll_startup_team_1794836123918.jpg';
 import techCodeImg from '../assets/images/broll_tech_code_1794753159977.jpg';
 import creatorStudioImg from '../assets/images/editorial_creator_studio_1794587431455.jpg';
 import parliamentLawImg from '../assets/images/editorial_parliament_law_1794587431774.jpg';
 import teenPhoneImg from '../assets/images/editorial_teen_phone_night_1794587431392.jpg';
+import { getBrollSequenceForTopic, type BrollKey } from '../engine/brollKeys';
 
-export type BrollKey =
-  | 'ai_meetings'
-  | 'economy'
-  | 'tech_code'
-  | 'business'
-  | 'parliament'
-  | 'teen_phone'
-  | 'studio';
+export type { BrollKey };
 
 export interface BrollAsset {
   key: BrollKey;
@@ -35,12 +34,12 @@ export const BROLL_ASSETS: Record<BrollKey, BrollAsset> = {
   tech_code: {
     key: 'tech_code',
     src: techCodeImg,
-    defaultCaption: 'Outils IA · Temps réel',
+    defaultCaption: 'Systèmes · Temps réel',
   },
   business: {
     key: 'business',
     src: businessStrategyImg,
-    defaultCaption: 'Performance · Décision rapide',
+    defaultCaption: 'Stratégie · Décision rapide',
   },
   parliament: {
     key: 'parliament',
@@ -57,6 +56,31 @@ export const BROLL_ASSETS: Record<BrollKey, BrollAsset> = {
     src: creatorStudioImg,
     defaultCaption: 'Décryptage · @alex.decode',
   },
+  focus_clockwork: {
+    key: 'focus_clockwork',
+    src: focusClockworkImg,
+    defaultCaption: 'Temps · Cadence & Précision',
+  },
+  data_analytics: {
+    key: 'data_analytics',
+    src: dataAnalyticsImg,
+    defaultCaption: 'Données · Tendances mesurées',
+  },
+  mobile_attention: {
+    key: 'mobile_attention',
+    src: mobileAttentionImg,
+    defaultCaption: 'Attention · Flux continu',
+  },
+  startup_team: {
+    key: 'startup_team',
+    src: startupTeamImg,
+    defaultCaption: 'Équipes · Nouvelle donne',
+  },
+  ai_lab: {
+    key: 'ai_lab',
+    src: aiLabImg,
+    defaultCaption: 'Recherche · Agents autonomes',
+  },
 };
 
 export function resolveBrollAsset(
@@ -69,25 +93,11 @@ export function resolveBrollAsset(
     return BROLL_ASSETS[brollKey as BrollKey];
   }
 
-  const hay = `${category || ''} ${theme || ''}`.toLowerCase();
-
-  if (beatIndex >= 7) {
+  const seq = getBrollSequenceForTopic(category, theme);
+  const idx = Math.max(0, beatIndex - 1);
+  if (beatIndex >= 8) {
     return BROLL_ASSETS.studio;
   }
-
-  if (/(réunion|meeting|visio|ia|ai|agent|llm|chatgpt|claude|résumé|productiv)/.test(hay)) {
-    return beatIndex % 2 === 1 ? BROLL_ASSETS.ai_meetings : BROLL_ASSETS.tech_code;
-  }
-  if (/(loyer|salaire|smic|banque|crédit|économie|impôt|euro|inflation|50-30-20|budget)/.test(hay)) {
-    return beatIndex % 2 === 1 ? BROLL_ASSETS.economy : BROLL_ASSETS.business;
-  }
-  if (/(loi|parlement|état|politique|france|décret|censure|interdiction|ue|europe)/.test(hay)) {
-    return beatIndex % 2 === 1 ? BROLL_ASSETS.parliament : BROLL_ASSETS.teen_phone;
-  }
-  if (/(code|dev|logiciel|saas|startup|entreprise|business)/.test(hay)) {
-    return beatIndex % 2 === 1 ? BROLL_ASSETS.tech_code : BROLL_ASSETS.business;
-  }
-
-  const cycle: BrollKey[] = ['business', 'tech_code', 'economy', 'ai_meetings'];
-  return BROLL_ASSETS[cycle[(beatIndex - 1) % cycle.length]];
+  const chosenKey = seq[idx % seq.length] || 'business';
+  return BROLL_ASSETS[chosenKey];
 }

@@ -80,7 +80,8 @@ async function startServer() {
   app.get('/api/health', (_req, res) => {
     res.json({
       ok: true,
-      version: 'ig-fbpage-v2',
+      version: 'studio-sync-v3',
+      syncEnabled: true,
       uptimeSec: Math.round(process.uptime()),
       storageDir: STORAGE_DIR,
       elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
@@ -226,6 +227,10 @@ async function startServer() {
     } catch (err) {
       res.status(500).send(err instanceof Error ? err.message : 'Erreur de rendu MP4');
     }
+  });
+
+  app.all('/api/*', (_req, res) => {
+    res.status(404).json({ error: 'Route API introuvable sur ce serveur.' });
   });
 
   if (process.env.NODE_ENV !== 'production') {

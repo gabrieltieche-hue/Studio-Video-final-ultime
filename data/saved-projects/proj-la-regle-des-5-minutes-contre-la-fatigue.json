@@ -1,0 +1,1611 @@
+{
+  "id": "proj-la-regle-des-5-minutes-contre-la-fatigue",
+  "slug": "la-regle-des-5-minutes-contre-la-fatigue",
+  "title": "La règle des 5 minutes contre la fatigue numérique",
+  "topicCategory": "Conseils de vie",
+  "hookText": "On répète partout la même erreur sur la règle des 5, mais les chiffres prouvent l’inverse.",
+  "mode": "faceless_explainer",
+  "platform": "youtube_shorts",
+  "status": "ready",
+  "duration": 50.47,
+  "fps": 25,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "currentVersion": "v1",
+  "versions": [
+    {
+      "version": "v1",
+      "createdAt": "2026-11-16T15:40:54.631Z",
+      "status": "done",
+      "duration": 50.47,
+      "fps": 25,
+      "notes": "Créé en masse · Mythe vs Réalité · Look Papier signature",
+      "hasMp4": false
+    }
+  ],
+  "transcript": [
+    {
+      "id": "w-1",
+      "word": "On",
+      "start": 0.08,
+      "end": 0.215,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-2",
+      "word": "répète",
+      "start": 0.227,
+      "end": 0.632,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-3",
+      "word": "partout",
+      "start": 0.667,
+      "end": 1.14,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-4",
+      "word": "la",
+      "start": 1.181,
+      "end": 1.316,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-5",
+      "word": "même",
+      "start": 1.328,
+      "end": 1.598,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-6",
+      "word": "erreur",
+      "start": 1.622,
+      "end": 2.027,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-7",
+      "word": "sur",
+      "start": 2.062,
+      "end": 2.265,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-8",
+      "word": "la",
+      "start": 2.283,
+      "end": 2.418,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-9",
+      "word": "règle",
+      "start": 2.429,
+      "end": 2.767,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-10",
+      "word": "des",
+      "start": 2.796,
+      "end": 2.999,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-11",
+      "word": "5,",
+      "start": 3.017,
+      "end": 3.422,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-12",
+      "word": "mais",
+      "start": 3.457,
+      "end": 3.727,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-13",
+      "word": "les",
+      "start": 3.751,
+      "end": 3.953,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-14",
+      "word": "chiffres",
+      "start": 3.971,
+      "end": 4.511,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-15",
+      "word": "prouvent",
+      "start": 4.558,
+      "end": 5.099,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-16",
+      "word": "l’inverse.",
+      "start": 5.146,
+      "end": 5.821,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-17",
+      "word": "D’abord,",
+      "start": 5.88,
+      "end": 6.42,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-18",
+      "word": "regardons",
+      "start": 6.467,
+      "end": 7.075,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-19",
+      "word": "le",
+      "start": 7.128,
+      "end": 7.263,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-20",
+      "word": "point",
+      "start": 7.275,
+      "end": 7.613,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-21",
+      "word": "de",
+      "start": 7.642,
+      "end": 7.777,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-22",
+      "word": "départ",
+      "start": 7.789,
+      "end": 8.194,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-23",
+      "word": ":",
+      "start": 8.229,
+      "end": 8.364,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-24",
+      "word": "sur",
+      "start": 8.376,
+      "end": 8.579,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-25",
+      "word": "la",
+      "start": 8.596,
+      "end": 8.731,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-26",
+      "word": "règle",
+      "start": 8.743,
+      "end": 9.081,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-27",
+      "word": "des",
+      "start": 9.11,
+      "end": 9.313,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-28",
+      "word": "5,",
+      "start": 9.331,
+      "end": 9.736,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-29",
+      "word": "le",
+      "start": 9.771,
+      "end": 9.906,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-30",
+      "word": "coût",
+      "start": 9.918,
+      "end": 10.188,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-31",
+      "word": "caché",
+      "start": 10.212,
+      "end": 10.549,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-32",
+      "word": "passe",
+      "start": 10.579,
+      "end": 10.916,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-33",
+      "word": "souvent",
+      "start": 10.946,
+      "end": 11.418,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-34",
+      "word": "inaperçu.",
+      "start": 11.46,
+      "end": 12.067,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-35",
+      "word": "Concrètement,",
+      "start": 12.12,
+      "end": 12.998,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-36",
+      "word": "le",
+      "start": 13.075,
+      "end": 13.21,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-37",
+      "word": "basculement",
+      "start": 13.222,
+      "end": 13.965,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-38",
+      "word": "vient",
+      "start": 14.029,
+      "end": 14.367,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-39",
+      "word": "de",
+      "start": 14.396,
+      "end": 14.531,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-40",
+      "word": "l’enchaînement",
+      "start": 14.543,
+      "end": 15.489,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-41",
+      "word": ":",
+      "start": 15.571,
+      "end": 15.706,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-42",
+      "word": "repérer",
+      "start": 15.718,
+      "end": 16.191,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-43",
+      "word": "le",
+      "start": 16.232,
+      "end": 16.367,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-44",
+      "word": "goulot,",
+      "start": 16.379,
+      "end": 16.851,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-45",
+      "word": "chiffrer",
+      "start": 16.892,
+      "end": 17.433,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-46",
+      "word": "l’écart",
+      "start": 17.48,
+      "end": 17.953,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-47",
+      "word": "et",
+      "start": 17.994,
+      "end": 18.129,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-48",
+      "word": "corriger",
+      "start": 18.141,
+      "end": 18.681,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-49",
+      "word": "au",
+      "start": 18.728,
+      "end": 18.863,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-50",
+      "word": "bon",
+      "start": 18.875,
+      "end": 19.077,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-51",
+      "word": "endroit.",
+      "start": 19.095,
+      "end": 19.635,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-52",
+      "word": "Mais",
+      "start": 19.682,
+      "end": 19.952,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-53",
+      "word": "le",
+      "start": 19.976,
+      "end": 20.111,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-54",
+      "word": "vrai",
+      "start": 20.123,
+      "end": 20.393,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-55",
+      "word": "piège",
+      "start": 20.416,
+      "end": 20.754,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-56",
+      "word": "n’est",
+      "start": 20.784,
+      "end": 21.121,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-57",
+      "word": "pas",
+      "start": 21.151,
+      "end": 21.353,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-58",
+      "word": "celui",
+      "start": 21.371,
+      "end": 21.709,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-59",
+      "word": "qu’on",
+      "start": 21.738,
+      "end": 22.076,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-60",
+      "word": "croit",
+      "start": 22.105,
+      "end": 22.443,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-61",
+      "word": ":",
+      "start": 22.472,
+      "end": 22.607,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-62",
+      "word": "la",
+      "start": 22.619,
+      "end": 22.754,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-63",
+      "word": "majorité",
+      "start": 22.766,
+      "end": 23.306,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-64",
+      "word": "regarde",
+      "start": 23.353,
+      "end": 23.826,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-65",
+      "word": "le",
+      "start": 23.867,
+      "end": 24.002,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-66",
+      "word": "chiffre",
+      "start": 24.014,
+      "end": 24.487,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-67",
+      "word": "de",
+      "start": 24.528,
+      "end": 24.663,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-68",
+      "word": "surface",
+      "start": 24.675,
+      "end": 25.147,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-69",
+      "word": "et",
+      "start": 25.189,
+      "end": 25.324,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-70",
+      "word": "rate",
+      "start": 25.335,
+      "end": 25.606,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-71",
+      "word": "l’effet",
+      "start": 25.629,
+      "end": 26.102,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-72",
+      "word": "cumulé.",
+      "start": 26.143,
+      "end": 26.616,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-73",
+      "word": "Quand",
+      "start": 26.657,
+      "end": 26.995,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-74",
+      "word": "on",
+      "start": 27.024,
+      "end": 27.159,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-75",
+      "word": "met",
+      "start": 27.171,
+      "end": 27.373,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-76",
+      "word": "les",
+      "start": 27.391,
+      "end": 27.594,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-77",
+      "word": "deux",
+      "start": 27.611,
+      "end": 27.881,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-78",
+      "word": "options",
+      "start": 27.905,
+      "end": 28.378,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-79",
+      "word": "face",
+      "start": 28.419,
+      "end": 28.689,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-80",
+      "word": "à",
+      "start": 28.713,
+      "end": 28.848,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-81",
+      "word": "face,",
+      "start": 28.859,
+      "end": 29.197,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-82",
+      "word": "la",
+      "start": 29.226,
+      "end": 29.362,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-83",
+      "word": "différence",
+      "start": 29.373,
+      "end": 30.049,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-84",
+      "word": "devient",
+      "start": 30.107,
+      "end": 30.58,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-85",
+      "word": "nette",
+      "start": 30.621,
+      "end": 30.959,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-86",
+      "word": "sur",
+      "start": 30.988,
+      "end": 31.191,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-87",
+      "word": "la",
+      "start": 31.209,
+      "end": 31.344,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-88",
+      "word": "durée",
+      "start": 31.356,
+      "end": 31.693,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-89",
+      "word": "et",
+      "start": 31.723,
+      "end": 31.858,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-90",
+      "word": "sur",
+      "start": 31.869,
+      "end": 32.072,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-91",
+      "word": "le",
+      "start": 32.09,
+      "end": 32.225,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-92",
+      "word": "résultat.",
+      "start": 32.237,
+      "end": 32.844,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-93",
+      "word": "Pour",
+      "start": 32.897,
+      "end": 33.167,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-94",
+      "word": "en",
+      "start": 33.191,
+      "end": 33.326,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-95",
+      "word": "tirer",
+      "start": 33.338,
+      "end": 33.676,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-96",
+      "word": "parti",
+      "start": 33.705,
+      "end": 34.043,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-97",
+      "word": "dès",
+      "start": 34.072,
+      "end": 34.275,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-98",
+      "word": "cette",
+      "start": 34.292,
+      "end": 34.63,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-99",
+      "word": "semaine,",
+      "start": 34.659,
+      "end": 35.2,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-100",
+      "word": "applique",
+      "start": 35.247,
+      "end": 35.787,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-101",
+      "word": "ces",
+      "start": 35.834,
+      "end": 36.037,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-102",
+      "word": "trois",
+      "start": 36.054,
+      "end": 36.392,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-103",
+      "word": "réglages",
+      "start": 36.421,
+      "end": 36.962,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-104",
+      "word": "simples",
+      "start": 37.009,
+      "end": 37.481,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-105",
+      "word": "dans",
+      "start": 37.523,
+      "end": 37.793,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-106",
+      "word": "l’ordre.",
+      "start": 37.816,
+      "end": 38.357,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-107",
+      "word": "Résultat",
+      "start": 38.404,
+      "end": 38.944,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-108",
+      "word": ":",
+      "start": 38.991,
+      "end": 39.126,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-109",
+      "word": "ceux",
+      "start": 39.138,
+      "end": 39.408,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-110",
+      "word": "qui",
+      "start": 39.431,
+      "end": 39.634,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-111",
+      "word": "s’adaptent",
+      "start": 39.652,
+      "end": 40.327,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-112",
+      "word": "dès",
+      "start": 40.386,
+      "end": 40.588,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-113",
+      "word": "maintenant",
+      "start": 40.606,
+      "end": 41.282,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-114",
+      "word": "gardent",
+      "start": 41.34,
+      "end": 41.813,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-115",
+      "word": "une",
+      "start": 41.854,
+      "end": 42.057,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-116",
+      "word": "longueur",
+      "start": 42.074,
+      "end": 42.615,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-117",
+      "word": "d’avance",
+      "start": 42.662,
+      "end": 43.202,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-118",
+      "word": "durable.",
+      "start": 43.249,
+      "end": 43.789,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-119",
+      "word": "Dis-moi",
+      "start": 43.836,
+      "end": 44.309,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-120",
+      "word": "en",
+      "start": 44.35,
+      "end": 44.485,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-121",
+      "word": "commentaire",
+      "start": 44.497,
+      "end": 45.24,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-122",
+      "word": "ce",
+      "start": 45.305,
+      "end": 45.44,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-123",
+      "word": "que",
+      "start": 45.452,
+      "end": 45.654,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-124",
+      "word": "tu",
+      "start": 45.672,
+      "end": 45.807,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-125",
+      "word": "en",
+      "start": 45.819,
+      "end": 45.954,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-126",
+      "word": "penses,",
+      "start": 45.965,
+      "end": 46.438,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-127",
+      "word": "et",
+      "start": 46.479,
+      "end": 46.614,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-128",
+      "word": "abonne-toi",
+      "start": 46.626,
+      "end": 47.302,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-129",
+      "word": "pour",
+      "start": 47.36,
+      "end": 47.631,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-130",
+      "word": "ne",
+      "start": 47.654,
+      "end": 47.789,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-131",
+      "word": "pas",
+      "start": 47.801,
+      "end": 48.004,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-132",
+      "word": "rater",
+      "start": 48.021,
+      "end": 48.359,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-133",
+      "word": "le",
+      "start": 48.388,
+      "end": 48.523,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-134",
+      "word": "prochain",
+      "start": 48.535,
+      "end": 49.075,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-135",
+      "word": "décryptage.",
+      "start": 49.122,
+      "end": 49.865,
+      "confidence": 0.95
+    }
+  ],
+  "motionTrack": [
+    {
+      "id": "mot-beat-1",
+      "componentId": "comp-beat-1",
+      "name": "La règle des 5",
+      "start": 0,
+      "end": 5.85,
+      "type": "typography",
+      "color": "#258EFF"
+    },
+    {
+      "id": "mot-beat-2",
+      "componentId": "comp-beat-2",
+      "name": "Le point de départ",
+      "start": 5.85,
+      "end": 12.09,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-3",
+      "componentId": "comp-beat-3",
+      "name": "Comment ça fonctionne",
+      "start": 12.09,
+      "end": 19.66,
+      "type": "typography",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-4",
+      "componentId": "comp-beat-4",
+      "name": "Le point aveugle",
+      "start": 19.66,
+      "end": 26.64,
+      "type": "counter",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-5",
+      "componentId": "comp-beat-5",
+      "name": "L’écart chiffré",
+      "start": 26.64,
+      "end": 32.87,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-6",
+      "componentId": "comp-beat-6",
+      "name": "3 leviers concrets",
+      "start": 32.87,
+      "end": 38.38,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-7",
+      "componentId": "comp-beat-7",
+      "name": "Le verdict final",
+      "start": 38.38,
+      "end": 43.81,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-8",
+      "componentId": "comp-beat-8",
+      "name": "Et toi, quel choix",
+      "start": 43.81,
+      "end": 50.47,
+      "type": "rocket",
+      "color": "#059669"
+    }
+  ],
+  "layoutTrack": [
+    {
+      "id": "layout-beat-1",
+      "layout": "split",
+      "start": 0,
+      "end": 5.85
+    },
+    {
+      "id": "layout-beat-2",
+      "layout": "fullscreen",
+      "start": 5.85,
+      "end": 12.09
+    },
+    {
+      "id": "layout-beat-3",
+      "layout": "split",
+      "start": 12.09,
+      "end": 19.66
+    },
+    {
+      "id": "layout-beat-4",
+      "layout": "split",
+      "start": 19.66,
+      "end": 26.64
+    },
+    {
+      "id": "layout-beat-5",
+      "layout": "fullscreen",
+      "start": 26.64,
+      "end": 32.87
+    },
+    {
+      "id": "layout-beat-6",
+      "layout": "split",
+      "start": 32.87,
+      "end": 38.38
+    },
+    {
+      "id": "layout-beat-7",
+      "layout": "fullscreen",
+      "start": 38.38,
+      "end": 43.81
+    },
+    {
+      "id": "layout-beat-8",
+      "layout": "split",
+      "start": 43.81,
+      "end": 50.47
+    }
+  ],
+  "sfxTrack": [
+    {
+      "id": "sfx-hook-shatter",
+      "sound": "glass-shatter",
+      "start": 2.4,
+      "volume": 0.44
+    },
+    {
+      "id": "sfx-hook-boom",
+      "sound": "impact-boom",
+      "start": 2.4,
+      "volume": 0.38
+    },
+    {
+      "id": "sfx-2",
+      "sound": "thud",
+      "start": 5.97,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-3",
+      "sound": "tap",
+      "start": 12.21,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-4",
+      "sound": "zhhh",
+      "start": 19.78,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-5",
+      "sound": "riser",
+      "start": 26.76,
+      "volume": 0.26
+    },
+    {
+      "id": "sfx-6",
+      "sound": "tap",
+      "start": 32.99,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-7",
+      "sound": "pop",
+      "start": 38.5,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8",
+      "sound": "pop-back",
+      "start": 44.46,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8-bell",
+      "sound": "bell",
+      "start": 44.58,
+      "volume": 0.3
+    }
+  ],
+  "musicTrack": {
+    "trackName": "upbeat",
+    "volume": 0.24,
+    "ducking": true
+  },
+  "feedbacks": [],
+  "motionComponents": {},
+  "contactSheet": [],
+  "editSpec": {
+    "lookId": "papier",
+    "blueprintId": "myth_buster",
+    "speed": 1.05,
+    "hookText": "On répète partout la même erreur sur la règle des 5, mais les chiffres prouvent l’inverse.",
+    "sources": "",
+    "youtubeTitle": "La règle des 5 minutes contre la fatigue numérique",
+    "caption": "On répète partout la même erreur sur la règle des 5, mais les chiffres prouvent l’inverse.\n\nQuel est ton avis sur la règle des 5 ? Dis-le en commentaire.",
+    "hashtags": [
+      "#conseilsdevie",
+      "#actualite",
+      "#france",
+      "#shorts"
+    ],
+    "beats": [
+      {
+        "id": "beat-1",
+        "blueprintId": "myth_buster",
+        "beatRole": "hook",
+        "visualType": "hook_myth_bust",
+        "layoutHint": "split",
+        "brollKey": "teen_phone",
+        "iconKind": "clock",
+        "title": "La règle des 5",
+        "shortLabel": "Mythe vs Réalité",
+        "screenLabel": "CONSEILS DE VIE · SIGNAL",
+        "spokenLine": "On répète partout la même erreur sur la règle des 5, mais les chiffres prouvent l’inverse.",
+        "brollCaption": "Focus · La règle des 5",
+        "stampWord": "FAUX",
+        "statValue": "5 minutes",
+        "statLabel": "Repère temporel",
+        "hookCards": [
+          {
+            "label": "Avant",
+            "sub": "Ancien réflexe",
+            "iconKind": "clock",
+            "tone": "dark"
+          },
+          {
+            "label": "5 minutes",
+            "sub": "Données 2026",
+            "iconKind": "clock",
+            "tone": "light"
+          },
+          {
+            "label": "En 2026",
+            "sub": "Nouveau standard",
+            "iconKind": "rocket",
+            "tone": "accent"
+          }
+        ],
+        "subStats": [
+          {
+            "value": "5 minutes",
+            "label": "Repère temporel"
+          },
+          {
+            "value": "Données 2026",
+            "label": "Source terrain"
+          }
+        ],
+        "comparisonLeft": {
+          "label": "Option classique",
+          "value": "Réflexe subi",
+          "ratio": 0.82
+        },
+        "comparisonRight": {
+          "label": "Nouvelle approche",
+          "value": "5 minutes",
+          "ratio": 0.34
+        },
+        "quoteText": "On répète partout la même erreur sur la règle des 5, mais les chiffres prouvent l’inverse.",
+        "highlightPhrase": "La règle des 5",
+        "quoteSource": "Données 2026",
+        "sfxKind": "glass-shatter",
+        "from": 0,
+        "to": 5.85,
+        "layout": "split"
+      },
+      {
+        "id": "beat-2",
+        "blueprintId": "myth_buster",
+        "beatRole": "context",
+        "visualType": "comparison_bars",
+        "layoutHint": "fullscreen",
+        "brollKey": "data_analytics",
+        "iconKind": "clock",
+        "title": "Le point de départ",
+        "shortLabel": "Contexte",
+        "screenLabel": "FAIT SOURCE",
+        "spokenLine": "D’abord, regardons le point de départ : sur la règle des 5, le coût caché passe souvent inaperçu.",
+        "brollCaption": "Constat · Données 2026",
+        "statValue": "5 minutes",
+        "statLabel": "Mesuré sur La règle des 5",
+        "comparisonLeft": {
+          "label": "Modèle subi",
+          "value": "Coût caché",
+          "ratio": 0.84
+        },
+        "comparisonRight": {
+          "label": "Approche mesurée",
+          "value": "5 minutes",
+          "ratio": 0.28
+        },
+        "steps": [
+          "Situation",
+          "Blocage",
+          "Déclic",
+          "Mesure"
+        ],
+        "ledgerRows": [
+          {
+            "label": "Situation actuelle",
+            "value": "Dispersion",
+            "delta": "Friction",
+            "highlight": false
+          },
+          {
+            "label": "Point de rupture",
+            "value": "5 minutes",
+            "delta": "Données 2026",
+            "highlight": true
+          },
+          {
+            "label": "Marges perdues",
+            "value": "Sous-évaluées",
+            "delta": "À corriger",
+            "highlight": false
+          }
+        ],
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Vérification chiffrée terrain",
+          "Application dès cette semaine"
+        ],
+        "sfxKind": "thud",
+        "from": 5.85,
+        "to": 12.09,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-3",
+        "blueprintId": "myth_buster",
+        "beatRole": "mechanism",
+        "visualType": "verdict_quote",
+        "layoutHint": "split",
+        "brollKey": "focus_clockwork",
+        "iconKind": "clock",
+        "title": "Comment ça fonctionne",
+        "shortLabel": "Mécanisme",
+        "screenLabel": "MÉCANISME",
+        "spokenLine": "Concrètement, le basculement vient de l’enchaînement : repérer le goulot, chiffrer l’écart et corriger au bon endroit.",
+        "brollCaption": "Enchaînement réel",
+        "steps": [
+          "Repérer",
+          "Chiffrer",
+          "Arbitrer",
+          "Stabiliser"
+        ],
+        "stampWord": "LOGIQUE",
+        "comparisonLeft": {
+          "label": "Option classique",
+          "value": "Subi",
+          "ratio": 0.86
+        },
+        "comparisonRight": {
+          "label": "Nouvelle approche",
+          "value": "Maîtrisé",
+          "ratio": 0.32
+        },
+        "ledgerRows": [
+          {
+            "label": "Étape 1 · Diagnostic",
+            "value": "Mesure nette",
+            "delta": "Clair"
+          },
+          {
+            "label": "Étape 2 · Arbitrage",
+            "value": "5 minutes",
+            "delta": "Décisif",
+            "highlight": true
+          },
+          {
+            "label": "Étape 3 · Suivi",
+            "value": "Régulier",
+            "delta": "Durable"
+          }
+        ],
+        "quoteText": "Ce n’est pas un détail technique : c’est la structure du calcul qui fait toute la différence.",
+        "highlightPhrase": "la structure du calcul",
+        "quoteSource": "Données 2026",
+        "toggles": [
+          {
+            "label": "Décision à l’instinct",
+            "before": "ACTIF",
+            "after": "COUPÉ",
+            "activeAfter": false
+          },
+          {
+            "label": "Calcul coût réel",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": true
+          },
+          {
+            "label": "Suivi chiffré",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": true
+          }
+        ],
+        "sfxKind": "tap",
+        "from": 12.09,
+        "to": 19.66,
+        "layout": "split"
+      },
+      {
+        "id": "beat-4",
+        "blueprintId": "myth_buster",
+        "beatRole": "rehook",
+        "visualType": "counter_flip",
+        "layoutHint": "split",
+        "brollKey": "studio",
+        "iconKind": "clock",
+        "title": "Le point aveugle",
+        "shortLabel": "Re-hook",
+        "screenLabel": "CE QU’ON OUBLIE",
+        "spokenLine": "Mais le vrai piège n’est pas celui qu’on croit : la majorité regarde le chiffre de surface et rate l’effet cumulé.",
+        "brollCaption": "Effet cumulé caché",
+        "gaugePct": 84,
+        "statValue": "5 minutes",
+        "statLabel": "Poids de l’effet cumulé",
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Vérification chiffrée terrain",
+          "Application dès cette semaine"
+        ],
+        "steps": [
+          "Signal",
+          "Piège",
+          "Ajustement",
+          "Impact"
+        ],
+        "quoteText": "Ce qui compte n’est pas le chiffre affiché le jour 1, mais l’écart cumulé sur 12 mois.",
+        "highlightPhrase": "l’écart cumulé sur 12 mois",
+        "quoteSource": "La règle des 5",
+        "comparisonLeft": {
+          "label": "Effet jour 1",
+          "value": "Faible",
+          "ratio": 0.28
+        },
+        "comparisonRight": {
+          "label": "Effet 12 mois",
+          "value": "Majeur",
+          "ratio": 0.9
+        },
+        "sfxKind": "zhhh",
+        "from": 19.66,
+        "to": 26.64,
+        "layout": "split"
+      },
+      {
+        "id": "beat-5",
+        "blueprintId": "myth_buster",
+        "beatRole": "proof",
+        "visualType": "ledger_breakdown",
+        "layoutHint": "fullscreen",
+        "brollKey": "parliament",
+        "iconKind": "clock",
+        "title": "L’écart chiffré",
+        "shortLabel": "Preuve",
+        "screenLabel": "PREUVE TERRAIN",
+        "spokenLine": "Quand on met les deux options face à face, la différence devient nette sur la durée et sur le résultat.",
+        "brollCaption": "Comparatif chiffré",
+        "comparisonLeft": {
+          "label": "Option classique",
+          "value": "Coût subi",
+          "ratio": 0.88
+        },
+        "comparisonRight": {
+          "label": "Nouvelle approche",
+          "value": "5 minutes",
+          "ratio": 0.3
+        },
+        "multiplierBadge": "NET",
+        "statValue": "5 minutes",
+        "statLabel": "Différence observée sur La règle des 5",
+        "gaugePct": 86,
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Vérification chiffrée terrain",
+          "Application dès cette semaine"
+        ],
+        "ledgerRows": [
+          {
+            "label": "Référence passive",
+            "value": "Base 100",
+            "delta": "Érodée"
+          },
+          {
+            "label": "Option optimisée",
+            "value": "5 minutes",
+            "delta": "Avantage net",
+            "highlight": true
+          },
+          {
+            "label": "Fiabilité 2026",
+            "value": "Vérifiée",
+            "delta": "Données 2026"
+          }
+        ],
+        "sfxKind": "riser",
+        "from": 26.64,
+        "to": 32.87,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-6",
+        "blueprintId": "myth_buster",
+        "beatRole": "action",
+        "visualType": "checklist_action",
+        "layoutHint": "split",
+        "brollKey": "mobile_attention",
+        "iconKind": "clock",
+        "title": "3 leviers concrets",
+        "shortLabel": "Action",
+        "screenLabel": "PLAN D’ACTION",
+        "spokenLine": "Pour en tirer parti dès cette semaine, applique ces trois réglages simples dans l’ordre.",
+        "brollCaption": "Mise en application",
+        "toggles": [
+          {
+            "label": "Piloter sans chiffres",
+            "before": "ACTIF",
+            "after": "COUPÉ",
+            "activeAfter": false
+          },
+          {
+            "label": "Suivre La règle",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": true
+          },
+          {
+            "label": "Vérifier chaque mois",
+            "before": "OFF",
+            "after": "ON",
+            "activeAfter": true
+          }
+        ],
+        "bullets": [
+          "Poser un repère chiffré sur La règle",
+          "Supprimer la friction principale",
+          "Réévaluer au bout de 30 jours"
+        ],
+        "sfxKind": "tap",
+        "from": 32.87,
+        "to": 38.38,
+        "layout": "split"
+      },
+      {
+        "id": "beat-7",
+        "blueprintId": "myth_buster",
+        "beatRole": "payoff",
+        "visualType": "radar_pillars",
+        "layoutHint": "fullscreen",
+        "brollKey": "teen_phone",
+        "iconKind": "clock",
+        "title": "Le verdict final",
+        "shortLabel": "Verdict",
+        "screenLabel": "CONCLUSION",
+        "spokenLine": "Résultat : ceux qui s’adaptent dès maintenant gardent une longueur d’avance durable.",
+        "brollCaption": "Verdict · Données 2026",
+        "statValue": "5 minutes",
+        "statLabel": "Avantage cumulé",
+        "quoteText": "Celui qui ajuste ses paramètres aujourd’hui transforme une contrainte en avantage net.",
+        "highlightPhrase": "en avantage net",
+        "quoteSource": "Données 2026",
+        "ledgerRows": [
+          {
+            "label": "Avant ajustement",
+            "value": "Subi",
+            "delta": "Coût continu"
+          },
+          {
+            "label": "Après réglage",
+            "value": "5 minutes",
+            "delta": "Gain confirmé",
+            "highlight": true
+          }
+        ],
+        "comparisonLeft": {
+          "label": "Attendre",
+          "value": "Écart subi",
+          "ratio": 0.85
+        },
+        "comparisonRight": {
+          "label": "Ajuster tôt",
+          "value": "Gain net",
+          "ratio": 0.25
+        },
+        "bullets": [
+          "Impact direct sur La règle des",
+          "Vérification chiffrée terrain",
+          "Application dès cette semaine"
+        ],
+        "sfxKind": "pop",
+        "from": 38.38,
+        "to": 43.81,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-8",
+        "blueprintId": "myth_buster",
+        "beatRole": "cta",
+        "visualType": "cta_card",
+        "layoutHint": "split",
+        "brollKey": "studio",
+        "iconKind": "clock",
+        "title": "Et toi, quel choix",
+        "shortLabel": "CTA",
+        "screenLabel": "PROCHAIN ÉPISODE",
+        "spokenLine": "Dis-moi en commentaire ce que tu en penses, et abonne-toi pour ne pas rater le prochain décryptage.",
+        "brollCaption": "Nouveau décryptage bientôt",
+        "statValue": "@alex.decode",
+        "statLabel": "Conseils de vie · Décryptages 2026",
+        "sfxKind": "pop-back",
+        "from": 43.81,
+        "to": 50.47,
+        "layout": "split"
+      }
+    ]
+  },
+  "styleProfile": {
+    "name": "Papier signature",
+    "fontFamily": "Bricolage Grotesque",
+    "accentColor": "#258EFF",
+    "textColor": "#14161B",
+    "cardBg": "#FCFBF8",
+    "captionsPosition": "bottom",
+    "visualBeatsTarget": 8
+  },
+  "hasMp4": false
+}

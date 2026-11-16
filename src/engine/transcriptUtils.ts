@@ -1,4 +1,4 @@
-import type { DynamicIconKind, DynamicVisualType } from '../types/batch';
+import type { DynamicIconKind, DynamicVisualType, StoryBlueprintId } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
 
 export interface TranscriptSection {
@@ -20,16 +20,23 @@ export interface DynamicBeat {
   to: number;
   layout: 'split' | 'fullscreen';
   visualType?: DynamicVisualType;
+  blueprintId?: StoryBlueprintId;
+  beatRole?: 'hook' | 'context' | 'mechanism' | 'rehook' | 'proof' | 'action' | 'payoff' | 'cta';
   brollKey?: string;
   brollCaption?: string;
   iconKind?: DynamicIconKind;
   stampWord?: string;
   statValue?: string;
   statLabel?: string;
+  hookCards?: Array<{ label: string; sub: string; iconKind?: DynamicIconKind; tone?: 'dark' | 'light' | 'accent' }>;
   subStats?: Array<{ value: string; label: string }>;
   bullets?: string[];
   steps?: string[];
   toggles?: Array<{ label: string; before: string; after: string; activeAfter: boolean }>;
+  ledgerRows?: Array<{ label: string; value: string; delta?: string; highlight?: boolean }>;
+  quoteText?: string;
+  highlightPhrase?: string;
+  quoteSource?: string;
   terminalCmd?: string;
   terminalOut?: string[];
   comparisonLeft?: { label: string; value: string; ratio: number };
@@ -123,12 +130,17 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
         to: Number.isFinite(to) ? to : duration,
         layout: layoutRaw === 'fullscreen' ? 'fullscreen' : 'split',
         visualType: vType,
+        blueprintId: typeof b.blueprintId === 'string' ? (b.blueprintId as StoryBlueprintId) : undefined,
+        beatRole: typeof b.beatRole === 'string' ? (b.beatRole as DynamicBeat['beatRole']) : undefined,
         brollKey: typeof b.brollKey === 'string' ? b.brollKey : undefined,
         brollCaption: typeof b.brollCaption === 'string' ? b.brollCaption : undefined,
         iconKind: typeof b.iconKind === 'string' ? (b.iconKind as DynamicIconKind) : undefined,
         stampWord: typeof b.stampWord === 'string' ? b.stampWord : undefined,
         statValue: typeof b.statValue === 'string' ? b.statValue : undefined,
         statLabel: typeof b.statLabel === 'string' ? b.statLabel : undefined,
+        hookCards: Array.isArray(b.hookCards)
+          ? (b.hookCards as DynamicBeat['hookCards'])
+          : undefined,
         subStats: Array.isArray(b.subStats)
           ? (b.subStats as Array<{ value: string; label: string }>)
           : undefined,
@@ -137,6 +149,12 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
         toggles: Array.isArray(b.toggles)
           ? (b.toggles as DynamicBeat['toggles'])
           : undefined,
+        ledgerRows: Array.isArray(b.ledgerRows)
+          ? (b.ledgerRows as DynamicBeat['ledgerRows'])
+          : undefined,
+        quoteText: typeof b.quoteText === 'string' ? b.quoteText : undefined,
+        highlightPhrase: typeof b.highlightPhrase === 'string' ? b.highlightPhrase : undefined,
+        quoteSource: typeof b.quoteSource === 'string' ? b.quoteSource : undefined,
         terminalCmd: typeof b.terminalCmd === 'string' ? b.terminalCmd : undefined,
         terminalOut: Array.isArray(b.terminalOut) ? b.terminalOut.map(String) : undefined,
         comparisonLeft:

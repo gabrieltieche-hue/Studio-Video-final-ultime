@@ -1,15 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  STORY_BLUEPRINTS,
   alignmentToWords,
   assignBeatTimingsAndTranscript,
   buildFallbackBatchScript,
   computeStaggeredScheduleSlots,
   condenseVisualHeadline,
+  estimateSpokenWordWeight,
   parseBulkTopicsInput,
   resolveBeatLayout,
   sanitizeScriptText,
+  selectStoryBlueprint,
 } from './batchShortBuilder';
+import { ALL_BROLL_KEYS, getBrollSequenceForTopic, isDevOrCodeTopic } from './brollKeys';
 
 test('sanitizeScriptText removes em-dashes and normalizes whitespace', () => {
   assert.equal(
@@ -84,10 +88,11 @@ test('alignmentToWords converts character alignment into speed-adjusted WhisperW
   assert.equal(spRes.words[1].word, 'pourquoi ?');
 });
 
-test('assignBeatTimingsAndTranscript creates continuous non-overlapping beats and SFX tracks', () => {
+test('assignBeatTimingsAndTranscript creates continuous non-overlapping beats snapped to sentence ends', () => {
   const fallback = buildFallbackBatchScript({
     theme: 'La taxe numérique en 2026',
     category: 'Politique',
+    batchIndex: 0,
   });
   const fullText = fallback.beats.map((b) => b.spokenLine).join(' ');
   const { words, durationSec } = alignmentToWords(null, fullText, 1.0, 38);
@@ -98,10 +103,11 @@ test('assignBeatTimingsAndTranscript creates continuous non-overlapping beats an
   assert.equal(timed.beats[timed.beats.length - 1].to, timed.durationSec);
   for (let i = 1; i < timed.beats.length; i++) {
     assert.equal(timed.beats[i].from, timed.beats[i - 1].to);
-    assert.ok(timed.beats[i].to > timed.beats[i].from);
+    assert.ok(timed.beats[i].to - timed.beats[i].from >= 1.49);
   }
   assert.ok(timed.motionTrack.length === fallback.beats.length);
   assert.ok(timed.sfxTrack.length >= 2);
+  assert.ok(estimateSpokenWordWeight('En 2026 c’est 80 %') > estimateSpokenWordWeight('C’est un fait'));
 });
 
 test('computeStaggeredScheduleSlots outputs chronological ISO slots spaced by intervalHours', () => {
@@ -121,26 +127,59 @@ test('condenseVisualHeadline enforces scannable <= 5 word headlines and <= 38 ch
   assert.equal(condensed.endsWith('.'), false);
 });
 
-test('buildFallbackBatchScript generates 8 kinetic beats with split/fullscreen alternation and Beat 1 Act-2 shatter SFX', () => {
-  const script = buildFallbackBatchScript({
-    theme: 'Pourquoi 80 % des réunions sont remplacées par des résumés IA en 2026',
-    category: 'IA',
+test('batch shorts vary blueprints, hooks, B-Rolls and exclude boilerplate or terminal_flow on non-dev topics', () => {
+  const topics = [
+    { category: 'Actualité', theme: 'Livret A vs ETF en 2026 : le vrai calcul' },
+    { category: 'Politique', theme: 'Ce qui change sur le SMIC au 1er janvier' },
+    { category: 'Business', theme: 'Pourquoi 90 % des freelances sous-facturent' },
+  ];
+
+  const scripts = topics.map((t, idx) =>
+    buildFallbackBatchScript({ ...t, batchIndex: idx })
+  );
+
+  // Blueprints and hooks must all be distinct across the 3 consecutive items
+  const blueprintIds = new Set(scripts.map((s) => s.blueprintId));
+  const hookVisuals = new Set(scripts.map((s) => s.beats[0].visualType));
+  assert.equal(blueprintIds.size, 3);
+  assert.equal(hookVisuals.size, 3);
+
+  for (const s of scripts) {
+    assert.equal(s.beats.length, 8);
+    assert.equal(s.beats[s.beats.length - 1].visualType, 'cta_card');
+    const serialized = JSON.stringify(s);
+    assert.equal(serialized.includes('Méthode 2022'), false);
+    assert.equal(serialized.includes('14 h/sem'), false);
+    assert.equal(serialized.includes('analyser --impact-2026'), false);
+    assert.equal(
+      s.beats.some((b) => b.visualType === 'terminal_flow'),
+      false,
+      'Non-dev topics must not emit terminal_flow'
+    );
+  }
+
+  assert.equal(isDevOrCodeTopic('IA', 'Développeur TypeScript et agents CLI'), true);
+  assert.equal(isDevOrCodeTopic('Économie', 'Livret A vs ETF en 2026'), false);
+  assert.equal(ALL_BROLL_KEYS.length, 12);
+  assert.ok(getBrollSequenceForTopic('Politique', 'Censure parlementaire').includes('parliament'));
+  assert.equal(Object.keys(STORY_BLUEPRINTS).length, 5);
+  assert.notEqual(
+    selectStoryBlueprint('Tech', 'Sujet A', 0).id,
+    selectStoryBlueprint('Tech', 'Sujet B', 1).id
+  );
+  const used = new Set<NonNullable<Parameters<typeof selectStoryBlueprint>[3]> extends Set<infer T> ? T : never>();
+  const batch5 = [
+    ['Business', 'Livret A vs ETF en 2026'],
+    ['Politique', 'Ce qui change sur le SMIC au 1er janvier'],
+    ['Conseils de vie', 'La règle des 5 minutes contre la fatigue'],
+    ['IA', 'Les agents IA remplacent-ils les juniors ?'],
+    ['Business', 'Pourquoi 90 % des freelances sous-facturent'],
+  ].map(([cat, th], i) => {
+    const bp = selectStoryBlueprint(cat, th, i, used);
+    used.add(bp.id);
+    return bp.id;
   });
-  assert.equal(script.beats.length, 8);
-  assert.equal(script.beats[0].visualType, 'hook_shatter');
-  assert.equal(script.beats[script.beats.length - 1].visualType, 'cta_card');
-
-  assert.equal(resolveBeatLayout(script.beats[0], 0, 8), 'split');
-  assert.equal(resolveBeatLayout(script.beats[3], 3, 8), 'fullscreen');
-  assert.equal(resolveBeatLayout(script.beats[4], 4, 8), 'fullscreen');
-  assert.equal(resolveBeatLayout(script.beats[5], 5, 8), 'split');
-
-  const fullText = script.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.05, 30);
-  const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
-
-  const shatterSfx = timed.sfxTrack.find((s) => s.id === 'sfx-hook-shatter');
-  assert.ok(shatterSfx);
-  assert.equal(shatterSfx.sound, 'glass-shatter');
-  assert.ok(shatterSfx.start >= 1.4 && shatterSfx.start <= 2.6);
+  assert.equal(new Set(batch5).size, 5);
+  assert.equal(resolveBeatLayout(scripts[0].beats[0], 0, 8), 'split');
 });
+

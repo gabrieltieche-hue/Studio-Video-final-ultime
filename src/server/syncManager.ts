@@ -373,9 +373,72 @@ export function receiveImportedFile(params: {
   return { savedPath: targetPath, sizeBytes: params.data.byteLength };
 }
 
+export function sanitizeSyncHttpError(status: number, bodyText: string): string {
+  const raw = String(bodyText || '').trim();
+  if (!raw) return `HTTP ${status}`;
+  if (/<!doctype|<html|<pre>/i.test(raw)) {
+    const preMatch = raw.match(/<pre>([\s\S]*?)<\/pre>/i);
+    if (preMatch?.[1]) {
+      return `HTTP ${status} (${preMatch[1].replace(/\s+/g, ' ').trim().slice(0, 90)})`;
+    }
+    return `HTTP ${status} (réponse HTML inattendue — route non disponible sur cette instance)`;
+  }
+  return `HTTP ${status}: ${raw.replace(/\s+/g, ' ').slice(0, 140)}`;
+}
+
+export async function checkRailwaySyncCapability(
+  railwayUrl: string,
+  syncSecret?: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<{ ok: true }> {
+  const headers: Record<string, string> = {};
+  if (syncSecret) headers['x-sync-secret'] = syncSecret;
+
+  let res: Response;
+  try {
+    res = await fetchImpl(`${railwayUrl}/api/sync/status`, {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    throw new Error(
+      `Impossible de joindre Railway (${railwayUrl}): ${err instanceof Error ? err.message : 'réseau indisponible'}.`
+    );
+  }
+
+  const contentType = (res.headers.get('content-type') || '').toLowerCase();
+  if (res.status === 404 || !contentType.includes('application/json')) {
+    throw new Error(
+      `Le serveur Railway (${railwayUrl}) exécute une version antérieure sans les routes /api/sync/*. Poussez d’abord vers GitHub (ou attendez le redéploiement de Railway sur main), puis réessayez.`
+    );
+  }
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Erreur Railway (${sanitizeSyncHttpError(res.status, errText)})`);
+  }
+
+  let parsed: unknown = null;
+  try {
+    parsed = await res.json();
+  } catch {
+    throw new Error(
+      `Le serveur Railway (${railwayUrl}) n’a pas renvoyé un JSON valide sur /api/sync/status. Redéployez Railway sur main.`
+    );
+  }
+  if (!parsed || typeof parsed !== 'object' || !('status' in parsed)) {
+    throw new Error(
+      `Réponse /api/sync/status incomplète sur Railway (${railwayUrl}). Redéployez Railway sur main.`
+    );
+  }
+
+  return { ok: true };
+}
+
 export async function pushProjectToRailway(
   projectId: string,
-  overrideUrl?: string
+  overrideUrl?: string,
+  skipCapabilityCheck = false
 ): Promise<{ railwayUrl: string; uploadedFiles: string[] }> {
   const cfg = readSyncConfig();
   const railwayUrl = normalizeRailwayUrl(overrideUrl) || cfg.railwayUrl;
@@ -386,6 +449,10 @@ export async function pushProjectToRailway(
   const project = getProject(projectId);
   if (!project) {
     throw new Error(`Projet "${projectId}" introuvable.`);
+  }
+
+  if (!skipCapabilityCheck) {
+    await checkRailwaySyncCapability(railwayUrl, cfg.syncSecret);
   }
 
   const headersBase: Record<string, string> = {};
@@ -403,7 +470,7 @@ export async function pushProjectToRailway(
   if (!projRes.ok) {
     const errText = await projRes.text().catch(() => '');
     throw new Error(
-      `Échec envoi métadonnées vers Railway (${projRes.status}): ${errText.slice(0, 180)}`
+      `Échec envoi métadonnées vers Railway (${sanitizeSyncHttpError(projRes.status, errText)})`
     );
   }
 
@@ -427,7 +494,7 @@ export async function pushProjectToRailway(
     if (!fileRes.ok) {
       const errText = await fileRes.text().catch(() => '');
       throw new Error(
-        `Échec upload ${mf.fileName} vers Railway (${fileRes.status}): ${errText.slice(0, 180)}`
+        `Échec upload ${mf.fileName} vers Railway (${sanitizeSyncHttpError(fileRes.status, errText)})`
       );
     }
     uploadedFiles.push(mf.fileName);
@@ -446,13 +513,15 @@ export async function pushAllProjectsToRailway(
     throw new Error('URL Railway non configurée.');
   }
 
+  await checkRailwaySyncCapability(railwayUrl, cfg.syncSecret);
+
   const projects = onlyProjectId
     ? [getProject(onlyProjectId)].filter((p): p is ShortProject => Boolean(p))
     : getAllProjects();
 
   let filesUploaded = 0;
   for (const proj of projects) {
-    const r = await pushProjectToRailway(proj.id, railwayUrl);
+    const r = await pushProjectToRailway(proj.id, railwayUrl, true);
     filesUploaded += r.uploadedFiles.length;
   }
 
@@ -472,6 +541,8 @@ export async function pullFromRailway(
     throw new Error('URL Railway non configurée.');
   }
 
+  await checkRailwaySyncCapability(railwayUrl, cfg.syncSecret);
+
   const headersBase: Record<string, string> = {};
   if (cfg.syncSecret) headersBase['x-sync-secret'] = cfg.syncSecret;
 
@@ -480,7 +551,8 @@ export async function pullFromRailway(
     signal: AbortSignal.timeout(20_000),
   });
   if (!manifestRes.ok) {
-    throw new Error(`Impossible de contacter Railway (${manifestRes.status}).`);
+    const errText = await manifestRes.text().catch(() => '');
+    throw new Error(`Impossible de contacter Railway (${sanitizeSyncHttpError(manifestRes.status, errText)}).`);
   }
   const manifest = (await manifestRes.json()) as { projects?: SyncManifestProjectEntry[] };
   const remoteProjects = manifest.projects || [];
@@ -670,19 +742,19 @@ export async function runFullSync(opts: {
     | { railwayUrl: string; projectsSynced: number; filesUploaded: number }
     | undefined;
 
-  if ((target === 'all' || target === 'railway') && (opts.railwayUrl || cfg.railwayUrl)) {
-    try {
-      railwayResult = await pushAllProjectsToRailway(opts.railwayUrl, opts.projectId);
-    } catch (err) {
-      errors.push(`Railway: ${err instanceof Error ? err.message : 'erreur inconnue'}`);
-    }
-  }
-
   if ((target === 'all' || target === 'github') && cfg.githubRepo && cfg.githubToken) {
     try {
       githubResult = await pushWorkspaceToGitHub(opts.commitMessage);
     } catch (err) {
       errors.push(`GitHub: ${err instanceof Error ? err.message : 'erreur inconnue'}`);
+    }
+  }
+
+  if ((target === 'all' || target === 'railway') && (opts.railwayUrl || cfg.railwayUrl)) {
+    try {
+      railwayResult = await pushAllProjectsToRailway(opts.railwayUrl, opts.projectId);
+    } catch (err) {
+      errors.push(`Railway: ${err instanceof Error ? err.message : 'erreur inconnue'}`);
     }
   }
 

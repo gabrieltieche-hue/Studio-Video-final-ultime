@@ -86,3 +86,34 @@ test('receiveImportedFile and resolveExportFile sanitize paths and isolate allow
     })
   );
 });
+
+test('sanitizeSyncHttpError strips raw Express HTML pages', () => {
+  const htmlErr =
+    '<!DOCTYPE html><html lang="en"><head><title>Error</title></head><body><pre>Cannot POST /api/sync/import-project</pre></body></html>';
+  const cleaned = sync.sanitizeSyncHttpError(404, htmlErr);
+  assert.equal(cleaned.includes('<!DOCTYPE'), false);
+  assert.ok(cleaned.includes('Cannot POST /api/sync/import-project'));
+});
+
+test('checkRailwaySyncCapability rejects HTML SPA fallbacks and 404s with actionable message', async () => {
+  const htmlFallbackFetch = (async () =>
+    new Response('<!doctype html><html><body>SPA</body></html>', {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    })) as unknown as typeof fetch;
+
+  await assert.rejects(
+    () => sync.checkRailwaySyncCapability('https://old-deploy.up.railway.app', undefined, htmlFallbackFetch),
+    /version antérieure sans les routes \/api\/sync/
+  );
+
+  const validJsonFetch = (async () =>
+    new Response(JSON.stringify({ status: { railwayConnected: true } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })) as unknown as typeof fetch;
+
+  const okRes = await sync.checkRailwaySyncCapability('https://new-deploy.up.railway.app', undefined, validJsonFetch);
+  assert.equal(okRes.ok, true);
+});
+
