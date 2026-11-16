@@ -27,6 +27,7 @@ export interface SyncConfigRecord {
   githubRepo: string;
   githubToken: string;
   railwayUrl: string;
+  railwayDeployHookUrl: string;
   syncSecret: string;
   autoSync: boolean;
   lastSyncAt?: string;
@@ -39,6 +40,10 @@ export interface PublicSyncStatus {
   githubTokenMasked: string | null;
   railwayUrl: string;
   railwayConnected: boolean;
+  railwayReachable: boolean;
+  railwaySyncReady: boolean;
+  railwayVersion?: string;
+  railwayDeployHookConfigured: boolean;
   syncSecretConfigured: boolean;
   autoSync: boolean;
   gitBranch: string;
@@ -96,6 +101,18 @@ export function maskSecretToken(token?: string): string | null {
   return `${t.slice(0, 6)}••••${t.slice(-4)}`;
 }
 
+export function normalizeDeployHookUrl(input?: string): string {
+  const raw = String(input || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+    return parsed.toString();
+  } catch {
+    return '';
+  }
+}
+
 export function readSyncConfig(): SyncConfigRecord {
   let stored: Partial<SyncConfigRecord> = {};
   const cfgPath = getSyncConfigPath();
@@ -114,17 +131,31 @@ export function readSyncConfig(): SyncConfigRecord {
   const railwayUrl =
     normalizeRailwayUrl(stored.railwayUrl) ||
     normalizeRailwayUrl(process.env.RAILWAY_STUDIO_URL);
+  const railwayDeployHookUrl =
+    normalizeDeployHookUrl(stored.railwayDeployHookUrl) ||
+    normalizeDeployHookUrl(process.env.RAILWAY_DEPLOY_HOOK_URL);
   const syncSecret = (stored.syncSecret || process.env.SYNC_SECRET || '').trim();
 
   return {
     githubRepo,
     githubToken,
     railwayUrl,
+    railwayDeployHookUrl,
     syncSecret,
     autoSync: stored.autoSync !== undefined ? Boolean(stored.autoSync) : true,
     lastSyncAt: stored.lastSyncAt,
     lastSyncSummary: stored.lastSyncSummary,
   };
+}
+
+let cachedRailwayProbe: {
+  key: string;
+  checkedAt: number;
+  result: { reachable: boolean; syncReady: boolean; version?: string };
+} | null = null;
+
+export function invalidateRailwayProbeCache(): void {
+  cachedRailwayProbe = null;
 }
 
 export function saveSyncConfig(patch: Partial<SyncConfigRecord>): SyncConfigRecord {
@@ -142,6 +173,10 @@ export function saveSyncConfig(patch: Partial<SyncConfigRecord>): SyncConfigReco
       patch.railwayUrl !== undefined
         ? normalizeRailwayUrl(patch.railwayUrl)
         : current.railwayUrl,
+    railwayDeployHookUrl:
+      patch.railwayDeployHookUrl !== undefined
+        ? normalizeDeployHookUrl(patch.railwayDeployHookUrl)
+        : current.railwayDeployHookUrl,
     syncSecret:
       patch.syncSecret !== undefined
         ? String(patch.syncSecret).trim()
@@ -154,11 +189,19 @@ export function saveSyncConfig(patch: Partial<SyncConfigRecord>): SyncConfigReco
   if (patch.railwayUrl !== undefined && patch.railwayUrl.trim() && !next.railwayUrl) {
     throw new Error('URL Railway invalide (doit commencer par https:// ou http://).');
   }
+  if (
+    patch.railwayDeployHookUrl !== undefined &&
+    patch.railwayDeployHookUrl.trim() &&
+    !next.railwayDeployHookUrl
+  ) {
+    throw new Error('URL Deploy Hook Railway invalide.');
+  }
   if (patch.githubRepo !== undefined && patch.githubRepo.trim() && !next.githubRepo) {
     throw new Error('Dépôt GitHub invalide (format attendu : proprietaire/repo).');
   }
 
   writeJsonAtomic(getSyncConfigPath(), next);
+  invalidateRailwayProbeCache();
   return next;
 }
 
@@ -182,12 +225,21 @@ export function getPublicSyncStatus(): PublicSyncStatus {
       process.env.ALWAYS_ON_SERVER === 'true'
   );
 
+  const cachedForUrl =
+    cfg.railwayUrl && cachedRailwayProbe?.key === `${cfg.railwayUrl}|${cfg.syncSecret}`
+      ? cachedRailwayProbe.result
+      : null;
+
   return {
     githubRepo: cfg.githubRepo,
     githubConnected: Boolean(cfg.githubRepo && cfg.githubToken),
     githubTokenMasked: maskSecretToken(cfg.githubToken),
     railwayUrl: cfg.railwayUrl,
-    railwayConnected: Boolean(cfg.railwayUrl),
+    railwayConnected: Boolean(cachedForUrl ? cachedForUrl.syncReady : cfg.railwayUrl),
+    railwayReachable: cachedForUrl ? cachedForUrl.reachable : false,
+    railwaySyncReady: cachedForUrl ? cachedForUrl.syncReady : false,
+    railwayVersion: cachedForUrl?.version,
+    railwayDeployHookConfigured: Boolean(cfg.railwayDeployHookUrl),
     syncSecretConfigured: Boolean(cfg.syncSecret),
     autoSync: cfg.autoSync,
     gitBranch,
@@ -196,6 +248,68 @@ export function getPublicSyncStatus(): PublicSyncStatus {
     lastSyncAt: cfg.lastSyncAt,
     lastSyncSummary: cfg.lastSyncSummary,
   };
+}
+
+export async function probeRailwaySyncState(
+  railwayUrl: string,
+  syncSecret?: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<{ reachable: boolean; syncReady: boolean; version?: string }> {
+  if (!railwayUrl) {
+    return { reachable: false, syncReady: false };
+  }
+
+  let reachable = false;
+  let version: string | undefined;
+
+  try {
+    const healthRes = await fetchImpl(`${railwayUrl}/api/health`, {
+      signal: AbortSignal.timeout(4_000),
+    });
+    if (healthRes.ok) {
+      reachable = true;
+      const cType = (healthRes.headers.get('content-type') || '').toLowerCase();
+      if (cType.includes('application/json')) {
+        const healthJson = (await healthRes.json().catch(() => null)) as {
+          version?: string;
+          syncEnabled?: boolean;
+        } | null;
+        if (healthJson?.version) version = String(healthJson.version);
+      }
+    }
+  } catch {
+    return { reachable: false, syncReady: false };
+  }
+
+  try {
+    await checkRailwaySyncCapability(railwayUrl, syncSecret, fetchImpl);
+    return { reachable: true, syncReady: true, version };
+  } catch {
+    return { reachable, syncReady: false, version };
+  }
+}
+
+export async function getLivePublicSyncStatus(forceRefresh = false): Promise<PublicSyncStatus> {
+  const cfg = readSyncConfig();
+  if (cfg.railwayUrl) {
+    const cacheKey = `${cfg.railwayUrl}|${cfg.syncSecret}`;
+    const isFresh =
+      !forceRefresh &&
+      cachedRailwayProbe &&
+      cachedRailwayProbe.key === cacheKey &&
+      Date.now() - cachedRailwayProbe.checkedAt < 12_000;
+
+    if (!isFresh) {
+      const result = await probeRailwaySyncState(cfg.railwayUrl, cfg.syncSecret);
+      cachedRailwayProbe = {
+        key: cacheKey,
+        checkedAt: Date.now(),
+        result,
+      };
+    }
+  }
+
+  return getPublicSyncStatus();
 }
 
 export function verifyIncomingSyncSecret(provided?: string | null): boolean {
@@ -600,6 +714,98 @@ export async function pullFromRailway(
   return { railwayUrl, pulledProjects, pulledFiles };
 }
 
+async function pushSavedProjectsViaGitHubApi(cfg: SyncConfigRecord): Promise<{
+  repo: string;
+  committed: boolean;
+  pushed: boolean;
+  commitSha?: string;
+}> {
+  const headers = {
+    Authorization: `Bearer ${cfg.githubToken}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'studio-short-sync',
+  };
+
+  let committed = false;
+  let lastSha: string | undefined;
+
+  if (fs.existsSync(path.join(ROOT_DIR, 'data', 'saved-projects'))) {
+    const files = fs
+      .readdirSync(path.join(ROOT_DIR, 'data', 'saved-projects'))
+      .filter((f) => f.endsWith('.json'));
+
+    for (const file of files) {
+      const repoPath = `data/saved-projects/${file}`;
+      const localContent = fs.readFileSync(
+        path.join(ROOT_DIR, 'data', 'saved-projects', file),
+        'utf-8'
+      );
+      const localB64 = Buffer.from(localContent, 'utf-8').toString('base64');
+
+      const existingRes = await fetch(
+        `https://api.github.com/repos/${cfg.githubRepo}/contents/${repoPath}?ref=main`,
+        { headers, signal: AbortSignal.timeout(15_000) }
+      );
+      let existingSha: string | undefined;
+      let existingContent = '';
+      if (existingRes.ok) {
+        const existingJson = (await existingRes.json()) as { sha?: string; content?: string };
+        existingSha = existingJson.sha;
+        existingContent = (existingJson.content || '').replace(/\n/g, '');
+      }
+      if (existingContent === localB64) continue;
+
+      const putRes = await fetch(
+        `https://api.github.com/repos/${cfg.githubRepo}/contents/${repoPath}`,
+        {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            message: `Sync Studio Short (${file})`,
+            content: localB64,
+            branch: 'main',
+            ...(existingSha ? { sha: existingSha } : {}),
+          }),
+          signal: AbortSignal.timeout(20_000),
+        }
+      );
+      if (!putRes.ok) {
+        const errBody = await putRes.text().catch(() => '');
+        throw new Error(`API GitHub (${putRes.status}): ${errBody.slice(0, 120)}`);
+      }
+      const putJson = (await putRes.json()) as { commit?: { sha?: string } };
+      lastSha = putJson.commit?.sha || lastSha;
+      committed = true;
+    }
+  }
+
+  return {
+    repo: cfg.githubRepo,
+    committed,
+    pushed: true,
+    commitSha: lastSha,
+  };
+}
+
+export async function triggerRailwayDeployHook(hookUrl?: string): Promise<{ triggered: boolean }> {
+  const cfg = readSyncConfig();
+  const target = normalizeDeployHookUrl(hookUrl || cfg.railwayDeployHookUrl);
+  if (!target) {
+    throw new Error('Aucun Deploy Hook Railway configuré.');
+  }
+  const res = await fetch(target, {
+    method: 'POST',
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Deploy Hook Railway (${sanitizeSyncHttpError(res.status, errText)})`);
+  }
+  invalidateRailwayProbeCache();
+  return { triggered: true };
+}
+
 export async function pushWorkspaceToGitHub(commitMessage?: string): Promise<{
   repo: string;
   committed: boolean;
@@ -610,13 +816,14 @@ export async function pushWorkspaceToGitHub(commitMessage?: string): Promise<{
   if (!cfg.githubRepo || !cfg.githubToken) {
     throw new Error('Dépôt ou token GitHub non configuré.');
   }
-  if (!fs.existsSync(path.join(ROOT_DIR, '.git'))) {
-    throw new Error('Dépôt Git non initialisé dans ce workspace.');
-  }
 
   // Ensure every project is mirrored cleanly before staging
   for (const p of getAllProjects()) {
     mirrorProjectToRepo(p);
+  }
+
+  if (!fs.existsSync(path.join(ROOT_DIR, '.git'))) {
+    return pushSavedProjectsViaGitHubApi(cfg);
   }
 
   const safePaths = [
@@ -724,6 +931,8 @@ export async function runFullSync(opts: {
   ok: boolean;
   github?: { repo: string; committed: boolean; pushed: boolean; commitSha?: string };
   railway?: { railwayUrl: string; projectsSynced: number; filesUploaded: number };
+  railwayNeedsRedeploy?: boolean;
+  railwayDeployTriggered?: boolean;
   summary: string;
   errors: string[];
 }> {
@@ -741,6 +950,8 @@ export async function runFullSync(opts: {
   let railwayResult:
     | { railwayUrl: string; projectsSynced: number; filesUploaded: number }
     | undefined;
+  let railwayNeedsRedeploy = false;
+  let railwayDeployTriggered = false;
 
   if ((target === 'all' || target === 'github') && cfg.githubRepo && cfg.githubToken) {
     try {
@@ -750,11 +961,30 @@ export async function runFullSync(opts: {
     }
   }
 
-  if ((target === 'all' || target === 'railway') && (opts.railwayUrl || cfg.railwayUrl)) {
+  const effectiveRailwayUrl = normalizeRailwayUrl(opts.railwayUrl) || cfg.railwayUrl;
+  if ((target === 'all' || target === 'railway') && effectiveRailwayUrl) {
     try {
+      invalidateRailwayProbeCache();
       railwayResult = await pushAllProjectsToRailway(opts.railwayUrl, opts.projectId);
+      cachedRailwayProbe = {
+        key: `${effectiveRailwayUrl}|${cfg.syncSecret}`,
+        checkedAt: Date.now(),
+        result: { reachable: true, syncReady: true, version: 'studio-sync-v3' },
+      };
     } catch (err) {
-      errors.push(`Railway: ${err instanceof Error ? err.message : 'erreur inconnue'}`);
+      const msg = err instanceof Error ? err.message : 'erreur inconnue';
+      if (msg.includes('version antérieure sans les routes /api/sync')) {
+        railwayNeedsRedeploy = true;
+        if (cfg.railwayDeployHookUrl) {
+          try {
+            await triggerRailwayDeployHook(cfg.railwayDeployHookUrl);
+            railwayDeployTriggered = true;
+          } catch {
+            // keep railwayNeedsRedeploy notice
+          }
+        }
+      }
+      errors.push(`Railway: ${msg}`);
     }
   }
 
@@ -773,19 +1003,24 @@ export async function runFullSync(opts: {
     parts.push('Projets sauvegardés dans le dépôt local');
   }
 
-  const summary =
-    errors.length > 0 ? `${parts.join(' · ')} — Erreurs : ${errors.join(' | ')}` : parts.join(' · ');
+  const storedSummary = railwayNeedsRedeploy
+    ? `${parts.join(' · ')} · En attente redéploiement Railway sur main`
+    : errors.length > 0
+      ? `${parts.join(' · ')} — ${errors[0]}`
+      : parts.join(' · ');
 
   saveSyncConfig({
     lastSyncAt: new Date().toISOString(),
-    lastSyncSummary: summary,
+    lastSyncSummary: storedSummary,
   });
 
   return {
     ok: errors.length === 0,
     github: githubResult,
     railway: railwayResult,
-    summary,
+    railwayNeedsRedeploy,
+    railwayDeployTriggered,
+    summary: parts.join(' · ') || storedSummary,
     errors,
   };
 }

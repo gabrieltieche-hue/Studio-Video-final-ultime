@@ -68,8 +68,8 @@ async function ensureRenderedMp4(): Promise<string> {
 
 async function startServer() {
   initStorage();
-  seedFlagshipProjectIfMissing();
   hydrateSavedProjectsFromRepo();
+  seedFlagshipProjectIfMissing();
 
   const app = express();
   app.use(express.json({ limit: '25mb' }));

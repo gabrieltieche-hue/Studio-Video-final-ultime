@@ -107,6 +107,10 @@ export default function App() {
     githubTokenMasked: string | null;
     railwayUrl: string;
     railwayConnected: boolean;
+    railwayReachable: boolean;
+    railwaySyncReady: boolean;
+    railwayVersion?: string;
+    railwayDeployHookConfigured: boolean;
     autoSync: boolean;
     lastSyncAt?: string;
     lastSyncSummary?: string;
@@ -122,6 +126,7 @@ export default function App() {
       return '';
     }
   });
+  const [railwayHookInput, setRailwayHookInput] = useState('');
   const [githubRepoInput, setGithubRepoInput] = useState('');
   const [githubTokenInput, setGithubTokenInput] = useState('');
 
@@ -180,9 +185,10 @@ export default function App() {
     return Math.max(8, activeProject?.duration || SHORT_DURATION);
   }, [isFlagshipReactPlayer, activeProject]);
 
-  const fetchSyncStatus = useCallback(async () => {
+  const fetchSyncStatus = useCallback(async (forceRefresh = false) => {
     try {
-      const res = await fetch('/api/sync/status', { credentials: 'same-origin' });
+      const url = forceRefresh ? '/api/sync/status?refresh=1' : '/api/sync/status';
+      const res = await fetch(url, { credentials: 'same-origin' });
       if (!res.ok) return;
       const data = (await res.json()) as { status?: typeof syncStatus };
       if (data.status) {
@@ -724,16 +730,27 @@ export default function App() {
         summary?: string;
         errors?: string[];
         error?: string;
+        railwayNeedsRedeploy?: boolean;
+        railwayDeployTriggered?: boolean;
         status?: typeof syncStatus;
       };
       if (data.status) setSyncStatus(data.status);
       if (!res.ok && data.error) {
         throw new Error(data.error);
       }
-      if (data.errors && data.errors.length > 0) {
+      if (data.summary && (!data.errors || data.errors.length === 0 || data.railwayNeedsRedeploy)) {
+        setSyncMsg(
+          data.railwayDeployTriggered
+            ? `${data.summary} · Redéploiement Railway déclenché automatiquement.`
+            : data.summary
+        );
+      }
+      if (data.errors && data.errors.length > 0 && !data.railwayNeedsRedeploy) {
         setSyncErr(data.errors.join(' · '));
-      } else {
-        setSyncMsg(data.summary || 'Synchronisation terminée.');
+      } else if (data.railwayNeedsRedeploy && !data.railwayDeployTriggered) {
+        setSyncErr(
+          'GitHub est à jour, mais votre service Railway tourne encore sur une ancienne version. Sur Railway : Settings → Source → gabrieltieche-hue/Studio-Video-final-ultime (main) → Deployments → Redeploy.'
+        );
       }
       await fetchWorkspace();
     } catch (err) {
@@ -742,6 +759,34 @@ export default function App() {
       setSyncing(false);
     }
   }, [syncing, railwayInput, fetchWorkspace]);
+
+  const handleCheckRailwayNow = useCallback(async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncErr(null);
+    setSyncMsg(null);
+    try {
+      await fetchSyncStatus(true);
+      const res = await fetch('/api/sync/status?refresh=1', { credentials: 'same-origin' });
+      const data = (await res.json()) as { status?: typeof syncStatus };
+      if (data.status) {
+        setSyncStatus(data.status);
+        if (data.status.railwaySyncReady) {
+          setSyncMsg('Railway est en ligne sur la dernière version et prêt pour la synchronisation directe.');
+        } else if (data.status.railwayReachable) {
+          setSyncErr(
+            `Railway répond encore en version ${data.status.railwayVersion || 'antérieure'}. Vérifiez sur Railway que le dépôt source est bien gabrieltieche-hue/Studio-Video-final-ultime (main) puis cliquez Redeploy.`
+          );
+        } else {
+          setSyncErr('Serveur Railway injoignable pour le moment.');
+        }
+      }
+    } catch (err) {
+      setSyncErr(err instanceof Error ? err.message : 'Impossible de vérifier Railway');
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncing, fetchSyncStatus]);
 
   const handlePullRailway = useCallback(async () => {
     if (syncing) return;
@@ -798,6 +843,9 @@ export default function App() {
         if (githubTokenInput.trim()) {
           payload.githubToken = githubTokenInput.trim();
         }
+        if (railwayHookInput.trim()) {
+          payload.railwayDeployHookUrl = railwayHookInput.trim();
+        }
         const res = await fetch('/api/sync/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -810,13 +858,14 @@ export default function App() {
         }
         if (data.status) setSyncStatus(data.status);
         setGithubTokenInput('');
+        setRailwayHookInput('');
         setShowSyncSettings(false);
         setSyncMsg('Configuration enregistrée.');
       } catch (err) {
         setSyncErr(err instanceof Error ? err.message : 'Erreur configuration sync');
       }
     },
-    [railwayInput, githubRepoInput, githubTokenInput]
+    [railwayInput, githubRepoInput, githubTokenInput, railwayHookInput]
   );
 
   // Keyboard shortcuts (Space: play/pause, Left/Right: scrub 1s)
@@ -1524,15 +1573,15 @@ export default function App() {
                 aria-label="Synchronisation GitHub et Railway"
                 className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
+                <div className="flex flex-col gap-2.5">
+                  <div className="space-y-1.5 min-w-0">
                     <div className="flex items-center gap-2 text-xs font-bold text-[#14161B]">
                       <Cloud className="w-4 h-4 text-[#258EFF] shrink-0" aria-hidden="true" />
                       <span>Synchronisation Studio · GitHub · Railway</span>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
                       <span
-                        className={`px-2 py-0.5 rounded font-semibold whitespace-nowrap ${
+                        className={`px-2 py-0.5 rounded font-semibold max-w-full truncate ${
                           syncStatus?.githubConnected
                             ? 'bg-[#059669]/12 text-[#047857]'
                             : 'bg-[#EAE7DF] text-[#5C5F68]'
@@ -1545,17 +1594,28 @@ export default function App() {
                       </span>
                       <span
                         className={`px-2 py-0.5 rounded font-semibold whitespace-nowrap ${
-                          syncStatus?.railwayConnected
-                            ? 'bg-[#258EFF]/12 text-[#1D4ED8]'
-                            : 'bg-[#EAE7DF] text-[#5C5F68]'
+                          !syncStatus?.railwayUrl
+                            ? 'bg-[#EAE7DF] text-[#5C5F68]'
+                            : syncStatus.railwaySyncReady
+                              ? 'bg-[#059669]/12 text-[#047857]'
+                              : syncStatus.railwayReachable
+                                ? 'bg-[#D97706]/12 text-[#B45309]'
+                                : 'bg-[#DC2626]/10 text-[#DC2626]'
                         }`}
                       >
-                        Railway : {syncStatus?.railwayConnected ? 'Connecté' : 'Optionnel'}
+                        Railway :{' '}
+                        {!syncStatus?.railwayUrl
+                          ? 'Optionnel'
+                          : syncStatus.railwaySyncReady
+                            ? 'Synchronisable'
+                            : syncStatus.railwayReachable
+                              ? `Redéploiement requis (${syncStatus.railwayVersion || 'ancien'})`
+                              : 'Hors ligne'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => setShowSyncSettings((v) => !v)}
@@ -1565,6 +1625,18 @@ export default function App() {
                       <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
                       Configurer
                     </button>
+
+                    {syncStatus?.railwayUrl && !syncStatus.railwaySyncReady && (
+                      <button
+                        type="button"
+                        disabled={syncing}
+                        onClick={() => void handleCheckRailwayNow()}
+                        className="h-9 px-3 rounded-xl border border-[#D97706]/40 bg-[#FEF3C7]/60 hover:bg-[#FEF3C7] text-xs font-semibold text-[#92400E] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                        Revérifier Railway
+                      </button>
+                    )}
 
                     <button
                       type="button"
@@ -1583,22 +1655,33 @@ export default function App() {
                   </div>
                 </div>
 
+                {syncStatus?.railwayUrl && syncStatus.railwayReachable && !syncStatus.railwaySyncReady && !syncErr && (
+                  <p className="text-[11px] text-[#92400E] bg-[#FEF3C7]/60 border border-[#D97706]/25 rounded-xl px-3 py-2">
+                    GitHub <span className="font-mono font-semibold">{syncStatus.githubRepo || 'main'}</span> est à jour, mais Railway exécute encore la build <span className="font-mono">{syncStatus.railwayVersion || 'antérieure'}</span>. Sur Railway → Service → <span className="font-semibold">Settings → Source ({syncStatus.githubRepo || 'Studio-Video-final-ultime'} / main) → Deployments → Redeploy</span>, puis cliquez sur <span className="font-semibold">Revérifier Railway</span>.
+                  </p>
+                )}
+
                 {syncStatus?.lastSyncSummary && !syncMsg && !syncErr && (
                   <p className="text-[11px] text-[#5C5F68] truncate">
                     Dernière synchro : {syncStatus.lastSyncSummary}
                   </p>
                 )}
 
-                {(syncMsg || syncErr) && (
+                {syncMsg && (
                   <div
                     role="status"
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold ${
-                      syncErr
-                        ? 'bg-[#DC2626]/10 text-[#DC2626]'
-                        : 'bg-[#059669]/10 text-[#047857]'
-                    }`}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#059669]/10 text-[#047857]"
                   >
-                    {syncErr || syncMsg}
+                    {syncMsg}
+                  </div>
+                )}
+
+                {syncErr && (
+                  <div
+                    role="status"
+                    className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#D97706]/12 text-[#92400E] border border-[#D97706]/25"
+                  >
+                    {syncErr}
                   </div>
                 )}
 
@@ -1643,25 +1726,48 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="sync-github-token"
-                        className="block text-[11px] font-semibold text-[#5C5F68]"
-                      >
-                        Token GitHub (PAT · laissé masqué, laissez vide pour conserver l&apos;actuel)
-                      </label>
-                      <input
-                        id="sync-github-token"
-                        type="password"
-                        value={githubTokenInput}
-                        onChange={(e) => setGithubTokenInput(e.target.value)}
-                        placeholder={
-                          syncStatus?.githubTokenMasked
-                            ? `Actuel : ${syncStatus.githubTokenMasked}`
-                            : 'github_pat_...'
-                        }
-                        className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="sync-github-token"
+                          className="block text-[11px] font-semibold text-[#5C5F68]"
+                        >
+                          Token GitHub (PAT · laissé masqué, laissez vide pour conserver)
+                        </label>
+                        <input
+                          id="sync-github-token"
+                          type="password"
+                          value={githubTokenInput}
+                          onChange={(e) => setGithubTokenInput(e.target.value)}
+                          placeholder={
+                            syncStatus?.githubTokenMasked
+                              ? `Actuel : ${syncStatus.githubTokenMasked}`
+                              : 'github_pat_...'
+                          }
+                          className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="sync-railway-hook"
+                          className="block text-[11px] font-semibold text-[#5C5F68]"
+                        >
+                          Railway Deploy Hook (optionnel · redéploiement auto)
+                        </label>
+                        <input
+                          id="sync-railway-hook"
+                          type="password"
+                          value={railwayHookInput}
+                          onChange={(e) => setRailwayHookInput(e.target.value)}
+                          placeholder={
+                            syncStatus?.railwayDeployHookConfigured
+                              ? 'Deploy Hook enregistré (laisser vide pour conserver)'
+                              : 'https://backboard.railway.com/deploy/...'
+                          }
+                          className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white font-mono text-[11px] text-[#14161B]"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
