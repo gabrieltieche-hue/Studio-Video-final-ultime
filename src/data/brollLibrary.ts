@@ -1,11 +1,11 @@
-import aiLabImg from '../assets/images/broll_ai_lab_1794836125445.jpg';
+import aiLabImg from '../assets/images/broll_ai_lab_1794940169988.jpg';
 import aiMeetingsImg from '../assets/images/broll_ai_meetings_1794753158637.jpg';
 import businessStrategyImg from '../assets/images/broll_business_strategy_1794753161377.jpg';
-import dataAnalyticsImg from '../assets/images/broll_data_analytics_1794836122643.jpg';
+import dataAnalyticsImg from '../assets/images/broll_data_analytics_1794940171313.jpg';
 import economyFinanceImg from '../assets/images/broll_economy_finance_1794753160047.jpg';
-import focusClockworkImg from '../assets/images/broll_focus_clockwork_1794836122551.jpg';
-import mobileAttentionImg from '../assets/images/broll_mobile_attention_1794836123647.jpg';
-import startupTeamImg from '../assets/images/broll_startup_team_1794836123918.jpg';
+import focusClockworkImg from '../assets/images/broll_focus_clockwork_1794940171295.jpg';
+import mobileAttentionImg from '../assets/images/broll_mobile_attention_1794940172642.jpg';
+import startupTeamImg from '../assets/images/broll_startup_team_1794940171928.jpg';
 import techCodeImg from '../assets/images/broll_tech_code_1794753159977.jpg';
 import creatorStudioImg from '../assets/images/editorial_creator_studio_1794587431455.jpg';
 import parliamentLawImg from '../assets/images/editorial_parliament_law_1794587431774.jpg';
@@ -24,22 +24,22 @@ export const BROLL_ASSETS: Record<BrollKey, BrollAsset> = {
   ai_meetings: {
     key: 'ai_meetings',
     src: aiMeetingsImg,
-    defaultCaption: 'Réunions · Automatisation IA',
+    defaultCaption: 'Réunions · Décision rapide',
   },
   economy: {
     key: 'economy',
     src: economyFinanceImg,
-    defaultCaption: 'Pouvoir d’achat · Coût réel',
+    defaultCaption: 'Budget · Coût réel',
   },
   tech_code: {
     key: 'tech_code',
     src: techCodeImg,
-    defaultCaption: 'Systèmes · Temps réel',
+    defaultCaption: 'Outils · Temps réel',
   },
   business: {
     key: 'business',
     src: businessStrategyImg,
-    defaultCaption: 'Stratégie · Décision rapide',
+    defaultCaption: 'Stratégie · Impact concret',
   },
   parliament: {
     key: 'parliament',
@@ -49,7 +49,7 @@ export const BROLL_ASSETS: Record<BrollKey, BrollAsset> = {
   teen_phone: {
     key: 'teen_phone',
     src: teenPhoneImg,
-    defaultCaption: 'Usage quotidien · Écrans',
+    defaultCaption: 'Écrans · Usages quotidiens',
   },
   studio: {
     key: 'studio',
@@ -59,27 +59,27 @@ export const BROLL_ASSETS: Record<BrollKey, BrollAsset> = {
   focus_clockwork: {
     key: 'focus_clockwork',
     src: focusClockworkImg,
-    defaultCaption: 'Temps · Cadence & Précision',
+    defaultCaption: 'Rythme · Mécanique cachée',
   },
   data_analytics: {
     key: 'data_analytics',
     src: dataAnalyticsImg,
-    defaultCaption: 'Données · Tendances mesurées',
+    defaultCaption: 'Données · Tendances 2026',
   },
   mobile_attention: {
     key: 'mobile_attention',
     src: mobileAttentionImg,
-    defaultCaption: 'Attention · Flux continu',
+    defaultCaption: 'Attention · Réflexe mobile',
   },
   startup_team: {
     key: 'startup_team',
     src: startupTeamImg,
-    defaultCaption: 'Équipes · Nouvelle donne',
+    defaultCaption: 'Terrain · Équipes actives',
   },
   ai_lab: {
     key: 'ai_lab',
     src: aiLabImg,
-    defaultCaption: 'Recherche · Agents autonomes',
+    defaultCaption: 'Laboratoire IA · Mutation',
   },
 };
 
@@ -93,11 +93,11 @@ export function resolveBrollAsset(
     return BROLL_ASSETS[brollKey as BrollKey];
   }
 
-  const seq = getBrollSequenceForTopic(category, theme);
-  const idx = Math.max(0, beatIndex - 1);
   if (beatIndex >= 8) {
     return BROLL_ASSETS.studio;
   }
-  const chosenKey = seq[idx % seq.length] || 'business';
-  return BROLL_ASSETS[chosenKey];
+
+  const seq = getBrollSequenceForTopic(category, theme);
+  const picked = seq[(Math.max(0, beatIndex - 1)) % seq.length] || 'business';
+  return BROLL_ASSETS[picked] || BROLL_ASSETS.business;
 }

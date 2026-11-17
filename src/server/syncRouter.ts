@@ -7,14 +7,13 @@ import {
 } from './storageManager';
 import {
   buildExportManifest,
-  getLivePublicSyncStatus,
   getPublicSyncStatus,
+  probeRailwayStatus,
   pullFromRailway,
   receiveImportedFile,
   resolveExportFile,
   runFullSync,
   saveSyncConfig,
-  triggerRailwayDeployHook,
   verifyIncomingSyncSecret,
 } from './syncManager';
 import type { ShortProject } from '../types/studio';
@@ -22,19 +21,22 @@ import type { ShortProject } from '../types/studio';
 export function createSyncRouter(): express.Router {
   const router = express.Router();
 
-  router.get('/api/sync/status', async (req: Request, res: Response) => {
-    const force = req.query.refresh === '1';
-    const status = await getLivePublicSyncStatus(force);
-    res.json({ status });
+  router.get('/api/sync/status', (_req: Request, res: Response) => {
+    res.json({ status: getPublicSyncStatus() });
   });
 
-  router.post('/api/sync/config', async (req: Request, res: Response) => {
+  router.post('/api/sync/test-railway', async (req: Request, res: Response) => {
+    const body = (req.body || {}) as { railwayUrl?: string };
+    const probe = await probeRailwayStatus(body.railwayUrl);
+    res.json({ probe, status: getPublicSyncStatus() });
+  });
+
+  router.post('/api/sync/config', (req: Request, res: Response) => {
     try {
       const body = (req.body || {}) as {
         githubRepo?: string;
         githubToken?: string;
         railwayUrl?: string;
-        railwayDeployHookUrl?: string;
         syncSecret?: string;
         autoSync?: boolean;
       };
@@ -42,27 +44,13 @@ export function createSyncRouter(): express.Router {
         ...(body.githubRepo !== undefined ? { githubRepo: body.githubRepo } : {}),
         ...(body.githubToken !== undefined ? { githubToken: body.githubToken } : {}),
         ...(body.railwayUrl !== undefined ? { railwayUrl: body.railwayUrl } : {}),
-        ...(body.railwayDeployHookUrl !== undefined
-          ? { railwayDeployHookUrl: body.railwayDeployHookUrl }
-          : {}),
         ...(body.syncSecret !== undefined ? { syncSecret: body.syncSecret } : {}),
         ...(body.autoSync !== undefined ? { autoSync: body.autoSync } : {}),
       });
-      res.json({ success: true, status: await getLivePublicSyncStatus(true) });
+      res.json({ success: true, status: getPublicSyncStatus() });
     } catch (err) {
       res.status(400).json({
         error: err instanceof Error ? err.message : 'Configuration de synchronisation invalide.',
-      });
-    }
-  });
-
-  router.post('/api/sync/redeploy-railway', async (_req: Request, res: Response) => {
-    try {
-      const result = await triggerRailwayDeployHook();
-      res.json({ success: true, ...result, status: await getLivePublicSyncStatus(true) });
-    } catch (err) {
-      res.status(400).json({
-        error: err instanceof Error ? err.message : 'Impossible de déclencher le redéploiement Railway.',
       });
     }
   });
@@ -99,7 +87,7 @@ export function createSyncRouter(): express.Router {
       res.json({
         success: true,
         ...result,
-        status: await getLivePublicSyncStatus(true),
+        status: getPublicSyncStatus(),
       });
     } catch (err) {
       res.status(400).json({

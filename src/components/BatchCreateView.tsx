@@ -19,7 +19,6 @@ import {
   type LookId,
   type MusicBedId,
 } from '../data/shortSpec';
-import { getBlueprintLabel } from '../engine/batchShortBuilder';
 import { computeCompositeViralScore, type TopicCsvRow } from '../engine/topicCsv';
 import type { BatchItemStep, BatchJobRecord, BatchSourceMode } from '../types/batch';
 import type { SocialPlatform } from '../types/social';
@@ -355,8 +354,9 @@ export const BatchCreateView: React.FC<BatchCreateViewProps> = ({
             Création de vidéos en masse
           </h1>
           <p className="text-sm text-[#5C5F68] max-w-2xl leading-relaxed">
-            Générez plusieurs Shorts complets en un clic : script cinétique en 8 séquences,
-            B-Roll &amp; motion design, voix off Brian FR (≤ 1.06×), rendu MP4 1080×1920 et planification échelonnée.
+            Générez plusieurs Shorts variés en un clic : hooks et arcs narratifs adaptés à chaque
+            sujet, motion design dynamique (12 B-Rolls contextuels), voix Brian FR (≤ 1.06×), rendu
+            MP4 1080×1920 et planification échelonnée.
           </p>
         </div>
 
@@ -1038,14 +1038,9 @@ export const BatchCreateView: React.FC<BatchCreateViewProps> = ({
                             <span className="px-1.5 py-0.5 rounded bg-[#F6F5F1] border border-[#E3DED3] font-semibold text-[#5C5F68]">
                               {item.category}
                             </span>
-                            {item.blueprintId && (
-                              <span className="font-semibold text-[#258EFF]">
-                                · {getBlueprintLabel(item.blueprintId)}
-                              </span>
-                            )}
                             {item.duration && (
                               <span className="text-[#5C5F68] tabular-nums">
-                                · {item.duration.toFixed(1)} s
+                                {item.duration.toFixed(1)} s
                               </span>
                             )}
                             {item.beatsCount && (

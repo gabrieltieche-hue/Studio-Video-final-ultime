@@ -68,8 +68,8 @@ async function ensureRenderedMp4(): Promise<string> {
 
 async function startServer() {
   initStorage();
-  hydrateSavedProjectsFromRepo();
   seedFlagshipProjectIfMissing();
+  hydrateSavedProjectsFromRepo();
 
   const app = express();
   app.use(express.json({ limit: '25mb' }));
@@ -81,7 +81,6 @@ async function startServer() {
     res.json({
       ok: true,
       version: 'studio-sync-v3',
-      syncEnabled: true,
       uptimeSec: Math.round(process.uptime()),
       storageDir: STORAGE_DIR,
       elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
@@ -227,10 +226,6 @@ async function startServer() {
     } catch (err) {
       res.status(500).send(err instanceof Error ? err.message : 'Erreur de rendu MP4');
     }
-  });
-
-  app.all('/api/*', (_req, res) => {
-    res.status(404).json({ error: 'Route API introuvable sur ce serveur.' });
   });
 
   if (process.env.NODE_ENV !== 'production') {

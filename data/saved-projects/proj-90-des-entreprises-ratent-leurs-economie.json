@@ -1,0 +1,1365 @@
+{
+  "id": "proj-90-des-entreprises-ratent-leurs-economie",
+  "slug": "90-des-entreprises-ratent-leurs-economie",
+  "title": "90 % des entreprises ratent leurs économies IA : le paradoxe des agents autonomes",
+  "topicId": "SH-004",
+  "topicCategory": "Business",
+  "hookText": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.",
+  "mode": "faceless_explainer",
+  "platform": "youtube_shorts",
+  "status": "rendering",
+  "duration": 41.85,
+  "fps": 25,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "audioTrackUrl": "/storage/projects/proj-90-des-entreprises-ratent-leurs-economie/voice.mp3",
+  "currentVersion": "v1",
+  "versions": [
+    {
+      "version": "v1",
+      "createdAt": "2026-11-17T18:35:42.851Z",
+      "status": "rendering",
+      "duration": 41.85,
+      "fps": 25,
+      "notes": "Enquête Chiffre Choc (Structuré) · Look Papier signature",
+      "audioTrackUrl": "/storage/projects/proj-90-des-entreprises-ratent-leurs-economie/voice.mp3",
+      "outputMp4": "/renders/90-des-entreprises-ratent-leurs-economie_v1.mp4",
+      "hasMp4": true
+    }
+  ],
+  "transcript": [
+    {
+      "id": "w-1",
+      "word": "Tout",
+      "start": 0.033,
+      "end": 0.199,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-2",
+      "word": "le",
+      "start": 0.221,
+      "end": 0.288,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-3",
+      "word": "monde",
+      "start": 0.331,
+      "end": 0.53,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-4",
+      "word": "installe",
+      "start": 0.552,
+      "end": 0.873,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-5",
+      "word": "des",
+      "start": 0.907,
+      "end": 1.017,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-6",
+      "word": "agents",
+      "start": 1.094,
+      "end": 1.36,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-7",
+      "word": "IA.",
+      "start": 1.382,
+      "end": 1.813,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-8",
+      "word": "Mais",
+      "start": 2.178,
+      "end": 2.333,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-9",
+      "word": "90",
+      "start": 2.377,
+      "end": 2.897,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-10",
+      "word": "%",
+      "start": 3.063,
+      "end": 3.262,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-11",
+      "word": "des",
+      "start": 3.35,
+      "end": 3.439,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-12",
+      "word": "boîtes",
+      "start": 3.472,
+      "end": 3.715,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-13",
+      "word": "ne",
+      "start": 3.737,
+      "end": 3.804,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-14",
+      "word": "gagnent",
+      "start": 3.848,
+      "end": 4.125,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-15",
+      "word": "pas",
+      "start": 4.169,
+      "end": 4.324,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-16",
+      "word": "un",
+      "start": 4.379,
+      "end": 4.439,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-17",
+      "word": "euro.",
+      "start": 4.478,
+      "end": 4.888,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-18",
+      "word": "Pourquoi",
+      "start": 5.252,
+      "end": 5.617,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-19",
+      "word": "l'IA",
+      "start": 5.65,
+      "end": 5.893,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-20",
+      "word": "fait",
+      "start": 5.982,
+      "end": 6.104,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-21",
+      "word": "gagner",
+      "start": 6.137,
+      "end": 6.369,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-22",
+      "word": "du",
+      "start": 6.391,
+      "end": 6.49,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-23",
+      "word": "temps",
+      "start": 6.557,
+      "end": 6.79,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-24",
+      "word": "aux",
+      "start": 6.811,
+      "end": 6.922,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-25",
+      "word": "salariés",
+      "start": 6.955,
+      "end": 7.663,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-26",
+      "word": "mais",
+      "start": 7.829,
+      "end": 7.95,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-27",
+      "word": "ne",
+      "start": 7.972,
+      "end": 8.038,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-28",
+      "word": "réduit",
+      "start": 8.083,
+      "end": 8.381,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-29",
+      "word": "pas",
+      "start": 8.414,
+      "end": 8.57,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-30",
+      "word": "encore",
+      "start": 8.591,
+      "end": 8.834,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-31",
+      "word": "les",
+      "start": 8.857,
+      "end": 8.945,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-32",
+      "word": "coûts,",
+      "start": 8.978,
+      "end": 9.299,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-33",
+      "word": "et",
+      "start": 9.531,
+      "end": 9.653,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-34",
+      "word": "casse-tête",
+      "start": 9.697,
+      "end": 10.095,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-35",
+      "word": "sécurité.",
+      "start": 10.117,
+      "end": 10.781,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-36",
+      "word": "Concrètement,",
+      "start": 11.146,
+      "end": 11.897,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-37",
+      "word": "tout",
+      "start": 12.008,
+      "end": 12.207,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-38",
+      "word": "s'enchaîne",
+      "start": 12.24,
+      "end": 12.693,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-39",
+      "word": "en",
+      "start": 12.715,
+      "end": 12.775,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-40",
+      "word": "quatre",
+      "start": 12.827,
+      "end": 13.07,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-41",
+      "word": "étapes",
+      "start": 13.092,
+      "end": 13.379,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-42",
+      "word": "précises",
+      "start": 13.402,
+      "end": 13.921,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-43",
+      "word": "qui",
+      "start": 13.943,
+      "end": 14.021,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-44",
+      "word": "modifient",
+      "start": 14.065,
+      "end": 14.441,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-45",
+      "word": "la",
+      "start": 14.463,
+      "end": 14.53,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-46",
+      "word": "suite.",
+      "start": 14.573,
+      "end": 14.938,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-47",
+      "word": "Le",
+      "start": 15.359,
+      "end": 15.48,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-48",
+      "word": "vrai",
+      "start": 15.513,
+      "end": 15.657,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-49",
+      "word": "point",
+      "start": 15.69,
+      "end": 15.868,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-50",
+      "word": "de",
+      "start": 15.89,
+      "end": 15.95,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-51",
+      "word": "bascule",
+      "start": 15.978,
+      "end": 16.365,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-52",
+      "word": "ne",
+      "start": 16.387,
+      "end": 16.465,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-53",
+      "word": "vient",
+      "start": 16.509,
+      "end": 16.719,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-54",
+      "word": "pas",
+      "start": 16.751,
+      "end": 16.873,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-55",
+      "word": "des",
+      "start": 16.895,
+      "end": 16.995,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-56",
+      "word": "annonces,",
+      "start": 17.062,
+      "end": 17.559,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-57",
+      "word": "mais",
+      "start": 17.869,
+      "end": 17.99,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-58",
+      "word": "de",
+      "start": 18.012,
+      "end": 18.072,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-59",
+      "word": "l'effet",
+      "start": 18.111,
+      "end": 18.355,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-60",
+      "word": "concret",
+      "start": 18.41,
+      "end": 18.775,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-61",
+      "word": "au",
+      "start": 18.809,
+      "end": 18.869,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-62",
+      "word": "quotidien.",
+      "start": 18.897,
+      "end": 19.471,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-63",
+      "word": "Quand",
+      "start": 19.782,
+      "end": 19.97,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-64",
+      "word": "on",
+      "start": 20.036,
+      "end": 20.096,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-65",
+      "word": "compare",
+      "start": 20.147,
+      "end": 20.533,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-66",
+      "word": "l'ancien",
+      "start": 20.555,
+      "end": 20.876,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-67",
+      "word": "fonctionnement",
+      "start": 20.931,
+      "end": 21.473,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-68",
+      "word": "avec",
+      "start": 21.495,
+      "end": 21.683,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-69",
+      "word": "la",
+      "start": 21.739,
+      "end": 21.799,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-70",
+      "word": "nouvelle",
+      "start": 21.838,
+      "end": 22.104,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-71",
+      "word": "situation,",
+      "start": 22.126,
+      "end": 22.822,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-72",
+      "word": "la",
+      "start": 23.242,
+      "end": 23.342,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-73",
+      "word": "différence",
+      "start": 23.386,
+      "end": 23.85,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-74",
+      "word": "saute",
+      "start": 23.872,
+      "end": 24.094,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-75",
+      "word": "aux",
+      "start": 24.127,
+      "end": 24.193,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-76",
+      "word": "yeux.",
+      "start": 24.26,
+      "end": 24.525,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-77",
+      "word": "Pour",
+      "start": 24.89,
+      "end": 25.067,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-78",
+      "word": "t'adapter",
+      "start": 25.133,
+      "end": 25.598,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-79",
+      "word": "dès",
+      "start": 25.664,
+      "end": 25.797,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-80",
+      "word": "cette",
+      "start": 25.83,
+      "end": 26.007,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-81",
+      "word": "semaine,",
+      "start": 26.029,
+      "end": 26.549,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-82",
+      "word": "garde",
+      "start": 26.748,
+      "end": 26.98,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-83",
+      "word": "ces",
+      "start": 27.002,
+      "end": 27.112,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-84",
+      "word": "trois",
+      "start": 27.146,
+      "end": 27.345,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-85",
+      "word": "repères",
+      "start": 27.378,
+      "end": 27.688,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-86",
+      "word": "simples",
+      "start": 27.721,
+      "end": 28.086,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-87",
+      "word": "sous",
+      "start": 28.13,
+      "end": 28.295,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-88",
+      "word": "les",
+      "start": 28.318,
+      "end": 28.417,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-89",
+      "word": "yeux.",
+      "start": 28.472,
+      "end": 28.738,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-90",
+      "word": "D'après",
+      "start": 29.158,
+      "end": 29.446,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-91",
+      "word": "Notes",
+      "start": 29.468,
+      "end": 29.633,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-92",
+      "word": "sectorielles",
+      "start": 29.7,
+      "end": 30.33,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-93",
+      "word": "France",
+      "start": 30.905,
+      "end": 31.47,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-94",
+      "word": "*",
+      "start": 31.525,
+      "end": 31.69,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-95",
+      "word": "Solutions",
+      "start": 31.834,
+      "end": 32.32,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-96",
+      "word": "Numériques,",
+      "start": 32.343,
+      "end": 32.94,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-97",
+      "word": "ceux",
+      "start": 33.139,
+      "end": 33.305,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-98",
+      "word": "qui",
+      "start": 33.338,
+      "end": 33.426,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-99",
+      "word": "anticipent",
+      "start": 33.47,
+      "end": 34.123,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-100",
+      "word": "ce",
+      "start": 34.145,
+      "end": 34.255,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-101",
+      "word": "changement",
+      "start": 34.3,
+      "end": 34.742,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-102",
+      "word": "évitent",
+      "start": 34.809,
+      "end": 35.129,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-103",
+      "word": "l'essentiel",
+      "start": 35.24,
+      "end": 35.67,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-104",
+      "word": "du",
+      "start": 35.715,
+      "end": 35.804,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-105",
+      "word": "choc.",
+      "start": 35.836,
+      "end": 36.246,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-106",
+      "word": "Tu",
+      "start": 36.555,
+      "end": 36.699,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-107",
+      "word": "étais",
+      "start": 36.754,
+      "end": 36.898,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-108",
+      "word": "déjà",
+      "start": 36.92,
+      "end": 37.086,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-109",
+      "word": "au",
+      "start": 37.109,
+      "end": 37.169,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-110",
+      "word": "courant ?",
+      "start": 37.196,
+      "end": 37.599,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-111",
+      "word": "Dis-le",
+      "start": 38.081,
+      "end": 38.369,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-112",
+      "word": "en",
+      "start": 38.413,
+      "end": 38.473,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-113",
+      "word": "commentaire",
+      "start": 38.512,
+      "end": 39.043,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-114",
+      "word": "et",
+      "start": 39.098,
+      "end": 39.265,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-115",
+      "word": "abonne-toi",
+      "start": 39.32,
+      "end": 39.85,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-116",
+      "word": "pour",
+      "start": 39.894,
+      "end": 40.005,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-117",
+      "word": "le",
+      "start": 40.028,
+      "end": 40.088,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-118",
+      "word": "prochain",
+      "start": 40.115,
+      "end": 40.403,
+      "confidence": 0.99
+    },
+    {
+      "id": "w-119",
+      "word": "décryptage.",
+      "start": 40.436,
+      "end": 41.067,
+      "confidence": 0.99
+    }
+  ],
+  "motionTrack": [
+    {
+      "id": "mot-beat-1",
+      "componentId": "comp-beat-1",
+      "name": "90 % des entreprises",
+      "start": 0,
+      "end": 5.07,
+      "type": "counter",
+      "color": "#258EFF"
+    },
+    {
+      "id": "mot-beat-2",
+      "componentId": "comp-beat-2",
+      "name": "Ce qui change",
+      "start": 5.07,
+      "end": 10.96,
+      "type": "counter",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-3",
+      "componentId": "comp-beat-3",
+      "name": "Comment ça joue",
+      "start": 10.96,
+      "end": 15.15,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-4",
+      "componentId": "comp-beat-4",
+      "name": "Le point critique",
+      "start": 15.15,
+      "end": 18.88,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-5",
+      "componentId": "comp-beat-5",
+      "name": "Avant vs Maintenant",
+      "start": 18.88,
+      "end": 24.11,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-6",
+      "componentId": "comp-beat-6",
+      "name": "3 réflexes clés",
+      "start": 24.11,
+      "end": 28.11,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-7",
+      "componentId": "comp-beat-7",
+      "name": "Ce qu’il faut retenir",
+      "start": 28.11,
+      "end": 34.78,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-8",
+      "componentId": "comp-beat-8",
+      "name": "Évite les faux gains IA",
+      "start": 34.78,
+      "end": 41.85,
+      "type": "rocket",
+      "color": "#059669"
+    }
+  ],
+  "layoutTrack": [
+    {
+      "id": "layout-beat-1",
+      "layout": "split",
+      "start": 0,
+      "end": 5.07
+    },
+    {
+      "id": "layout-beat-2",
+      "layout": "split",
+      "start": 5.07,
+      "end": 10.96
+    },
+    {
+      "id": "layout-beat-3",
+      "layout": "split",
+      "start": 10.96,
+      "end": 15.15
+    },
+    {
+      "id": "layout-beat-4",
+      "layout": "fullscreen",
+      "start": 15.15,
+      "end": 18.88
+    },
+    {
+      "id": "layout-beat-5",
+      "layout": "split",
+      "start": 18.88,
+      "end": 24.11
+    },
+    {
+      "id": "layout-beat-6",
+      "layout": "split",
+      "start": 24.11,
+      "end": 28.11
+    },
+    {
+      "id": "layout-beat-7",
+      "layout": "fullscreen",
+      "start": 28.11,
+      "end": 34.78
+    },
+    {
+      "id": "layout-beat-8",
+      "layout": "split",
+      "start": 34.78,
+      "end": 41.85
+    }
+  ],
+  "sfxTrack": [
+    {
+      "id": "sfx-hook-shatter",
+      "sound": "impact-boom",
+      "start": 2.43,
+      "volume": 0.46
+    },
+    {
+      "id": "sfx-hook-boom",
+      "sound": "pop",
+      "start": 2.43,
+      "volume": 0.38
+    },
+    {
+      "id": "sfx-2",
+      "sound": "thud",
+      "start": 5.19,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-3",
+      "sound": "tap",
+      "start": 11.08,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-4",
+      "sound": "zhhh",
+      "start": 15.27,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-5",
+      "sound": "pop",
+      "start": 19,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-6",
+      "sound": "tap",
+      "start": 24.23,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-7",
+      "sound": "riser",
+      "start": 28.23,
+      "volume": 0.26
+    },
+    {
+      "id": "sfx-8",
+      "sound": "pop-back",
+      "start": 35.48,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8-bell",
+      "sound": "bell",
+      "start": 35.6,
+      "volume": 0.3
+    }
+  ],
+  "musicTrack": {
+    "trackName": "upbeat",
+    "volume": 0.24,
+    "ducking": true
+  },
+  "feedbacks": [],
+  "motionComponents": {},
+  "contactSheet": [],
+  "editSpec": {
+    "lookId": "papier",
+    "speed": 1.05,
+    "hookText": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.",
+    "sources": "Notes sectorielles France · Solutions Numériques (Nov 2026)",
+    "youtubeTitle": "90 % des entreprises ratent leurs économies IA : le parado",
+    "caption": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.\n\nTu en penses quoi ? Dis-le en commentaire.",
+    "hashtags": [
+      "#business",
+      "#actualite",
+      "#france",
+      "#shorts"
+    ],
+    "beats": [
+      {
+        "id": "beat-1",
+        "visualType": "hook_stat",
+        "layoutHint": "split",
+        "sfxKind": "impact-boom",
+        "title": "90 % des entreprises",
+        "shortLabel": "Hook",
+        "screenLabel": "BUSINESS · DÈS 2026",
+        "spokenLine": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.",
+        "brollKey": "mobile_attention",
+        "brollCaption": "90 % des",
+        "iconKind": "euro",
+        "stampWord": "PARADOXE",
+        "statValue": "90 %",
+        "statLabel": "Projets IA sans gain financier net",
+        "dateBadge": "DÈS 2026",
+        "leftCard": {
+          "label": "Promesse IA",
+          "value": "+40 %",
+          "sub": "Vitesse perçue"
+        },
+        "rightCard": {
+          "label": "Bilan comptable",
+          "value": "0 €",
+          "sub": "Coût caché réel"
+        },
+        "subStats": [
+          {
+            "value": "90 %",
+            "label": "Signal clé"
+          },
+          {
+            "value": "9 sur 10",
+            "label": "Écart réel"
+          }
+        ],
+        "from": 0,
+        "to": 5.07,
+        "layout": "split"
+      },
+      {
+        "id": "beat-2",
+        "visualType": "counter_flip",
+        "layoutHint": "split",
+        "sfxKind": "thud",
+        "title": "Ce qui change",
+        "shortLabel": "Constat",
+        "screenLabel": "FAIT VÉRIFIÉ",
+        "spokenLine": "Pourquoi l'IA fait gagner du temps aux salariés mais ne réduit pas encore les coûts, et casse-tête sécurité.",
+        "brollKey": "teen_phone",
+        "brollCaption": "Constat vérifié",
+        "iconKind": "euro",
+        "dateBadge": "DÈS 2026",
+        "sourceLabel": "Notes sectorielles France · Solutions Numériques",
+        "statValue": "90 %",
+        "statLabel": "Projets IA sans gain financier net",
+        "leftCard": {
+          "label": "Promesse IA",
+          "value": "+40 %",
+          "sub": "Vitesse perçue"
+        },
+        "rightCard": {
+          "label": "Bilan comptable",
+          "value": "0 €",
+          "sub": "Coût caché réel"
+        },
+        "comparisonLeft": {
+          "label": "Déploiement sans refonte",
+          "value": "90 %",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Gains nets mesurés",
+          "value": "10 %",
+          "ratio": 0.22
+        },
+        "bullets": [
+          "Process inchangés",
+          "Sécurité des agents lourde",
+          "ROI long à prouver"
+        ],
+        "from": 5.07,
+        "to": 10.96,
+        "layout": "split"
+      },
+      {
+        "id": "beat-3",
+        "visualType": "timeline_steps",
+        "layoutHint": "split",
+        "sfxKind": "tap",
+        "title": "Comment ça joue",
+        "shortLabel": "Mécanisme",
+        "screenLabel": "EN 4 TEMPS",
+        "spokenLine": "Concrètement, tout s’enchaîne en quatre étapes précises qui modifient la suite.",
+        "brollKey": "focus_clockwork",
+        "brollCaption": "Mécanique réelle",
+        "iconKind": "euro",
+        "steps": [
+          "Outil ajouté",
+          "Double saisie",
+          "Coût API & audit",
+          "Zéro marge"
+        ],
+        "stampWord": "MESURÉ",
+        "statLabel": "Projets IA sans gain financier net",
+        "from": 10.96,
+        "to": 15.15,
+        "layout": "split"
+      },
+      {
+        "id": "beat-4",
+        "visualType": "gauge",
+        "layoutHint": "fullscreen",
+        "sfxKind": "zhhh",
+        "title": "Le point critique",
+        "shortLabel": "Pivot",
+        "screenLabel": "PLEIN ÉCRAN",
+        "spokenLine": "Le vrai point de bascule ne vient pas des annonces, mais de l’effet concret au quotidien.",
+        "brollKey": "studio",
+        "iconKind": "euro",
+        "gaugePct": 90,
+        "statValue": "90 %",
+        "statLabel": "Projets IA sans gain financier net",
+        "comparisonLeft": {
+          "label": "Déploiement sans refonte",
+          "value": "90 %",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Gains nets mesurés",
+          "value": "10 %",
+          "ratio": 0.22
+        },
+        "multiplierBadge": "9 sur 10",
+        "bullets": [
+          "Process inchangés",
+          "Sécurité des agents lourde",
+          "ROI long à prouver"
+        ],
+        "from": 15.15,
+        "to": 18.88,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-5",
+        "visualType": "myth_vs_fact",
+        "layoutHint": "split",
+        "sfxKind": "pop",
+        "title": "Avant vs Maintenant",
+        "shortLabel": "Écart chiffré",
+        "screenLabel": "COMPARAISON",
+        "spokenLine": "Quand on compare l’ancien fonctionnement avec la nouvelle situation, la différence saute aux yeux.",
+        "brollKey": "data_analytics",
+        "iconKind": "euro",
+        "comparisonLeft": {
+          "label": "Déploiement sans refonte",
+          "value": "90 %",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Gains nets mesurés",
+          "value": "10 %",
+          "ratio": 0.22
+        },
+        "multiplierBadge": "9 sur 10",
+        "statValue": "10 %",
+        "statLabel": "Projets IA sans gain financier net",
+        "dateBadge": "DÈS 2026",
+        "bullets": [
+          "Process inchangés",
+          "Sécurité des agents lourde",
+          "ROI long à prouver"
+        ],
+        "steps": [
+          "Outil ajouté",
+          "Double saisie",
+          "Coût API & audit",
+          "Zéro marge"
+        ],
+        "from": 18.88,
+        "to": 24.11,
+        "layout": "split"
+      },
+      {
+        "id": "beat-6",
+        "visualType": "toggles_switch",
+        "layoutHint": "split",
+        "sfxKind": "tap",
+        "title": "3 réflexes clés",
+        "shortLabel": "Actions",
+        "screenLabel": "PLAN CONCRET",
+        "spokenLine": "Pour t’adapter dès cette semaine, garde ces trois repères simples sous les yeux.",
+        "brollKey": "mobile_attention",
+        "brollCaption": "Plan immédiat",
+        "iconKind": "euro",
+        "toggles": [
+          {
+            "label": "Empiler des gadgets IA",
+            "before": "MODE",
+            "after": "STOPPÉ",
+            "activeAfter": false
+          },
+          {
+            "label": "Cibler un flux mesurable",
+            "before": "OFF",
+            "after": "PRIORITÉ",
+            "activeAfter": true
+          },
+          {
+            "label": "Contrôle sécurité & droits",
+            "before": "FLOU",
+            "after": "VERROUILLÉ",
+            "activeAfter": true
+          }
+        ],
+        "bullets": [
+          "Process inchangés",
+          "Sécurité des agents lourde",
+          "ROI long à prouver"
+        ],
+        "from": 24.11,
+        "to": 28.11,
+        "layout": "split"
+      },
+      {
+        "id": "beat-7",
+        "visualType": "comparison_bars",
+        "layoutHint": "fullscreen",
+        "sfxKind": "riser",
+        "title": "Ce qu’il faut retenir",
+        "shortLabel": "Preuve",
+        "screenLabel": "BILAN SOURCÉ",
+        "spokenLine": "D’après Notes sectorielles France · Solutions Numériques, ceux qui anticipent ce changement évitent l’essentiel du choc.",
+        "brollKey": "teen_phone",
+        "brollCaption": "Bilan sourcé",
+        "iconKind": "euro",
+        "sourceLabel": "Notes sectorielles France · Solutions Numériques",
+        "bullets": [
+          "Process inchangés",
+          "Sécurité des agents lourde",
+          "ROI long à prouver"
+        ],
+        "gaugePct": 90,
+        "comparisonLeft": {
+          "label": "Déploiement sans refonte",
+          "value": "90 %",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Gains nets mesurés",
+          "value": "10 %",
+          "ratio": 0.22
+        },
+        "multiplierBadge": "9 sur 10",
+        "statValue": "90 %",
+        "statLabel": "Projets IA sans gain financier net",
+        "from": 28.11,
+        "to": 34.78,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-8",
+        "visualType": "cta_card",
+        "layoutHint": "split",
+        "sfxKind": "pop-back",
+        "title": "Évite les faux gains IA",
+        "shortLabel": "CTA",
+        "screenLabel": "SUITE EN DIRECT",
+        "spokenLine": "Tu étais déjà au courant ? Dis-le en commentaire et abonne-toi pour le prochain décryptage.",
+        "brollKey": "studio",
+        "brollCaption": "Décryptage · @alex.decode",
+        "iconKind": "rocket",
+        "statValue": "@alex.decode",
+        "statLabel": "Business, IA & Stratégie FR",
+        "from": 34.78,
+        "to": 41.85,
+        "layout": "split"
+      }
+    ]
+  },
+  "styleProfile": {
+    "name": "Papier signature",
+    "fontFamily": "Bricolage Grotesque",
+    "accentColor": "#258EFF",
+    "textColor": "#14161B",
+    "cardBg": "#FCFBF8",
+    "captionsPosition": "bottom",
+    "visualBeatsTarget": 8
+  },
+  "hasMp4": true
+}

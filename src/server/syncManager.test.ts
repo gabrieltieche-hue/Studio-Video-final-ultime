@@ -87,78 +87,80 @@ test('receiveImportedFile and resolveExportFile sanitize paths and isolate allow
   );
 });
 
-test('sanitizeSyncHttpError strips raw Express HTML pages', () => {
-  const htmlErr =
-    '<!DOCTYPE html><html lang="en"><head><title>Error</title></head><body><pre>Cannot POST /api/sync/import-project</pre></body></html>';
-  const cleaned = sync.sanitizeSyncHttpError(404, htmlErr);
-  assert.equal(cleaned.includes('<!DOCTYPE'), false);
-  assert.ok(cleaned.includes('Cannot POST /api/sync/import-project'));
-});
-
-test('checkRailwaySyncCapability rejects HTML SPA fallbacks and 404s with actionable message', async () => {
-  const htmlFallbackFetch = (async () =>
-    new Response('<!doctype html><html><body>SPA</body></html>', {
-      status: 200,
-      headers: { 'content-type': 'text/html; charset=utf-8' },
-    })) as unknown as typeof fetch;
-
-  await assert.rejects(
-    () => sync.checkRailwaySyncCapability('https://old-deploy.up.railway.app', undefined, htmlFallbackFetch),
-    /version antérieure sans les routes \/api\/sync/
-  );
-
-  const validJsonFetch = (async () =>
-    new Response(JSON.stringify({ status: { railwayConnected: true } }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    })) as unknown as typeof fetch;
-
-  const okRes = await sync.checkRailwaySyncCapability('https://new-deploy.up.railway.app', undefined, validJsonFetch);
-  assert.equal(okRes.ok, true);
-});
-
-test('probeRailwaySyncState distinguishes outdated ig-fbpage-v2 from studio-sync-v3 and redacts deploy hook', async () => {
-  sync.saveSyncConfig({
-    railwayDeployHookUrl: 'https://backboard.railway.com/deploy/secret-hook-token-1234',
-  });
-  const pub = sync.getPublicSyncStatus();
-  assert.equal(pub.railwayDeployHookConfigured, true);
-  assert.ok(!JSON.stringify(pub).includes('secret-hook-token-1234'));
-
-  const outdatedFetch = (async (url: string) => {
-    if (String(url).endsWith('/api/health')) {
-      return new Response(JSON.stringify({ ok: true, version: 'ig-fbpage-v2' }), {
+test('probeRailwayStatus detects stale Railway deploy without /api/sync and pushProjectToRailway translates 404 HTML cleanly', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url.endsWith('/api/health')) {
+      return new Response(JSON.stringify({ ok: true, version: 'ig-fbpage-v2', uptimeSec: 9000 }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       });
     }
-    return new Response('<!doctype html><html><body>SPA</body></html>', {
-      status: 200,
-      headers: { 'content-type': 'text/html' },
-    });
-  }) as unknown as typeof fetch;
-
-  const outdated = await sync.probeRailwaySyncState('https://old.up.railway.app', undefined, outdatedFetch);
-  assert.equal(outdated.reachable, true);
-  assert.equal(outdated.syncReady, false);
-  assert.equal(outdated.version, 'ig-fbpage-v2');
-
-  const readyFetch = (async (url: string) => {
-    if (String(url).endsWith('/api/health')) {
-      return new Response(JSON.stringify({ ok: true, version: 'studio-sync-v3', syncEnabled: true }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
+    if (url.endsWith('/api/sync/status')) {
+      return new Response('<!DOCTYPE html><html><body>Cannot GET /api/sync/status</body></html>', {
+        status: 404,
+        headers: { 'content-type': 'text/html' },
       });
     }
-    return new Response(JSON.stringify({ status: { railwayConnected: true } }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
+    if (url.endsWith('/api/sync/import-project')) {
+      return new Response('<!DOCTYPE html><html><body>Cannot POST /api/sync/import-project</body></html>', {
+        status: 404,
+        headers: { 'content-type': 'text/html' },
+      });
+    }
+    return new Response('Not Found', { status: 404 });
+  }) as typeof fetch;
+
+  try {
+    const probe = await sync.probeRailwayStatus('https://stale-demo.up.railway.app');
+    assert.equal(probe.reachable, true);
+    assert.equal(probe.syncReady, false);
+    assert.equal(probe.remoteVersion, 'ig-fbpage-v2');
+    assert.ok(probe.error?.includes('ig-fbpage-v2'));
+    assert.ok(probe.hint?.includes('Redeploy'));
+
+    storage.saveProject({
+      id: 'proj-sync-stale-test',
+      slug: 'sync-stale-test',
+      title: 'Test Synchro',
+      mode: 'faceless_explainer',
+      platform: 'youtube_shorts',
+      status: 'ready',
+      duration: 12,
+      fps: 30,
+      resolution: { width: 1080, height: 1920 },
+      currentVersion: 'v1',
+      versions: [],
+      transcript: [],
+      motionTrack: [],
+      layoutTrack: [],
+      sfxTrack: [],
+      musicTrack: { trackName: 'upbeat', volume: 0.24, ducking: true },
+      feedbacks: [],
+      motionComponents: {},
+      contactSheet: [],
+      styleProfile: {
+        name: 'Papier',
+        fontFamily: 'Bricolage Grotesque',
+        accentColor: '#258EFF',
+        textColor: '#14161B',
+        cardBg: '#FFFFFF',
+        captionsPosition: 'center_divider',
+        visualBeatsTarget: 8,
+      },
     });
-  }) as unknown as typeof fetch;
 
-  const ready = await sync.probeRailwaySyncState('https://new.up.railway.app', undefined, readyFetch);
-  assert.equal(ready.reachable, true);
-  assert.equal(ready.syncReady, true);
-  assert.equal(ready.version, 'studio-sync-v3');
+    await assert.rejects(
+      () => sync.pushProjectToRailway('proj-sync-stale-test', 'https://stale-demo.up.railway.app'),
+      (err: Error) => {
+        assert.ok(err.message.includes('ig-fbpage-v2'));
+        assert.ok(err.message.includes('Redeploy'));
+        assert.ok(!err.message.includes('<!DOCTYPE'));
+        return true;
+      }
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
-
