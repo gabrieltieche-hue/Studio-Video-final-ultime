@@ -624,6 +624,20 @@ function extractTopicStat(hay: string): string {
   return '3× PLUS';
 }
 
+function formatSourceForSpeech(raw?: string): string {
+  const clean = sanitizeScriptText(raw || '').trim();
+  if (!clean) return 'les données officielles';
+  const normalized = clean
+    .replace(/\(([^)]*)\)/g, ' ')
+    .replace(/service-public\.gouv\.fr/gi, 'Service Public')
+    .replace(/\b([a-z0-9-]+)\.(gouv\.fr|fr|com|org|io)\b/gi, '$1')
+    .replace(/Notes sectorielles France\s*[·-]\s*/gi, '')
+    .replace(/[·|]/g, ' et ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalized || 'les données officielles';
+}
+
 interface DomainPreset {
   statValue: string;
   statLabel: string;
@@ -637,6 +651,7 @@ interface DomainPreset {
   steps: [string, string, string, string];
   bullets: [string, string, string];
   toggles: Array<{ label: string; before: string; after: string; activeAfter: boolean }>;
+  beatTitles: [string, string, string, string, string, string];
   ctaTitle: string;
   ctaTagline: string;
 }
@@ -662,6 +677,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
         { label: 'Calcul complet avant accord', before: 'OFF', after: 'OBLIGATOIRE', activeAfter: true },
         { label: 'Alerte avant frais bancaires', before: 'OFF', after: 'ACTIVÉE', activeAfter: true },
       ],
+      beatTitles: [
+        'Règle du 20 novembre',
+        'Mécanisme anti-agios',
+        'Coût réel des frais',
+        'Les 4 étapes bancaires',
+        '3 réflexes compte sain',
+        'Ce que fixe la loi',
+      ],
       ctaTitle: 'Garde ton pouvoir d’achat',
       ctaTagline: 'Argent, Banques & Décryptages',
     };
@@ -684,6 +707,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
         { label: 'CV générique sans preuve', before: 'CLASSIQUE', after: 'FILTRÉ', activeAfter: false },
         { label: 'Maîtrise flux & contrôle IA', before: 'OPTION', after: 'EXIGÉ', activeAfter: true },
         { label: 'Projets chiffrés vérifiables', before: 'RARE', after: 'PRIORITÉ', activeAfter: true },
+      ],
+      beatTitles: [
+        'La porte se ferme',
+        'Pourquoi l’IA filtre',
+        'Chute des offres juniors',
+        'Seniors vs Débutants',
+        '3 preuves qui recrutent',
+        'Verdict marché 2026',
       ],
       ctaTitle: 'Anticipe le marché 2026',
       ctaTagline: 'Emploi, IA & Carrière FR',
@@ -712,6 +743,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
         { label: 'Contrôle tiers vérifié', before: 'OFF', after: 'ACTIF', activeAfter: true },
         { label: 'Sanctions plateformes', before: 'FAIBLES', after: 'APPLIQUÉES', activeAfter: true },
       ],
+      beatTitles: [
+        'Le nouveau texte',
+        'Comment ça s’applique',
+        'Impact sur l’usage',
+        'Avant vs Nouveau cadre',
+        '3 leviers de contrôle',
+        'Ce que change la loi',
+      ],
       ctaTitle: 'Comprends les vraies règles',
       ctaTagline: 'Politique, Lois & Société',
     };
@@ -734,6 +773,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
         { label: 'Empiler des gadgets IA', before: 'MODE', after: 'STOPPÉ', activeAfter: false },
         { label: 'Cibler un flux mesurable', before: 'OFF', after: 'PRIORITÉ', activeAfter: true },
         { label: 'Contrôle sécurité & droits', before: 'FLOU', after: 'VERROUILLÉ', activeAfter: true },
+      ],
+      beatTitles: [
+        'Gain rapide, zéro marge',
+        'Le piège des agents',
+        'Part d’échec financier',
+        'Gadget vs Flux rentable',
+        '3 réglages pour le ROI',
+        'Ce qui rapporte vraiment',
       ],
       ctaTitle: 'Évite les faux gains IA',
       ctaTagline: 'Business, IA & Stratégie FR',
@@ -758,6 +805,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
         { label: 'Une idée claire en 5 min', before: 'OFF', after: 'PRIORITÉ', activeAfter: true },
         { label: 'Partages & sauvegardes', before: 'FAIBLES', after: 'BOOSTÉS', activeAfter: true },
       ],
+      beatTitles: [
+        'Pourquoi le feed sature',
+        'La règle des 5 minutes',
+        'Taux de rejet du lisse',
+        'Lisse IA vs Format brut',
+        '3 signaux qui retiennent',
+        'Le retour au concret',
+      ],
       ctaTitle: 'Teste la règle des 5 min',
       ctaTagline: 'Attention, Création & Vie FR',
     };
@@ -781,6 +836,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
         { label: 'Synthèse audio automatique', before: 'OFF', after: 'ON', activeAfter: true },
         { label: 'Décision en 3 lignes', before: 'OFF', after: 'ON', activeAfter: true },
       ],
+      beatTitles: [
+        'La visio inutile recule',
+        'Le nouveau flux async',
+        'Temps récupéré chaque semaine',
+        'Réunion 1 h vs Résumé',
+        '3 règles équipe claire',
+        'Ce qui reste essentiel',
+      ],
       ctaTitle: 'Arrête les réunions inutiles',
       ctaTagline: 'Productivité & IA concrète',
     };
@@ -802,6 +865,14 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
       { label: 'Automatisme sans contrôle', before: 'ACTIF', after: 'CORRIGÉ', activeAfter: false },
       { label: 'Indicateur chiffré clair', before: 'OFF', after: 'ACTIF', activeAfter: true },
       { label: 'Routine courte vérifiée', before: 'OFF', after: 'ACTIF', activeAfter: true },
+    ],
+    beatTitles: [
+      'Le constat chiffré',
+      'Ce qui bloque vraiment',
+      'L’écart réel mesuré',
+      'Avant vs Méthode nette',
+      '3 leviers vérifiables',
+      'Verdict sur le terrain',
     ],
     ctaTitle: 'Passe du bruit aux faits',
     ctaTagline: 'Décryptages France 2026',
@@ -842,12 +913,13 @@ export function buildFallbackBatchScript(input: {
     18
   );
   const sourceClean = sanitizeScriptText(input.sources || 'les données officielles 2026').slice(0, 48);
+  const sourceSpoken = formatSourceForSpeech(input.sources);
 
   const beatContents: Record<number, Omit<BatchBeatSpec, 'id' | 'visualType' | 'layoutHint'>> = {
     0: {
       title: shortTopic,
       shortLabel: 'Hook',
-      screenLabel: `${input.category.toUpperCase()} · ${dateBadge}`,
+      screenLabel: `${input.category.toUpperCase()} · ALERTE`,
       spokenLine: hookLine,
       brollKey: brollSeq[0],
       brollCaption: condenseVisualHeadline(shortTopic, 3, 28),
@@ -864,7 +936,7 @@ export function buildFallbackBatchScript(input: {
       ],
     },
     1: {
-      title: 'Ce qui change',
+      title: preset.beatTitles[0],
       shortLabel: 'Constat',
       screenLabel: 'FAIT VÉRIFIÉ',
       spokenLine: angleLine,
@@ -882,7 +954,7 @@ export function buildFallbackBatchScript(input: {
       bullets: preset.bullets,
     },
     2: {
-      title: 'Comment ça joue',
+      title: preset.beatTitles[1],
       shortLabel: 'Mécanisme',
       screenLabel: 'EN 4 TEMPS',
       spokenLine: `Concrètement, tout s’enchaîne en quatre étapes précises qui modifient la suite.`,
@@ -892,9 +964,13 @@ export function buildFallbackBatchScript(input: {
       steps: preset.steps,
       stampWord: 'MESURÉ',
       statLabel: preset.statLabel,
+      leftCard: preset.leftCard,
+      rightCard: preset.rightCard,
+      comparisonLeft: preset.compLeft,
+      comparisonRight: preset.compRight,
     },
     3: {
-      title: 'Le point critique',
+      title: preset.beatTitles[2],
       shortLabel: 'Pivot',
       screenLabel: 'PLEIN ÉCRAN',
       spokenLine: `Le vrai point de bascule ne vient pas des annonces, mais de l’effet concret au quotidien.`,
@@ -909,7 +985,7 @@ export function buildFallbackBatchScript(input: {
       bullets: preset.bullets,
     },
     4: {
-      title: 'Avant vs Maintenant',
+      title: preset.beatTitles[3],
       shortLabel: 'Écart chiffré',
       screenLabel: 'COMPARAISON',
       spokenLine: `Quand on compare l’ancien fonctionnement avec la nouvelle situation, la différence saute aux yeux.`,
@@ -925,7 +1001,7 @@ export function buildFallbackBatchScript(input: {
       steps: preset.steps,
     },
     5: {
-      title: '3 réflexes clés',
+      title: preset.beatTitles[4],
       shortLabel: 'Actions',
       screenLabel: 'PLAN CONCRET',
       spokenLine: `Pour t’adapter dès cette semaine, garde ces trois repères simples sous les yeux.`,
@@ -936,10 +1012,10 @@ export function buildFallbackBatchScript(input: {
       bullets: preset.bullets,
     },
     6: {
-      title: 'Ce qu’il faut retenir',
+      title: preset.beatTitles[5],
       shortLabel: 'Preuve',
       screenLabel: 'BILAN SOURCÉ',
-      spokenLine: `D’après ${sourceClean}, ceux qui anticipent ce changement évitent l’essentiel du choc.`,
+      spokenLine: `D’après ${sourceSpoken}, ceux qui anticipent ce changement évitent l’essentiel du choc.`,
       brollKey: brollSeq[1],
       brollCaption: 'Bilan sourcé',
       iconKind,

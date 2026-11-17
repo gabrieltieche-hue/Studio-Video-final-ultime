@@ -254,7 +254,7 @@ function renderDynamicBeatScene(
                 </span>
               </div>
               <div
-                className="text-[46px] font-extrabold text-white leading-tight mt-[4px] truncate"
+                className="text-[36px] font-extrabold text-white leading-[1.12] mt-[4px] line-clamp-2"
                 style={{ fontFamily: look.fontDisplay }}
               >
                 {beat.title}
@@ -916,7 +916,9 @@ function renderDynamicBeatScene(
         >
           <div className="flex items-center justify-between mb-[18px]">
             <span className="text-[32px] font-extrabold" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
-              {switched ? (beat.comparisonRight?.label || 'Nouvelle norme') : (beat.comparisonLeft?.label || 'Avant')}
+              {switched
+                ? (beat.comparisonRight?.label || beat.rightCard?.label || 'Nouvelle norme')
+                : (beat.comparisonLeft?.label || beat.leftCard?.label || 'Avant')}
             </span>
             <span
               className="text-[26px] font-bold px-[16px] py-[6px] rounded-[12px]"
@@ -933,7 +935,9 @@ function renderDynamicBeatScene(
             <div className="flex-1 rounded-[20px] px-[24px] py-[16px] border flex items-center justify-between" style={{ backgroundColor: look.paper, borderColor: look.line }}>
               <span className="text-[28px] font-medium" style={{ color: look.ink2 }}>Impact</span>
               <span className="text-[42px] font-extrabold tabular-nums" style={{ color: switched ? '#059669' : look.ink, fontFamily: look.fontDisplay }}>
-                {switched ? (beat.comparisonRight?.value || '2 min') : (beat.comparisonLeft?.value || '45 min')}
+                {switched
+                  ? (beat.comparisonRight?.value || beat.rightCard?.value || 'Encadré')
+                  : (beat.comparisonLeft?.value || beat.leftCard?.value || 'Subi')}
               </span>
             </div>
             <div
@@ -1449,8 +1453,16 @@ function renderDynamicBeatScene(
 
   // 5. COMPARISON BARS (Fullscreen 2-row high-density bars + multiplier + bottom telemetry cards)
   if (vType === 'comparison_bars') {
-    const left = beat.comparisonLeft || { label: 'Avant', value: '45 min', ratio: 0.85 };
-    const right = beat.comparisonRight || { label: 'Avec IA', value: '2 min', ratio: 0.22 };
+    const left = beat.comparisonLeft || {
+      label: beat.leftCard?.label || 'Avant',
+      value: beat.leftCard?.value || 'Subi',
+      ratio: 0.85,
+    };
+    const right = beat.comparisonRight || {
+      label: beat.rightCard?.label || 'Nouvelle donne',
+      value: beat.rightCard?.value || 'Corrigé',
+      ratio: 0.25,
+    };
     const b1 = spring(localT - 0.15, 13);
     const b2 = spring(localT - 0.45, 11);
     const bottomP = spring(localT - 0.85, 14);

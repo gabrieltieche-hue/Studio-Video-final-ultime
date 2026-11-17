@@ -11,6 +11,7 @@ import {
   sanitizeScriptText,
   selectChoreographyForTopic,
 } from './batchShortBuilder';
+import { getBrollSequenceForTopic } from './brollKeys';
 
 test('sanitizeScriptText removes em-dashes and normalizes whitespace', () => {
   assert.equal(
@@ -187,4 +188,24 @@ test('buildFallbackBatchScript generates 8 kinetic beats with split/fullscreen a
   assert.ok(shatterSfx);
   assert.equal(shatterSfx.sound, 'glass-shatter');
   assert.ok(shatterSfx.start >= 1.4 && shatterSfx.start <= 2.6);
+});
+
+test('getBrollSequenceForTopic avoids ado/paradoxe false match and buildFallbackBatchScript uses domain titles and natural spoken sources', () => {
+  const aiAgentsBrolls = getBrollSequenceForTopic(
+    'Business',
+    '90 % des entreprises ratent leurs économies IA : le paradoxe des agents autonomes'
+  );
+  assert.ok(!aiAgentsBrolls.includes('teen_phone'));
+  assert.ok(!aiAgentsBrolls.includes('mobile_attention'));
+  assert.equal(aiAgentsBrolls[0], 'startup_team');
+
+  const bankScript = buildFallbackBatchScript({
+    theme: 'Découverts bancaires et crédit conso : ce qui change dès le 20 novembre 2026',
+    category: 'Actualité',
+    sources: 'service-public.gouv.fr (Nov 2026)',
+  });
+  assert.ok(!bankScript.beats.some((b) => b.title === 'Ce qui change' || b.title === 'Le point critique'));
+  assert.equal(bankScript.beats[2].comparisonLeft?.value, '180 €/an');
+  assert.ok(!bankScript.beats[6].spokenLine.includes('('));
+  assert.ok(!bankScript.beats[6].spokenLine.includes('.gouv.fr'));
 });
