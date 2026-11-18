@@ -50,11 +50,20 @@ export function resolveMusicAssetPath(trackName?: string): string | null {
 export function resolveSfxAssetPath(soundName: string): string | null {
   const clean = String(soundName || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!clean) return null;
-  for (const ext of ['mp3', 'wav', 'm4a', 'ogg']) {
-    const p1 = path.join(SFX_DIR, `${clean}.${ext}`);
-    if (fs.existsSync(p1)) return p1;
-    const p2 = path.join(ROOT_DIR, 'public/audio/sfx', `${clean}.${ext}`);
-    if (fs.existsSync(p2)) return p2;
+  const candidates = [clean];
+  if (clean.includes('pop')) candidates.push('pop-back', 'pop');
+  else if (clean.includes('tap') || clean.includes('click')) candidates.push('tap', 'pop-back');
+  else if (clean.includes('thud') || clean.includes('boom') || clean.includes('hit')) candidates.push('thud', 'impact-boom');
+  else if (clean.includes('bell') || clean.includes('ding')) candidates.push('bell', 'pop-back');
+  else if (clean.includes('whoosh') || clean.includes('swipe')) candidates.push('zhhh');
+
+  for (const name of candidates) {
+    for (const ext of ['mp3', 'wav', 'm4a', 'ogg']) {
+      const p1 = path.join(SFX_DIR, `${name}.${ext}`);
+      if (fs.existsSync(p1)) return p1;
+      const p2 = path.join(ROOT_DIR, 'public/audio/sfx', `${name}.${ext}`);
+      if (fs.existsSync(p2)) return p2;
+    }
   }
   return null;
 }
@@ -420,7 +429,7 @@ export async function renderDynamicProjectToMp4(params: {
     if (hasVoice && params.voiceMp3Path) {
       audioInputs.push('-i', params.voiceMp3Path);
       filterParts.push(
-        `[${inputIdx}:a]atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,apad=whole_dur=${durationSec.toFixed(3)}[voice]`
+        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,acompressor=threshold=-18dB:ratio=2.4:attack=12:release=140,volume=1.18,apad=whole_dur=${durationSec.toFixed(3)}[voice]`
       );
       mixLabels.push('[voice]');
       inputIdx += 1;
@@ -429,10 +438,10 @@ export async function renderDynamicProjectToMp4(params: {
     const musicPath = resolveMusicAssetPath(params.project.musicTrack?.trackName);
     if (musicPath) {
       audioInputs.push('-stream_loop', '-1', '-i', musicPath);
-      const musicVol = hasVoice ? 0.24 : 0.36;
+      const musicVol = hasVoice ? 0.16 : 0.36;
       const fadeOutStart = Math.max(0.5, durationSec - 1.2).toFixed(2);
       filterParts.push(
-        `[${inputIdx}:a]atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[music]`
+        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[music]`
       );
       mixLabels.push('[music]');
       inputIdx += 1;
@@ -450,10 +459,11 @@ export async function renderDynamicProjectToMp4(params: {
       const sfxPath = resolveSfxAssetPath(s.sound);
       if (!sfxPath) continue;
       const delayMs = Math.max(0, Math.round((Number(s.start) || 0) * 1000));
+      const sfxVol = Math.min(0.85, Math.max(0.24, (Number(s.volume) || 0.36) * 1.35));
       audioInputs.push('-i', sfxPath);
       const label = `sfx${sIdx}`;
       filterParts.push(
-        `[${inputIdx}:a]volume=${(s.volume || 0.35).toFixed(2)},adelay=${delayMs}|${delayMs},apad=whole_dur=${durationSec.toFixed(3)}[${label}]`
+        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,volume=${sfxVol.toFixed(2)},adelay=${delayMs}|${delayMs},apad=whole_dur=${durationSec.toFixed(3)}[${label}]`
       );
       mixLabels.push(`[${label}]`);
       inputIdx += 1;

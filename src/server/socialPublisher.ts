@@ -23,6 +23,7 @@ import {
   issuePublicMediaToken,
   saveRawSocialAccount,
   saveSchedulerState,
+  saveScheduledQueue,
   upsertScheduledPost,
 } from './socialStorage';
 import {
@@ -31,6 +32,7 @@ import {
   publishViaTregHttp,
   readTregSession,
 } from './tregClient';
+import { readSyncConfig } from './syncManager';
 import {
   PLATFORM_META,
   buildTemplateSocialCopy,
@@ -112,10 +114,12 @@ export function getHostingDiagnostics(requestOrigin?: string): HostingDiagnostic
     environment === 'fly' ||
     (environment === 'custom_server' && !appUrl.startsWith('http://localhost'));
 
+  const syncCfg = readSyncConfig();
   return {
     environment,
     isAlwaysOn,
     appUrl,
+    ...(syncCfg.railwayUrl ? { syncedRailwayUrl: syncCfg.railwayUrl } : {}),
     storageDir: STORAGE_DIR,
     elevenLabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
     cronEndpoint: `${appUrl}/api/social/cron-tick`,
@@ -1308,7 +1312,87 @@ async function publishViaTregCli(
   );
 }
 
-export async function executeScheduledJob(jobId: string): Promise<ScheduledPostItem> {
+export function classifyPublishFailure(message: string): {
+  retryable: boolean;
+  reason: string;
+} {
+  const lower = (message || '').toLowerCase();
+  const nonRetryablePatterns = [
+    'session treg absente',
+    'non connecté',
+    'introuvable',
+    'page facebook',
+    'permission meta (#10)',
+    'does not have permission',
+    'exige une url https publique',
+    'bloque meta',
+    'id instagram pro manquant',
+    'identifiants oauth',
+    'cli treg non installée',
+  ];
+  for (const pat of nonRetryablePatterns) {
+    if (lower.includes(pat)) {
+      return { retryable: false, reason: 'config_or_auth' };
+    }
+  }
+  return { retryable: true, reason: 'transient' };
+}
+
+export function reconcilePendingJobsWithAccounts(
+  targetPlatforms?: SocialPlatform[]
+): number {
+  const queue = getScheduledQueue();
+  const accounts = getRawSocialAccounts();
+  const tregSession = readTregSession();
+  const tregLoggedIn = Boolean(tregSession?.token);
+  const filterSet = targetPlatforms ? new Set(targetPlatforms) : null;
+  let updatedCount = 0;
+
+  const nextQueue = queue.map((job) => {
+    if (job.status !== 'scheduled' || job.routeLocked) return job;
+    if (filterSet && !filterSet.has(job.platform)) return job;
+
+    const acc = accounts[job.platform];
+    let nextRoute: PublishRoute = job.route;
+
+    if (
+      acc.route === 'treg' &&
+      tregLoggedIn &&
+      (job.route === 'manual' || (job.route === 'oauth' && !acc.accessToken))
+    ) {
+      nextRoute = 'treg';
+    } else if (
+      acc.route === 'oauth' &&
+      acc.accessToken &&
+      job.route === 'manual'
+    ) {
+      nextRoute = 'oauth';
+    }
+
+    const nextMaxAttempts = Math.max(job.maxAttempts || 2, 3);
+    if (nextRoute !== job.route || nextMaxAttempts !== job.maxAttempts) {
+      updatedCount += 1;
+      return {
+        ...job,
+        route: nextRoute,
+        intendedRoute: nextRoute !== 'manual' ? nextRoute : job.intendedRoute,
+        maxAttempts: nextMaxAttempts,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return job;
+  });
+
+  if (updatedCount > 0) {
+    saveScheduledQueue(nextQueue);
+  }
+  return updatedCount;
+}
+
+export async function executeScheduledJob(
+  jobId: string,
+  options?: { isManualRetry?: boolean }
+): Promise<ScheduledPostItem> {
   const job = getScheduledPost(jobId);
   if (!job) {
     throw new Error(`Job "${jobId}" introuvable.`);
@@ -1327,8 +1411,11 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
   let current = upsertScheduledPost({
     ...job,
     status: 'preparing',
+    attempts: options?.isManualRetry ? 0 : job.attempts,
+    maxAttempts: Math.max(job.maxAttempts || 3, 3),
     lastAttemptAt: new Date().toISOString(),
     errorMessage: undefined,
+    notes: options?.isManualRetry ? undefined : job.notes,
   });
 
   const pack = prepareMediaPackForProject(project, {
@@ -1345,32 +1432,56 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
     },
   });
 
+  const accounts = getRawSocialAccounts();
+  const account = accounts[current.platform];
+  const tregSession = readTregSession();
+
+  let effectiveRoute: PublishRoute =
+    current.intendedRoute || current.route || account.route || 'manual';
+
+  if (!current.routeLocked) {
+    if (
+      account.route === 'treg' &&
+      tregSession?.token &&
+      (effectiveRoute === 'manual' ||
+        (effectiveRoute === 'oauth' && !account.accessToken))
+    ) {
+      effectiveRoute = 'treg';
+    } else if (
+      account.route === 'oauth' &&
+      account.accessToken &&
+      effectiveRoute === 'manual'
+    ) {
+      effectiveRoute = 'oauth';
+    }
+  }
+
   current = upsertScheduledPost({
     ...current,
+    route: effectiveRoute,
+    intendedRoute: effectiveRoute !== 'manual' ? effectiveRoute : current.intendedRoute,
     status: 'publishing',
     socialMp4Url: pack.socialMp4Url,
     coverUrl: pack.coverUrl,
     attempts: current.attempts + 1,
   });
 
-  const accounts = getRawSocialAccounts();
-  const account = accounts[current.platform];
-  const effectiveRoute: PublishRoute = current.route || account.route || 'manual';
-
-  const switchToManualKit = (reason: string): ScheduledPostItem => {
+  const switchToManualKit = (reason: string, isFailure = false): ScheduledPostItem => {
     const updated = upsertScheduledPost({
       ...current,
       status: 'awaiting_manual',
-      route: 'manual',
+      route: effectiveRoute,
+      intendedRoute:
+        current.intendedRoute || (effectiveRoute !== 'manual' ? effectiveRoute : undefined),
       notes: reason,
-      errorMessage: undefined,
+      errorMessage: isFailure ? reason : undefined,
     });
     appendPublishLog({
       jobId: updated.id,
       projectTitle: updated.projectTitle,
       platform: updated.platform,
-      route: 'manual',
-      level: 'warn',
+      route: effectiveRoute,
+      level: isFailure ? 'error' : 'warn',
       message: `${PLATFORM_META[updated.platform].name} basculé en Kit Manuel prêt à poster : ${reason}`,
     });
     return updated;
@@ -1378,14 +1489,15 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
 
   if (effectiveRoute === 'manual') {
     return switchToManualKit(
-      'Kit média (social.mp4, cover.jpg, légende) préparé automatiquement pour publication manuelle.'
+      'Kit média (social.mp4, cover.jpg, légende) préparé automatiquement pour publication manuelle.',
+      false
     );
   }
 
-  if (effectiveRoute === 'treg') {
+  const runTregAttempt = async (): Promise<ScheduledPostItem> => {
     try {
-      const tregSession = readTregSession();
-      const result = tregSession?.token
+      const latestTreg = readTregSession();
+      const result = latestTreg?.token
         ? await publishViaTregHttp(current, account, pack, getPublicAppBaseUrl())
         : await publishViaTregCli(current, pack);
 
@@ -1396,6 +1508,8 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
 
       const published = upsertScheduledPost({
         ...current,
+        route: 'treg',
+        intendedRoute: 'treg',
         status: 'published',
         publishedAt: new Date().toISOString(),
         publishedUrl: result.publishedUrl,
@@ -1415,11 +1529,38 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
       return published;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur Treg';
+      const { retryable } = classifyPublishFailure(msg);
+      const maxAttempts = Math.max(current.maxAttempts || 3, 3);
+
+      if (retryable && current.attempts < maxAttempts) {
+        const backoffMinutes = Math.min(10, current.attempts * 2);
+        const retryAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
+        const retrying = upsertScheduledPost({
+          ...current,
+          route: 'treg',
+          intendedRoute: 'treg',
+          status: 'scheduled',
+          scheduledAt: retryAt,
+          errorMessage: `Nouvelle tentative prévue (${current.attempts}/${maxAttempts}) : ${msg}`,
+        });
+        appendPublishLog({
+          jobId: retrying.id,
+          projectTitle: retrying.projectTitle,
+          platform: retrying.platform,
+          route: 'treg',
+          level: 'warn',
+          message: `Tentative Treg ${current.attempts}/${maxAttempts} échouée, reprogrammée dans ${backoffMinutes} min : ${msg}`,
+        });
+        return retrying;
+      }
+
       if (current.fallbackToManual || account.fallbackToManual) {
-        return switchToManualKit(`Fallback après indisponibilité Treg (${msg}).`);
+        return switchToManualKit(`Échec Treg (${msg}) — Kit Manuel prêt.`, true);
       }
       const failed = upsertScheduledPost({
         ...current,
+        route: 'treg',
+        intendedRoute: 'treg',
         status: 'failed',
         errorMessage: msg,
       });
@@ -1433,37 +1574,36 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
       });
       return failed;
     }
+  };
+
+  if (effectiveRoute === 'treg') {
+    return runTregAttempt();
   }
 
   // OAuth Direct Route
   try {
     if (!account.connected || !account.accessToken) {
-      const tregSession = readTregSession();
+      const latestTreg = readTregSession();
       const treg = inspectTregStatus();
       if (
-        (tregSession?.token && treg.connectedPlatforms.includes(current.platform)) ||
+        (latestTreg?.token && treg.connectedPlatforms.includes(current.platform)) ||
         (treg.installed && treg.connectedPlatforms.includes(current.platform))
       ) {
-        const tregResult = tregSession?.token
-          ? await publishViaTregHttp(current, account, pack, getPublicAppBaseUrl())
-          : await publishViaTregCli(current, pack);
-        const published = upsertScheduledPost({
+        effectiveRoute = 'treg';
+        current = upsertScheduledPost({
           ...current,
-          status: 'published',
           route: 'treg',
-          publishedAt: new Date().toISOString(),
-          publishedUrl: tregResult.publishedUrl,
-          externalPostId: tregResult.externalPostId,
+          intendedRoute: 'treg',
         });
-        recordPublishedMarkdown(published);
-        return published;
+        return runTregAttempt();
       }
       if (current.fallbackToManual || account.fallbackToManual) {
         const oauthConfigured = isPlatformOAuthConfigured(current.platform);
         return switchToManualKit(
           oauthConfigured
             ? 'Compte OAuth non encore connecté — kit prêt à publier généré.'
-            : 'Variables OAuth non configurées sur le serveur — kit prêt à publier généré.'
+            : 'Variables OAuth non configurées sur le serveur — kit prêt à publier généré.',
+          false
         );
       }
       throw new Error(
@@ -1503,13 +1643,16 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
     return published;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erreur publication OAuth';
-    if (current.attempts < current.maxAttempts) {
-      const retryAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+    const { retryable } = classifyPublishFailure(msg);
+    const maxAttempts = Math.max(current.maxAttempts || 3, 3);
+    if (retryable && current.attempts < maxAttempts) {
+      const backoffMinutes = Math.min(10, current.attempts * 2);
+      const retryAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
       const retrying = upsertScheduledPost({
         ...current,
         status: 'scheduled',
         scheduledAt: retryAt,
-        errorMessage: `Nouvelle tentative prévue (${current.attempts}/${current.maxAttempts}) : ${msg}`,
+        errorMessage: `Nouvelle tentative prévue (${current.attempts}/${maxAttempts}) : ${msg}`,
       });
       appendPublishLog({
         jobId: retrying.id,
@@ -1517,12 +1660,12 @@ export async function executeScheduledJob(jobId: string): Promise<ScheduledPostI
         platform: retrying.platform,
         route: 'oauth',
         level: 'warn',
-        message: `Tentative ${current.attempts} échouée, reprogrammée dans 2 min : ${msg}`,
+        message: `Tentative ${current.attempts}/${maxAttempts} échouée, reprogrammée dans ${backoffMinutes} min : ${msg}`,
       });
       return retrying;
     }
     if (current.fallbackToManual || account.fallbackToManual) {
-      return switchToManualKit(`Échec OAuth (${msg}) — basculé en Kit Manuel.`);
+      return switchToManualKit(`Échec OAuth (${msg}) — basculé en Kit Manuel.`, true);
     }
     const failed = upsertScheduledPost({
       ...current,

@@ -31,7 +31,18 @@ dotenv.config();
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT) || 3000;
+
+function readCliArg(flag: string): string | undefined {
+  const idx = process.argv.indexOf(flag);
+  if (idx !== -1 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1];
+  }
+  const prefixed = process.argv.find((arg) => arg.startsWith(`${flag}=`));
+  return prefixed ? prefixed.slice(flag.length + 1) : undefined;
+}
+
+const PORT = Number(readCliArg('--port') || process.env.PORT) || 3000;
+const HOST = readCliArg('--host') || '0.0.0.0';
 
 const DEFAULT_FREE_VOICE_ID = 'nPczCjzI2devNBz1zQrb'; // Brian — Deep, Resonant and Comforting (Free Plan premade API)
 
@@ -229,11 +240,18 @@ async function startServer() {
   });
 
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
+    const viteReady = createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
+    viteReady.catch((err) => {
+      console.error('Vite dev server initialization error:', err);
+    });
+    app.use((req, res, next) => {
+      viteReady
+        .then((vite) => vite.middlewares(req, res, next))
+        .catch(next);
+    });
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
@@ -246,7 +264,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, HOST, () => {
     console.log(`Studio Short server running on http://localhost:${PORT}`);
     if (readTregSession()?.token) {
       void syncTregConnections().catch(() => {
@@ -257,4 +275,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Fatal server startup error:', err);
+  process.exit(1);
+});

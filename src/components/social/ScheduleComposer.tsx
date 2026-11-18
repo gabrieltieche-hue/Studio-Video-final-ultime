@@ -409,7 +409,9 @@ export const ScheduleComposer: React.FC<ScheduleComposerProps> = ({
                   : 'OAuth (fallback manuel)'
                 : acc?.route === 'treg'
                   ? acc.connected
-                    ? 'Treg 1-Clic actif'
+                    ? acc.tregConnectionName
+                      ? `Treg · ${acc.tregConnectionName}`
+                      : 'Treg 1-Clic actif'
                     : 'Treg 1-Clic'
                   : 'Kit Manuel';
 

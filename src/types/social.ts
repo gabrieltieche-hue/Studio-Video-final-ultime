@@ -26,6 +26,7 @@ export interface SocialAccountConfig {
   hasCustomClientCredentials?: boolean;
   tregConnected?: boolean;
   tregConnectionId?: string;
+  tregConnectionName?: string;
   tregAuthorizationMethod?: string;
   tregSetupRequired?: boolean;
   tregSetupDetail?: string;
@@ -54,6 +55,7 @@ export interface SocialAccountSecretRecord {
   igPageId?: string;
   igUserId?: string;
   tregConnectionId?: string;
+  tregConnectionName?: string;
   tregResourceRef?: string;
   tregAuthorizationMethod?: string;
   tregSetupRequired?: boolean;
@@ -90,9 +92,23 @@ export interface HostingDiagnostics {
   environment: 'ai_studio_preview' | 'railway' | 'render' | 'fly' | 'custom_server';
   isAlwaysOn: boolean;
   appUrl: string;
+  syncedRailwayUrl?: string;
   storageDir: string;
   elevenLabsConfigured: boolean;
   cronEndpoint: string;
+}
+
+export interface SocialConnectionProbeResult {
+  platform: SocialPlatform;
+  ok: boolean;
+  route: PublishRoute;
+  connectionId?: string;
+  connectionName?: string;
+  accountName?: string;
+  accountHandle?: string;
+  detail: string;
+  warning?: string;
+  checkedAt: string;
 }
 
 export interface ChannelBrandingKit {
@@ -156,6 +172,8 @@ export interface ScheduledPostItem {
   version: string;
   platform: SocialPlatform;
   route: PublishRoute;
+  intendedRoute?: PublishRoute;
+  routeLocked?: boolean;
   fallbackToManual: boolean;
   status: ScheduledPostStatus;
   scheduledAt: string; // ISO UTC

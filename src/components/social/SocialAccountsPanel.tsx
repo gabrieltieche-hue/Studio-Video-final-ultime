@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Activity,
+  AlertTriangle,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Copy,
@@ -17,8 +20,10 @@ import {
   Youtube,
 } from 'lucide-react';
 import type {
+  HostingDiagnostics,
   PublishRoute,
   SocialAccountConfig,
+  SocialConnectionProbeResult,
   SocialPlatform,
   TregSessionPublic,
 } from '../../types/social';
@@ -27,6 +32,12 @@ interface SocialAccountsPanelProps {
   accounts: SocialAccountConfig[];
   callbacks: Record<SocialPlatform, string>;
   tregSession: TregSessionPublic;
+  hosting?: HostingDiagnostics | null;
+  testResults?: Partial<Record<SocialPlatform, SocialConnectionProbeResult>>;
+  testingPlatform?: SocialPlatform | null;
+  testingAll?: boolean;
+  onTestPlatform?: (platform: SocialPlatform) => Promise<void>;
+  onTestAll?: () => Promise<void>;
   onUpdateAccount: (
     platform: SocialPlatform,
     patch: {
@@ -40,6 +51,8 @@ interface SocialAccountsPanelProps {
       accessToken?: string;
       igUserId?: string;
       connected?: boolean;
+      tregConnectionId?: string;
+      tregConnectionName?: string;
     }
   ) => Promise<void>;
   onStartOAuth: (platform: SocialPlatform) => Promise<void>;
@@ -66,6 +79,12 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
   accounts,
   callbacks,
   tregSession,
+  hosting,
+  testResults,
+  testingPlatform,
+  testingAll,
+  onTestPlatform,
+  onTestAll,
   onUpdateAccount,
   onStartOAuth,
   onDisconnect,
@@ -378,15 +397,33 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void onRefreshStatus()}
-          aria-label="Actualiser l'état des connexions"
-          className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-xs font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap self-start sm:self-auto"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Actualiser
-        </button>
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {onTestAll && (
+            <button
+              type="button"
+              onClick={() => void onTestAll()}
+              disabled={Boolean(testingAll || testingPlatform)}
+              data-testid="test-all-connections-btn"
+              className="h-8 px-3 rounded-lg bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-60 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors"
+            >
+              {testingAll ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Activity className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              Tester tout
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void onRefreshStatus()}
+            aria-label="Actualiser l'état des connexions"
+            className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-xs font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Actualiser
+          </button>
+        </div>
       </div>
 
       {/* Treg 1-Link Express Banner */}
@@ -613,6 +650,14 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
           const isExpanded = expandedPlatform === acc.platform;
           const callbackUrl = callbacks[acc.platform] || '';
           const isTregReady = Boolean(acc.tregConnected);
+          const platformTregConns = tregSession.connections.filter(
+            (c) => c.platform === acc.platform
+          );
+          const selectedTregConn =
+            platformTregConns.find((c) => c.id === acc.tregConnectionId) ||
+            platformTregConns.find((c) => c.name && c.name === acc.tregConnectionName) ||
+            platformTregConns[0];
+          const probe = testResults?.[acc.platform];
 
           return (
             <article
@@ -707,14 +752,97 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                 />
               </label>
 
+              {/* Active Named Treg Connection / Selector */}
+              {acc.route === 'treg' && platformTregConns.length > 0 && (
+                <div className="space-y-1">
+                  {platformTregConns.length > 1 ? (
+                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                      <label
+                        htmlFor={`treg-conn-select-${acc.platform}`}
+                        className="font-semibold text-[#5C5F68] whitespace-nowrap"
+                      >
+                        Outil Treg
+                      </label>
+                      <select
+                        id={`treg-conn-select-${acc.platform}`}
+                        data-testid={`treg-connection-select-${acc.platform}`}
+                        value={selectedTregConn?.id || ''}
+                        onChange={(e) => {
+                          const chosen = platformTregConns.find(
+                            (c) => c.id === e.target.value
+                          );
+                          if (chosen) {
+                            void onUpdateAccount(acc.platform, {
+                              tregConnectionId: chosen.id,
+                              tregConnectionName: chosen.name,
+                            });
+                          }
+                        }}
+                        className="flex-1 min-w-0 h-7 px-2 rounded-lg border border-[#E3DED3] bg-[#F6F5F1] font-mono text-[11px] text-[#14161B] cursor-pointer"
+                      >
+                        {platformTregConns.map((c) => {
+                          const healthSuffix = c.setupRequired
+                            ? ' (config requise)'
+                            : c.health === 'error' || c.health === 'expired'
+                              ? ' (à reconnecter)'
+                              : '';
+                          return (
+                            <option key={c.id} value={c.id}>
+                              {c.name || `${c.provider} #${c.id}`} (#{c.id}){healthSuffix}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-[#5C5F68] flex items-center justify-between gap-2">
+                      <span>Outil Treg</span>
+                      <span className="font-mono text-[#14161B] truncate">
+                        {selectedTregConn?.name || acc.tregConnectionName || `#${selectedTregConn?.id}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {acc.lastError && (
                 <p className="text-[11px] text-[#DC2626] leading-snug">
                   {acc.lastError}
                 </p>
               )}
 
+              {probe && (
+                <div
+                  data-testid={`probe-result-${acc.platform}`}
+                  className={`rounded-lg border px-2.5 py-2 text-[11px] leading-snug space-y-1 ${
+                    probe.ok
+                      ? probe.warning
+                        ? 'border-[#D97706]/35 bg-[#D97706]/[0.06] text-[#14161B]'
+                        : 'border-[#059669]/30 bg-[#059669]/[0.06] text-[#059669]'
+                      : 'border-[#DC2626]/30 bg-[#DC2626]/[0.06] text-[#DC2626]'
+                  }`}
+                >
+                  <div className="flex items-start gap-1.5 font-semibold">
+                    {probe.ok ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                    )}
+                    <span className="min-w-0 break-words">{probe.detail}</span>
+                  </div>
+                  {probe.warning && (
+                    <p className="text-[10px] text-[#B45309] pl-5">{probe.warning}</p>
+                  )}
+                </div>
+              )}
+
               {acc.platform === 'instagram' && acc.route === 'treg' && (
                 (() => {
+                  const isExplicitIgLogin = Boolean(
+                    selectedTregConn &&
+                      selectedTregConn.authorizationMethod === 'instagram-login' &&
+                      !selectedTregConn.name?.startsWith('studio-instagram-page')
+                  );
                   const fbConns = tregSession.connections.filter(
                     (c) =>
                       c.platform === 'instagram' &&
@@ -722,6 +850,9 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                         Boolean(c.name && c.name.startsWith('studio-instagram-page')))
                   );
                   const bestFbConn =
+                    (selectedTregConn && fbConns.some((c) => c.id === selectedTregConn.id)
+                      ? selectedTregConn
+                      : undefined) ||
                     fbConns.find((c) => Boolean(c.resourceRef) && !c.setupRequired) ||
                     fbConns[fbConns.length - 1];
                   const fbPageReady = Boolean(
@@ -731,75 +862,104 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                       !acc.tregSetupRequired
                   );
                   const fbPageNeedsSetup = Boolean(
-                    (bestFbConn || acc.tregAuthorizationMethod === 'facebook-page') &&
+                    !isExplicitIgLogin &&
+                      (bestFbConn || acc.tregAuthorizationMethod === 'facebook-page') &&
                       !fbPageReady
                   );
-
-                  if (fbPageReady) {
-                    return (
-                      <div className="rounded-lg border border-[#059669]/25 bg-[#059669]/[0.06] px-2.5 py-2 text-[11px] text-[#059669] font-medium">
-                        Connexion Page Facebook active (ID {bestFbConn?.resourceRef}) — publication Reels autorisée par Meta.
-                      </div>
-                    );
-                  }
-
-                  if (fbPageNeedsSetup) {
-                    return (
-                      <div
-                        data-testid="ig-fb-page-setup-alert"
-                        className="rounded-lg border border-[#D97706]/40 bg-[#D97706]/[0.08] p-2.5 space-y-2 text-[11px]"
-                      >
-                        <p className="text-[#14161B] leading-snug">
-                          <span className="font-bold text-[#B45309]">
-                            Action requise sur Facebook / Instagram :
-                          </span>{' '}
-                          Facebook a autorisé les permissions, mais{' '}
-                          <span className="font-semibold">0 Page Facebook</span> liée à un compte Instagram Pro n’a été retournée.
-                        </p>
-                        <ol className="list-decimal pl-4 space-y-0.5 text-[#5C5F68] leading-snug">
-                          <li>
-                            Dans l’app <span className="font-semibold text-[#14161B]">Instagram</span> →{' '}
-                            <em>Modifier le profil</em> → <em>Page</em>, créez ou liez une{' '}
-                            <span className="font-semibold text-[#14161B]">Page Facebook</span> gérée par votre profil Facebook.
-                          </li>
-                          <li>
-                            Cliquez ci-dessous, puis dans Facebook (<em className="text-[#14161B]">Modifier les paramètres précédents</em>) cochez bien votre Page + <span className="font-mono">{acc.accountHandle || 'votre compte Instagram'}</span>.
-                          </li>
-                        </ol>
-                        <button
-                          type="button"
-                          disabled={connectingProvider === 'instagram'}
-                          onClick={() =>
-                            void handleStartTregProvider('instagram', 'facebook-page')
-                          }
-                          data-testid="ig-treg-fb-page-btn"
-                          className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                        >
-                          <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
-                          Reconnecter Page Facebook (Reels)
-                        </button>
-                      </div>
-                    );
-                  }
+                  const exactSetupDetail =
+                    bestFbConn?.healthDetail ||
+                    (acc.tregSetupRequired ? acc.tregSetupDetail : undefined);
+                  const previewUrlWarning =
+                    hosting &&
+                    !hosting.isAlwaysOn &&
+                    hosting.appUrl.includes('ais-dev-');
 
                   return (
-                    <div className="rounded-lg border border-[#D97706]/30 bg-[#D97706]/[0.06] p-2.5 space-y-2 text-[11px]">
-                      <p className="text-[#14161B] leading-snug">
-                        <span className="font-bold">Requis pour publier les Reels :</span>{' '}
-                        Meta bloque souvent la publication via Instagram Login (Erreur #10). Liez votre compte Pro à une Page Facebook puis autorisez ci-dessous :
-                      </p>
-                      <button
-                        type="button"
-                        disabled={connectingProvider === 'instagram'}
-                        onClick={() =>
-                          void handleStartTregProvider('instagram', 'facebook-page')
-                        }
-                        data-testid="ig-treg-fb-page-btn"
-                        className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                      >
-                        <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
-                        Connecter via Page Facebook (Reels)
-                      </button>
+                    <div className="space-y-2">
+                      {isExplicitIgLogin ? (
+                        <div className="rounded-lg border border-[#D97706]/30 bg-[#D97706]/[0.06] p-2.5 space-y-2 text-[11px]">
+                          <p className="text-[#14161B] leading-snug">
+                            Connexion Instagram Login active (
+                            <span className="font-mono">{selectedTregConn?.name}</span>). Meta limite souvent la publication Reels API sans Page Facebook liée :
+                          </p>
+                          <button
+                            type="button"
+                            disabled={connectingProvider === 'instagram'}
+                            onClick={() =>
+                              void handleStartTregProvider('instagram', 'facebook-page')
+                            }
+                            data-testid="ig-treg-fb-page-btn"
+                            className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            Connecter via Page Facebook (Reels)
+                          </button>
+                        </div>
+                      ) : fbPageReady ? (
+                        <div className="rounded-lg border border-[#059669]/25 bg-[#059669]/[0.06] px-2.5 py-2 text-[11px] text-[#059669] font-medium">
+                          Connexion Page Facebook active (ID {bestFbConn?.resourceRef}) — publication Reels autorisée par Meta.
+                        </div>
+                      ) : fbPageNeedsSetup ? (
+                        <div
+                          data-testid="ig-fb-page-setup-alert"
+                          className="rounded-lg border border-[#D97706]/40 bg-[#D97706]/[0.08] p-2.5 space-y-2 text-[11px]"
+                        >
+                          <p className="text-[#14161B] leading-snug">
+                            <span className="font-bold text-[#B45309]">
+                              Action requise sur Facebook / Instagram :
+                            </span>{' '}
+                            {exactSetupDetail ||
+                              "Facebook a autorisé les permissions, mais 0 Page Facebook liée à un compte Instagram Pro n’a été retournée."}
+                          </p>
+                          <ol className="list-decimal pl-4 space-y-0.5 text-[#5C5F68] leading-snug">
+                            <li>
+                              Dans l’app <span className="font-semibold text-[#14161B]">Instagram</span> →{' '}
+                              <em>Modifier le profil</em> → <em>Page</em>, liez votre compte Pro à votre{' '}
+                              <span className="font-semibold text-[#14161B]">Page Facebook</span>.
+                            </li>
+                            <li>
+                              Cliquez ci-dessous, puis dans Facebook (<em className="text-[#14161B]">Modifier les paramètres précédents</em>) cochez votre Page et votre compte Instagram.
+                            </li>
+                          </ol>
+                          <button
+                            type="button"
+                            disabled={connectingProvider === 'instagram'}
+                            onClick={() =>
+                              void handleStartTregProvider('instagram', 'facebook-page')
+                            }
+                            data-testid="ig-treg-fb-page-btn"
+                            className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            Reconnecter Page Facebook (Reels)
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-[#D97706]/30 bg-[#D97706]/[0.06] p-2.5 space-y-2 text-[11px]">
+                          <p className="text-[#14161B] leading-snug">
+                            <span className="font-bold">Requis pour publier les Reels :</span>{' '}
+                            Meta bloque souvent la publication via Instagram Login (Erreur #10). Liez votre compte Pro à une Page Facebook puis autorisez ci-dessous :
+                          </p>
+                          <button
+                            type="button"
+                            disabled={connectingProvider === 'instagram'}
+                            onClick={() =>
+                              void handleStartTregProvider('instagram', 'facebook-page')
+                            }
+                            data-testid="ig-treg-fb-page-btn"
+                            className="w-full h-8 px-2.5 rounded-lg bg-[#D97706] hover:bg-[#14161B] text-white font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            Connecter via Page Facebook (Reels)
+                          </button>
+                        </div>
+                      )}
+
+                      {previewUrlWarning && (
+                        <p className="text-[10px] text-[#5C5F68] leading-snug">
+                          Aperçu AI Studio protégé : pour que Meta télécharge le MP4 Instagram Reels, exécutez la publication depuis votre serveur public Railway.
+                        </p>
+                      )}
                     </div>
                   );
                 })()
@@ -861,6 +1021,24 @@ export const SocialAccountsPanel: React.FC<SocialAccountsPanelProps> = ({
                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                     Kit MP4 + Cover prêt
                   </div>
+                )}
+
+                {onTestPlatform && (
+                  <button
+                    type="button"
+                    disabled={testingPlatform === acc.platform || Boolean(testingAll)}
+                    onClick={() => void onTestPlatform(acc.platform)}
+                    data-testid={`test-account-${acc.platform}`}
+                    aria-label={`Tester la connexion ${acc.label}`}
+                    className="h-9 px-2.5 rounded-xl border border-[#E3DED3] bg-white hover:border-[#258EFF] hover:text-[#258EFF] disabled:opacity-60 text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    {testingPlatform === acc.platform ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Activity className="w-3 h-3" aria-hidden="true" />
+                    )}
+                    Tester
+                  </button>
                 )}
 
                 <button

@@ -274,7 +274,7 @@ function renderDynamicBeatScene(
         </div>
 
         <div
-          className="w-full rounded-[32px] p-[32px] border flex items-center justify-between gap-[24px]"
+          className="w-full rounded-[32px] p-[32px] border flex items-center justify-between gap-[24px] mb-[20px]"
           style={{
             backgroundColor: look.sheet,
             borderColor: flipped ? '#DC2626' : look.line,
@@ -302,6 +302,38 @@ function renderDynamicBeatScene(
             <div className="text-[58px] font-extrabold leading-none tabular-nums" style={{ fontFamily: look.fontDisplay }}>
               {beat.statValue || dateBadge}
             </div>
+          </div>
+        </div>
+
+        {/* Kinetic Dual Signal Footer filling split zone down to caption seam */}
+        <div className="w-full grid grid-cols-2 gap-[18px]">
+          <div
+            className="rounded-[24px] px-[26px] py-[22px] border flex items-center justify-between gap-[14px]"
+            style={{ backgroundColor: look.sheet, borderColor: look.line }}
+          >
+            <div>
+              <div className="text-[20px] font-mono font-bold uppercase" style={{ color: look.ink3 }}>
+                {beat.leftCard?.label || 'Régime actuel'}
+              </div>
+              <div className="text-[32px] font-extrabold mt-[4px]" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                {beat.leftCard?.value || 'En fin de cycle'}
+              </div>
+            </div>
+            <span className="w-[14px] h-[54px] rounded-full shrink-0" style={{ backgroundColor: look.ink3 }} />
+          </div>
+          <div
+            className="rounded-[24px] px-[26px] py-[22px] flex items-center justify-between gap-[14px]"
+            style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+          >
+            <div>
+              <div className="text-[20px] font-mono font-bold uppercase text-[#60A5FA]">
+                {beat.rightCard?.label || 'Nouveau cadre'}
+              </div>
+              <div className="text-[32px] font-extrabold mt-[4px]" style={{ fontFamily: look.fontDisplay }}>
+                {beat.rightCard?.value || dateBadge}
+              </div>
+            </div>
+            <span className="w-[14px] h-[54px] rounded-full shrink-0" style={{ backgroundColor: flipped ? '#DC2626' : look.accent }} />
           </div>
         </div>
       </div>
@@ -399,7 +431,7 @@ function renderDynamicBeatScene(
         </div>
 
         <div
-          className="w-full mt-[20px] rounded-[22px] px-[28px] py-[18px] border flex items-center justify-between"
+          className="w-full mt-[20px] rounded-[22px] px-[28px] py-[20px] border flex items-center justify-between"
           style={{ backgroundColor: look.sheet, borderColor: clashed ? '#DC2626' : look.line }}
         >
           <span className="text-[28px] font-extrabold truncate" style={{ color: look.ink }}>
@@ -410,6 +442,28 @@ function renderDynamicBeatScene(
             style={{ backgroundColor: clashed ? '#DC2626' : look.accent, color: '#FFFFFF' }}
           >
             {beat.stampWord || 'PARADOXE'}
+          </span>
+        </div>
+
+        {/* Bottom Kinetic Tension Meter */}
+        <div
+          className="w-full mt-[16px] rounded-[22px] px-[26px] py-[18px] flex items-center justify-between gap-[16px]"
+          style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+        >
+          <span className="text-[22px] font-mono font-bold text-[#60A5FA] uppercase shrink-0">
+            FRACTURE EN DIRECT
+          </span>
+          <div className="flex-1 h-[10px] rounded-full bg-white/12 overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.round(35 + 60 * seg(localT, 0.15, clashAt + 0.6))}%`,
+                backgroundColor: clashed ? '#DC2626' : look.accent,
+              }}
+            />
+          </div>
+          <span className="text-[24px] font-mono font-extrabold text-white shrink-0">
+            {beat.statValue || '-28 %'}
           </span>
         </div>
       </div>
@@ -477,7 +531,7 @@ function renderDynamicBeatScene(
           {[kpi1, kpi2].map((kpi, idx) => (
             <div
               key={idx}
-              className="rounded-[24px] px-[24px] py-[18px] border flex items-center justify-between gap-[12px]"
+              className="rounded-[24px] px-[24px] py-[20px] border flex items-center justify-between gap-[12px]"
               style={{ backgroundColor: look.sheet, borderColor: look.line }}
             >
               <span className="text-[24px] font-bold truncate" style={{ color: look.ink2 }}>
@@ -488,6 +542,28 @@ function renderDynamicBeatScene(
               </span>
             </div>
           ))}
+        </div>
+
+        {/* Bottom Dark Signal Progress Anchor */}
+        <div
+          className="w-full mt-[16px] rounded-[22px] px-[26px] py-[18px] flex items-center justify-between gap-[16px]"
+          style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+        >
+          <span className="text-[22px] font-mono font-bold uppercase text-[#60A5FA] shrink-0">
+            INDICE MESURÉ
+          </span>
+          <div className="flex-1 h-[10px] rounded-full bg-white/15 overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.round(clamp(countP * 88 + 10, 18, 96))}%`,
+                backgroundColor: locked ? '#DC2626' : look.accent,
+              }}
+            />
+          </div>
+          <span className="text-[24px] font-mono font-extrabold text-[#34D399] shrink-0">
+            {locked ? 'CONFIRMÉ ✓' : 'ANALYSE'}
+          </span>
         </div>
       </div>
     );
@@ -543,7 +619,7 @@ function renderDynamicBeatScene(
         </div>
 
         <div
-          className="w-full rounded-[30px] px-[32px] py-[28px] flex items-center justify-between gap-[20px]"
+          className="w-full rounded-[30px] px-[32px] py-[28px] flex items-center justify-between gap-[20px] mb-[18px]"
           style={{
             backgroundColor: '#14161B',
             color: '#FFFFFF',
@@ -562,6 +638,28 @@ function renderDynamicBeatScene(
           <div className="text-[58px] font-extrabold font-mono text-[#34D399] tabular-nums shrink-0">
             {beat.statValue || 'FAIT'}
           </div>
+        </div>
+
+        {/* Bottom 2-pillar context strip so split frame stays packed */}
+        <div className="w-full grid grid-cols-2 gap-[16px]">
+          {[
+            { label: 'Ce qu’on répète', value: beat.leftCard?.value || 'Bruit', dark: false },
+            { label: 'Ce qui reste', value: beat.rightCard?.value || 'Preuve', dark: true },
+          ].map((c, idx) => (
+            <div
+              key={idx}
+              className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between"
+              style={{
+                backgroundColor: c.dark ? look.sheet : look.paper,
+                borderColor: c.dark ? look.accent : look.line,
+              }}
+            >
+              <span className="text-[22px] font-bold" style={{ color: look.ink2 }}>{c.label}</span>
+              <span className="text-[30px] font-extrabold font-mono" style={{ color: c.dark ? look.accent : '#DC2626' }}>
+                {c.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -961,6 +1059,28 @@ function renderDynamicBeatScene(
             </div>
           </div>
         </div>
+
+        {/* Bottom Kinetic Delta Footer */}
+        <div className="w-full mt-[16px] grid grid-cols-2 gap-[16px]">
+          <div
+            className="rounded-[20px] px-[24px] py-[16px] border flex items-center justify-between"
+            style={{ backgroundColor: look.sheet, borderColor: look.line }}
+          >
+            <span className="text-[22px] font-mono font-bold uppercase" style={{ color: look.ink3 }}>Avant</span>
+            <span className="text-[28px] font-extrabold truncate ml-[10px]" style={{ color: look.ink2 }}>
+              {beat.leftCard?.value || 'Subi'}
+            </span>
+          </div>
+          <div
+            className="rounded-[20px] px-[24px] py-[16px] flex items-center justify-between"
+            style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+          >
+            <span className="text-[22px] font-mono font-bold uppercase text-[#34D399]">Écart net</span>
+            <span className="text-[28px] font-extrabold font-mono text-[#60A5FA] truncate ml-[10px]">
+              {beat.multiplierBadge || beat.statValue || 'Mesuré'}
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1167,7 +1287,7 @@ function renderDynamicBeatScene(
 
         {/* Bottom Card: Fact */}
         <div
-          className="w-full rounded-[30px] px-[34px] py-[28px] border-2"
+          className="w-full rounded-[30px] px-[34px] py-[28px] border-2 mb-[16px]"
           style={{
             backgroundColor: '#14161B',
             borderColor: revealed ? '#10B981' : '#2A2E37',
@@ -1188,6 +1308,22 @@ function renderDynamicBeatScene(
               {rightC.value}
             </div>
           </div>
+        </div>
+
+        {/* Bottom Evidence & Source Strip */}
+        <div
+          className="w-full rounded-[22px] px-[26px] py-[18px] border flex items-center justify-between gap-[16px]"
+          style={{ backgroundColor: look.sheet, borderColor: look.line }}
+        >
+          <div className="flex items-center gap-[12px] min-w-0">
+            <span className="w-[12px] h-[12px] rounded-full shrink-0" style={{ backgroundColor: revealed ? '#10B981' : look.accent }} />
+            <span className="text-[24px] font-bold truncate" style={{ color: look.ink }}>
+              {beat.sourceLabel || beat.statLabel || 'Vérification terrain 2026'}
+            </span>
+          </div>
+          <span className="text-[22px] font-mono font-extrabold shrink-0" style={{ color: look.accent }}>
+            {revealed ? 'PREUVE ✓' : 'ANALYSE'}
+          </span>
         </div>
       </div>
     );
@@ -1288,12 +1424,12 @@ function renderDynamicBeatScene(
           transform: `translateY(${(36 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
         }}
       >
-        <div className="w-full text-center mb-[24px]">
-          <div className="text-[30px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+        <div className="w-full text-center mb-[20px]">
+          <div className="text-[28px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
             {beat.screenLabel}
           </div>
           <div
-            className="text-[82px] font-extrabold leading-[1.02] tracking-[-0.04em] mt-[6px]"
+            className="text-[68px] font-extrabold leading-[1.02] tracking-[-0.04em] mt-[6px] line-clamp-2"
             style={{ color: look.ink, fontFamily: look.fontDisplay }}
           >
             {beat.title}
@@ -1302,37 +1438,73 @@ function renderDynamicBeatScene(
 
         {/* Dual Module Row */}
         <div className="w-full grid grid-cols-2 gap-[22px] items-stretch">
-          {/* Left: Real Animated Signal Cards from Beat Data */}
+          {/* Left: Live Animated Radar / Telemetry Matrix (distinct from 3 pillars below) */}
           <div
             className="rounded-[30px] p-[26px] border flex flex-col"
             style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 24px 48px -18px rgba(20,22,27,0.16)' }}
           >
             <div className="flex items-center justify-between mb-[14px]">
-              <span className="text-[28px] font-bold" style={{ color: look.ink }}>Points clés</span>
-              <span className="text-[24px] font-mono font-bold" style={{ color: look.accent }}>{beat.dateBadge || '2026'}</span>
+              <span className="text-[28px] font-bold" style={{ color: look.ink }}>Signal terrain</span>
+              <span className="text-[22px] font-mono font-bold px-[12px] py-[4px] rounded-[10px]" style={{ backgroundColor: `${look.accent}18`, color: look.accent }}>
+                {beat.dateBadge || 'LIVE 2026'}
+              </span>
             </div>
-            <div className="relative h-[490px] rounded-[22px] overflow-hidden border p-[16px] flex flex-col justify-between" style={{ backgroundColor: '#14161B', borderColor: look.line }}>
-              {pillars.map((txt, idx) => {
-                const cardActive = localT >= idx * 0.45;
-                const cardP = spring(localT - idx * 0.45, 14);
+            <div className="relative h-[490px] rounded-[22px] overflow-hidden border p-[18px] flex flex-col justify-between" style={{ backgroundColor: '#14161B', borderColor: look.line }}>
+              {/* Animated Radar Sweep Line */}
+              <div
+                className="absolute inset-x-0 h-[3px] opacity-60 pointer-events-none"
+                style={{
+                  top: `${((localT * 145) % 470).toFixed(0)}px`,
+                  background: `linear-gradient(90deg, transparent, ${look.accent}, transparent)`,
+                }}
+              />
+              {[
+                {
+                  tag: 'AVANT',
+                  title: beat.comparisonLeft?.label || beat.leftCard?.label || 'Situation subie',
+                  val: beat.comparisonLeft?.value || beat.leftCard?.value || 'Élevé',
+                  tone: '#EF4444',
+                  pct: Math.round((beat.comparisonLeft?.ratio ?? 0.86) * 100),
+                },
+                {
+                  tag: 'APRÈS',
+                  title: beat.comparisonRight?.label || beat.rightCard?.label || 'Nouvelle donne',
+                  val: beat.comparisonRight?.value || beat.rightCard?.value || 'Encadré',
+                  tone: '#10B981',
+                  pct: Math.round((beat.comparisonRight?.ratio ?? 0.28) * 100),
+                },
+                {
+                  tag: 'RATIO',
+                  title: beat.statLabel || 'Indice mesuré',
+                  val: beat.multiplierBadge || beat.statValue || `${Math.round(gaugeTarget * 100)} %`,
+                  tone: '#60A5FA',
+                  pct: Math.round(gaugeVal * 100),
+                },
+              ].map((row, idx) => {
+                const rowAt = idx * 0.42;
+                const rowAct = localT >= rowAt;
+                const rp = spring(localT - rowAt, 15);
                 return (
                   <div
                     key={idx}
-                    className="rounded-[18px] px-[20px] py-[20px] border border-white/12 flex items-center gap-[14px]"
+                    className="relative rounded-[18px] px-[18px] py-[16px] border border-white/12 flex flex-col gap-[8px]"
                     style={{
                       backgroundColor: idx % 2 === 0 ? '#1E222B' : '#252B37',
-                      opacity: cardActive ? clamp(cardP * 2, 0.25, 1) : 0.25,
-                      transform: `translateY(${((1 - (cardActive ? cardP : 0)) * 12).toFixed(1)}px)`,
+                      opacity: rowAct ? clamp(rp * 2, 0.25, 1) : 0.25,
+                      transform: `translateX(${((1 - (rowAct ? rp : 0)) * 16).toFixed(1)}px)`,
                     }}
                   >
-                    <span
-                      className="w-[36px] h-[36px] rounded-[10px] flex items-center justify-center text-[20px] font-mono font-extrabold shrink-0"
-                      style={{ backgroundColor: look.accent, color: '#FFFFFF' }}
-                    >
-                      {idx + 1}
-                    </span>
-                    <div className="text-[25px] font-bold text-white leading-tight">
-                      {txt}
+                    <div className="flex items-center justify-between gap-[10px]">
+                      <span className="text-[18px] font-mono font-bold px-[10px] py-[2px] rounded-[8px]" style={{ backgroundColor: `${row.tone}24`, color: row.tone }}>
+                        {row.tag}
+                      </span>
+                      <span className="text-[28px] font-extrabold font-mono text-white tabular-nums">
+                        {row.val}
+                      </span>
+                    </div>
+                    <div className="text-[23px] font-bold text-white/90 truncate">{row.title}</div>
+                    <div className="h-[6px] rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(12, Math.round(row.pct * (rowAct ? rp : 0))))}%`, backgroundColor: row.tone }} />
                     </div>
                   </div>
                 );
@@ -1503,7 +1675,7 @@ function renderDynamicBeatScene(
         </div>
 
         <div
-          className="w-full rounded-[34px] p-[44px] border space-y-[44px]"
+          className="w-full rounded-[34px] p-[40px] border space-y-[38px]"
           style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 30px 60px -18px rgba(20,22,27,0.18)' }}
         >
           <div>
@@ -1515,7 +1687,7 @@ function renderDynamicBeatScene(
                 {left.value}
               </span>
             </div>
-            <div className="h-[72px] rounded-[20px] overflow-hidden" style={{ backgroundColor: look.paper }}>
+            <div className="h-[68px] rounded-[20px] overflow-hidden" style={{ backgroundColor: look.paper }}>
               <div
                 className="h-full rounded-[20px]"
                 style={{ width: `${clamp(left.ratio * b1 * 100, 8, 100).toFixed(1)}%`, backgroundColor: look.ink3 }}
@@ -1532,7 +1704,7 @@ function renderDynamicBeatScene(
                 {right.value}
               </span>
             </div>
-            <div className="h-[72px] rounded-[20px] overflow-hidden" style={{ backgroundColor: look.paper }}>
+            <div className="h-[68px] rounded-[20px] overflow-hidden" style={{ backgroundColor: look.paper }}>
               <div
                 className="h-full rounded-[20px]"
                 style={{ width: `${clamp(right.ratio * b2 * 100, 8, 100).toFixed(1)}%`, backgroundColor: look.accent }}
@@ -1541,9 +1713,40 @@ function renderDynamicBeatScene(
           </div>
         </div>
 
+        {/* 3-Card Insight Strip matching gauge density down to y=1265 */}
+        <div
+          className="w-full grid grid-cols-3 gap-[16px] mt-[22px]"
+          style={{
+            opacity: clamp(0.35 + bottomP * 0.65, 0, 1),
+            transform: `translateY(${(18 * (1 - bottomP)).toFixed(1)}px)`,
+          }}
+        >
+          {((beat.bullets && beat.bullets.length > 0 ? beat.bullets : beat.steps) || [
+            'Écart chiffré mesuré',
+            'Impact direct immédiat',
+            'Vérifié sur le terrain',
+          ])
+            .slice(0, 3)
+            .map((txt, i) => (
+              <div
+                key={i}
+                className="rounded-[22px] px-[20px] py-[20px] border"
+                style={{ backgroundColor: look.sheet, borderColor: look.line, boxShadow: '0 16px 32px -14px rgba(20,22,27,0.12)' }}
+              >
+                <div className="flex items-center justify-between mb-[8px]">
+                  <span className="text-[20px] font-mono font-bold" style={{ color: look.accent }}>0{i + 1}</span>
+                  <span className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: look.accent }} />
+                </div>
+                <div className="text-[26px] font-extrabold leading-tight line-clamp-2" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+                  {txt}
+                </div>
+              </div>
+            ))}
+        </div>
+
         {/* Lower KPI / Insight bar filling full-paper height cleanly */}
         <div
-          className="w-full mt-[22px] rounded-[26px] px-[32px] py-[24px] flex items-center justify-between"
+          className="w-full mt-[20px] rounded-[24px] px-[32px] py-[22px] flex items-center justify-between"
           style={{
             backgroundColor: look.ink,
             color: '#FFFFFF',
@@ -1553,10 +1756,10 @@ function renderDynamicBeatScene(
         >
           <div>
             <div className="text-[22px] font-mono uppercase text-[#9CA3AF]">Gain cumulé</div>
-            <div className="text-[34px] font-extrabold">{beat.statLabel || 'Temps récupéré chaque semaine'}</div>
+            <div className="text-[32px] font-extrabold">{beat.statLabel || 'Écart net confirmé'}</div>
           </div>
-          <div className="text-[54px] font-extrabold font-mono text-[#60A5FA] tabular-nums">
-            {beat.statValue || '+11 h'}
+          <div className="text-[52px] font-extrabold font-mono text-[#60A5FA] tabular-nums">
+            {beat.statValue || right.value}
           </div>
         </div>
       </div>
@@ -1592,7 +1795,7 @@ function renderDynamicBeatScene(
           </span>
         </div>
 
-        <div className="w-full space-y-[18px]">
+        <div className="w-full space-y-[16px]">
           {items.map((item, idx) => {
             const flipAt = Math.min(beatSpan - 0.6, 0.5 + idx * 0.72);
             const flipped = localT >= flipAt;
@@ -1602,7 +1805,7 @@ function renderDynamicBeatScene(
             return (
               <div
                 key={idx}
-                className="w-full rounded-[26px] border-2 px-[30px] py-[24px] flex items-center justify-between gap-[20px]"
+                className="w-full rounded-[26px] border-2 px-[30px] py-[22px] flex items-center justify-between gap-[20px]"
                 style={{
                   backgroundColor: look.sheet,
                   borderColor: flipped ? (item.activeAfter ? '#059669' : '#DC2626') : look.line,
@@ -1636,6 +1839,19 @@ function renderDynamicBeatScene(
               </div>
             );
           })}
+        </div>
+
+        {/* Bottom Dark Status Summary Strip */}
+        <div
+          className="w-full mt-[16px] rounded-[22px] px-[28px] py-[18px] flex items-center justify-between"
+          style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+        >
+          <span className="text-[24px] font-bold truncate">
+            {beat.statLabel || 'Plan d’action activé'}
+          </span>
+          <span className="text-[24px] font-mono font-extrabold text-[#34D399] shrink-0">
+            {Math.min(items.length, items.filter((_, i) => localT >= Math.min(beatSpan - 0.6, 0.5 + i * 0.72)).length)}/{items.length} ACTIFS
+          </span>
         </div>
       </div>
     );
@@ -1718,18 +1934,14 @@ function renderDynamicBeatScene(
           })}
         </div>
 
-        {(beat.sourceLabel || beat.statValue) && (
-          <div className="w-full mt-[16px] rounded-[20px] px-[26px] py-[16px] border flex items-center justify-between" style={{ backgroundColor: look.sheet, borderColor: look.line }}>
-            <span className="text-[24px] font-bold truncate" style={{ color: look.ink2 }}>
-              {beat.sourceLabel || beat.statLabel}
-            </span>
-            {beat.statValue && (
-              <span className="text-[34px] font-extrabold font-mono shrink-0" style={{ color: look.accent }}>
-                {beat.statValue}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="w-full mt-[18px] rounded-[22px] px-[28px] py-[18px] flex items-center justify-between" style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}>
+          <span className="text-[25px] font-bold truncate">
+            {beat.sourceLabel || beat.statLabel || beat.stampWord || 'Réflexes vérifiés'}
+          </span>
+          <span className="text-[26px] font-extrabold font-mono shrink-0 text-[#34D399] ml-[12px]">
+            {beat.statValue || `${Math.min(items.length, items.filter((_, i) => localT >= Math.min(beatSpan - 0.5, 0.35 + i * 0.65)).length)}/${items.length} OK`}
+          </span>
+        </div>
       </div>
     );
   }
@@ -1823,24 +2035,24 @@ function renderDynamicBeatScene(
 
   return (
     <div
-      className="w-full flex flex-col items-center justify-center pt-[70px]"
+      className="w-full flex flex-col items-center justify-center pt-[32px]"
       style={{
         opacity: clamp(enter * 2.8, 0, 1) * exit,
         transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
       }}
     >
-      <div className="text-[30px] font-mono font-bold uppercase tracking-wider mb-[18px]" style={{ color: look.accent }}>
+      <div className="text-[30px] font-mono font-bold uppercase tracking-wider mb-[16px]" style={{ color: look.accent }}>
         {beat.screenLabel || 'PROCHAIN ÉPISODE'}
       </div>
       <div
-        className="text-[68px] font-extrabold text-center leading-[1.04] mb-[40px]"
+        className="text-[64px] font-extrabold text-center leading-[1.04] mb-[32px]"
         style={{ color: look.ink, fontFamily: look.fontDisplay }}
       >
         {beat.title}
       </div>
 
       <div
-        className="relative w-full rounded-[34px] border-2 px-[42px] py-[40px] flex items-center justify-between gap-[24px]"
+        className="relative w-full rounded-[34px] border-2 px-[42px] py-[38px] flex items-center justify-between gap-[24px] mb-[22px]"
         style={{
           backgroundColor: '#14161B',
           borderColor: clicked ? '#059669' : '#2A2E37',
@@ -1893,6 +2105,24 @@ function renderDynamicBeatScene(
               }}
             />
           )}
+        </div>
+      </div>
+
+      {/* Bottom Interactive Prompt Pills */}
+      <div className="w-full grid grid-cols-2 gap-[16px]">
+        <div
+          className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between"
+          style={{ backgroundColor: look.sheet, borderColor: look.line }}
+        >
+          <span className="text-[24px] font-bold" style={{ color: look.ink }}>Donne ton avis</span>
+          <span className="text-[22px] font-mono font-extrabold" style={{ color: look.accent }}>COMMENTAIRE ↓</span>
+        </div>
+        <div
+          className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between"
+          style={{ backgroundColor: look.sheet, borderColor: look.line }}
+        >
+          <span className="text-[24px] font-bold" style={{ color: look.ink }}>Enregistre le post</span>
+          <span className="text-[22px] font-mono font-extrabold" style={{ color: '#059669' }}>SAUVEGARDER ★</span>
         </div>
       </div>
     </div>
@@ -1965,9 +2195,13 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
 
   const beatLocalT = Math.max(0, t - activeBeat.from);
   const beatSpan = Math.max(0.5, activeBeat.to - activeBeat.from);
-  const gridShiftY = (t * 20) % 44;
-  const gridShiftX = Math.sin(t * 0.28) * 14;
-  const drift = 1 + (t % 4) * 0.008;
+  const beatProgress = clamp(beatLocalT / beatSpan, 0, 1);
+  const gridShiftY = (t * 24) % 44;
+  const gridShiftX = Math.sin(t * 0.34) * 16;
+  // Smooth continuous Ken Burns push-in + gentle pan (zero 4s jump artifact)
+  const brollZoom = 1.04 + 0.055 * beatProgress;
+  const brollPanX = Math.sin(t * 0.52) * 16;
+  const cutFlash = 1 - seg(beatLocalT, 0, 0.32);
 
   // Unified caption Y coordinate matched to ShortCaptions.tsx
   let captionTopY = 1130;
@@ -1999,15 +2233,35 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
         {/* Paper Grain */}
         {look.grain && <div className="absolute inset-0 paper-grain opacity-85 pointer-events-none" />}
 
-        {/* Dot-matrix grid + 3 drifting ambient sky-blue glows (no top bar!) */}
+        {/* Dot-matrix grid + 3 drifting ambient sky-blue glows + orbital geometric shapes */}
         {seam > 200 && (
           <div className="absolute inset-x-0 top-0 overflow-hidden pointer-events-none" style={{ height: `${seam.toFixed(1)}px` }}>
             <div
-              className="absolute inset-0 opacity-28"
+              className="absolute inset-0 opacity-32"
               style={{
                 backgroundImage: `radial-gradient(${look.ink3} 1.5px, transparent 1.5px)`,
                 backgroundSize: '44px 44px',
                 backgroundPosition: `${gridShiftX.toFixed(1)}px ${gridShiftY.toFixed(1)}px`,
+              }}
+            />
+
+            {/* Floating Ambient Motion Dots & Ring */}
+            <div
+              className="absolute w-[180px] h-[180px] rounded-full border-2 opacity-20"
+              style={{
+                borderColor: look.accent,
+                left: `${(760 + Math.sin(t * 0.7) * 55).toFixed(1)}px`,
+                top: `${(240 + Math.cos(t * 0.55) * 70).toFixed(1)}px`,
+                transform: `rotate(${(t * 22).toFixed(1)}deg)`,
+              }}
+            />
+            <div
+              className="absolute w-[42px] h-[42px] rounded-[12px] opacity-20"
+              style={{
+                backgroundColor: look.accent,
+                left: `${(92 + Math.cos(t * 0.65) * 40).toFixed(1)}px`,
+                top: `${(820 + Math.sin(t * 0.8) * 60).toFixed(1)}px`,
+                transform: `rotate(${(t * 36).toFixed(1)}deg)`,
               }}
             />
 
@@ -2040,6 +2294,88 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                   'radial-gradient(circle, rgba(37,142,255,0.14) 0%, rgba(191,219,254,0.05) 52%, rgba(37,142,255,0) 76%)',
               }}
             />
+
+            {/* Beat Transition Kinetic Light Sweep */}
+            {cutFlash > 0.02 && (
+              <div
+                className="absolute inset-y-0 w-[260px]"
+                style={{
+                  left: `${(-260 + (1 - cutFlash) * 1400).toFixed(1)}px`,
+                  background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(37,142,255,0.18), rgba(255,255,255,0))',
+                  transform: 'skewX(-18deg)',
+                  opacity: cutFlash,
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Fullscreen Bottom Melvynx Cinema B-Roll + Live 20-Bar Audio Waveform Dock (eliminates all blank space below y=1445) */}
+        {seam >= 1650 && (
+          <div
+            className="absolute left-[56px] right-[168px] top-[1460px] h-[256px] rounded-[30px] border p-[18px] flex items-center gap-[22px] z-20 pointer-events-none"
+            style={{
+              backgroundColor: '#14161B',
+              borderColor: 'rgba(255,255,255,0.14)',
+              boxShadow: '0 26px 52px -14px rgba(20,22,27,0.32)',
+            }}
+          >
+            <div className="relative w-[290px] h-full rounded-[20px] overflow-hidden shrink-0 border border-white/15">
+              <img
+                src={brollAsset.src}
+                alt={activeBeat.brollCaption || brollAsset.defaultCaption}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+                style={{
+                  transform: `translateX(${(brollPanX * 0.4).toFixed(1)}px) scale(${brollZoom.toFixed(4)})`,
+                  transformOrigin: 'center center',
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
+              <div className="absolute top-[12px] left-[12px] px-[10px] py-[4px] rounded-[8px] text-[18px] font-mono font-extrabold bg-black/75 text-[#60A5FA]">
+                0{activeBeat.index} / 0{beats.length}
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0 h-full flex flex-col justify-between py-[6px]">
+              <div className="flex items-center justify-between gap-[12px]">
+                <span className="text-[22px] font-mono font-bold uppercase text-[#60A5FA] truncate">
+                  {activeBeat.shortLabel || activeBeat.screenLabel}
+                </span>
+                <span className="text-[22px] font-mono font-bold text-white/75 tabular-nums shrink-0">
+                  {t.toFixed(1)} s
+                </span>
+              </div>
+
+              <div className="text-[30px] font-extrabold text-white truncate" style={{ fontFamily: look.fontDisplay }}>
+                {activeBeat.brollCaption || brollAsset.defaultCaption}
+              </div>
+
+              {/* 20-bar animated live voice spectrum */}
+              <div className="flex items-end gap-[6px] h-[54px] w-full">
+                {Array.from({ length: 20 }).map((_, i) => {
+                  const barPct = 0.24 + 0.76 * Math.abs(Math.sin(t * 7.8 + i * 0.62));
+                  const barActive = i / 20 <= beatProgress;
+                  return (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-full"
+                      style={{
+                        height: `${Math.round(barPct * 100)}%`,
+                        backgroundColor: barActive ? look.accent : 'rgba(255,255,255,0.22)',
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              <div className="h-[6px] w-full rounded-full bg-white/12 overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.round(beatProgress * 100)}%`, backgroundColor: look.accent }}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -2060,37 +2396,50 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
               style={{
-                transform: `scale(${(1.03 * drift).toFixed(4)})`,
+                transform: `translateX(${brollPanX.toFixed(1)}px) scale(${brollZoom.toFixed(4)})`,
                 transformOrigin: 'center center',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/22 to-black/38" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/22 to-black/38" />
 
-            {/* Live HUD reticle + pulsing indicator on B-Roll */}
+            {/* Corner Reticles + Live HUD indicator on B-Roll */}
             {seam > 300 && (
-              <div className="absolute bottom-[64px] left-[56px] right-[180px] flex items-center justify-between text-white/95">
-                <div className="flex items-center gap-[14px]">
-                  <span
-                    className="w-[14px] h-[14px] rounded-full"
-                    style={{
-                      backgroundColor: look.accent,
-                      transform: `scale(${(0.85 + 0.3 * Math.abs(Math.sin(t * 4.5))).toFixed(2)})`,
-                    }}
-                  />
-                  <div className="text-[30px] font-bold tracking-[-0.01em] drop-shadow">
-                    {activeBeat.brollCaption || brollAsset.defaultCaption}
+              <>
+                <div className="absolute top-[42px] left-[48px] w-[26px] h-[26px] border-t-[3px] border-l-[3px] border-white/55 rounded-tl-[6px]" />
+                <div className="absolute top-[42px] right-[168px] w-[26px] h-[26px] border-t-[3px] border-r-[3px] border-white/55 rounded-tr-[6px]" />
+
+                <div className="absolute bottom-[68px] left-[56px] right-[176px] flex flex-col gap-[12px] text-white/95">
+                  <div className="flex items-center justify-between gap-[16px]">
+                    <div className="flex items-center gap-[14px] min-w-0">
+                      <span
+                        className="w-[14px] h-[14px] rounded-full shrink-0"
+                        style={{
+                          backgroundColor: look.accent,
+                          transform: `scale(${(0.85 + 0.3 * Math.abs(Math.sin(t * 4.5))).toFixed(2)})`,
+                        }}
+                      />
+                      <div className="text-[30px] font-bold tracking-[-0.01em] drop-shadow truncate">
+                        {activeBeat.brollCaption || brollAsset.defaultCaption}
+                      </div>
+                    </div>
+                    <span className="text-[24px] font-mono font-bold text-white/85 tabular-nums shrink-0">
+                      0{activeBeat.index}/0{beats.length} · {t.toFixed(1)} s
+                    </span>
+                  </div>
+                  <div className="h-[5px] w-full rounded-full bg-white/20 overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${Math.round(beatProgress * 100)}%`, backgroundColor: look.accent }}
+                    />
                   </div>
                 </div>
-                <span className="text-[26px] font-mono font-bold text-white/80 tabular-nums">
-                  {t.toFixed(1)} s
-                </span>
-              </div>
+              </>
             )}
           </div>
         )}
 
-        {/* Upper Kinetic Motion Stage (z-20, zero top progress bars, right-rail safe pr-[148px]) */}
-        <div className="relative z-20 w-full h-full pt-[192px] pl-[58px] pr-[148px] pointer-events-none">
+        {/* Upper Kinetic Motion Stage (z-20, symmetric px-[56px] above TikTok right rail) */}
+        <div className="relative z-20 w-full h-full pt-[186px] px-[56px] pointer-events-none">
           {renderDynamicBeatScene(activeBeat, beatLocalT, beatSpan, look)}
         </div>
 
@@ -2103,7 +2452,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
             <div
               className="inline-flex flex-wrap items-baseline justify-center gap-x-[15px] px-[38px] py-[18px] rounded-[24px] border max-w-[920px]"
               style={{
-                backgroundColor: overVideo ? 'rgba(20, 22, 27, 0.86)' : 'rgba(252, 251, 248, 0.96)',
+                backgroundColor: overVideo ? 'rgba(20, 22, 27, 0.88)' : 'rgba(252, 251, 248, 0.96)',
                 borderColor: overVideo ? 'rgba(255, 255, 255, 0.14)' : look.line,
                 boxShadow: '0 18px 42px -12px rgba(20, 22, 27, 0.24)',
               }}
@@ -2123,11 +2472,12 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                 return (
                   <span
                     key={`${w.text}-${idx}`}
-                    className="font-extrabold leading-[1.12] tracking-[-0.03em]"
+                    className="inline-block font-extrabold leading-[1.12] tracking-[-0.03em]"
                     style={{
                       fontFamily: look.fontDisplay,
                       fontSize: '66px',
                       color: isActive || w.emph ? highlightColor : baseColor,
+                      transform: isActive ? 'scale(1.07) translateY(-2px)' : 'scale(1)',
                     }}
                   >
                     {w.text}

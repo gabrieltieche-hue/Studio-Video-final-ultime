@@ -209,3 +209,40 @@ test('getBrollSequenceForTopic avoids ado/paradoxe false match and buildFallback
   assert.ok(!bankScript.beats[6].spokenLine.includes('('));
   assert.ok(!bankScript.beats[6].spokenLine.includes('.gouv.fr'));
 });
+
+test('alignmentToWords rescales subtitle timing to match actual MP3 duration and keeps beat boundaries locked', () => {
+  const sampleText = 'Un deux trois quatre cinq six sept huit neuf dix.';
+  const chars = sampleText.split('');
+  // Simulate raw ElevenLabs timestamps spanning 10s, while actual measured MP3 duration is 12.0s (>2.5% diff)
+  const starts = chars.map((_, i) => Number((i * 0.2).toFixed(3)));
+  const ends = chars.map((_, i) => Number((i * 0.2 + 0.16).toFixed(3)));
+  const res = alignmentToWords(
+    {
+      characters: chars,
+      character_start_times_seconds: starts,
+      character_end_times_seconds: ends,
+    },
+    sampleText,
+    1.0,
+    12.0
+  );
+  const lastEnd = res.words[res.words.length - 1].end;
+  assert.ok(lastEnd >= 11.7 && lastEnd <= 12.05, `Expected rescaled last word near 11.88s, got ${lastEnd}`);
+});
+
+test('every SFX asset scheduled by buildFallbackBatchScript exists on disk via resolveSfxAssetPath', async () => {
+  const { resolveSfxAssetPath } = await import('../server/batchRenderer');
+  const script = buildFallbackBatchScript({
+    theme: "L'IA ne licencie pas les seniors : elle ferme la porte aux juniors (-28 %)",
+    category: 'IA',
+  });
+  const timed = assignBeatTimingsAndTranscript(
+    script.beats,
+    alignmentToWords(null, script.beats.map((b) => b.spokenLine).join(' '), 1.05, 36).words,
+    36
+  );
+  for (const s of timed.sfxTrack) {
+    const resolved = resolveSfxAssetPath(s.sound);
+    assert.ok(resolved, `Missing SFX audio asset for "${s.sound}"`);
+  }
+});

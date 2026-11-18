@@ -33,6 +33,7 @@ import {
   handleOAuthCallback,
   inspectTregStatus,
   prepareMediaPackForProject,
+  reconcilePendingJobsWithAccounts,
   runSchedulerTick,
   startSocialScheduler,
 } from './socialPublisher';
@@ -43,6 +44,8 @@ import {
   loginTregWithToken,
   pollTregBrowserLogin,
   pollTregProviderOAuth,
+  probeAllSocialConnections,
+  probeSocialConnection,
   pushYouTubeDescriptionDirect,
   readTregSession,
   startTregBrowserLogin,
@@ -149,6 +152,8 @@ export async function createScheduledPostsForProject(params: {
       version,
       platform,
       route,
+      intendedRoute: route !== 'manual' ? route : undefined,
+      routeLocked: Boolean(params.routeOverride),
       fallbackToManual,
       status: 'scheduled',
       scheduledAt: scheduledIso,
@@ -166,7 +171,7 @@ export async function createScheduledPostsForProject(params: {
       socialMp4Url: pack.socialMp4Url,
       coverUrl: pack.coverUrl,
       attempts: 0,
-      maxAttempts: 2,
+      maxAttempts: 3,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -205,6 +210,7 @@ export function createSocialRouter(): express.Router {
 
   // Status, environment diagnostics, callback URLs, scheduler state
   router.get('/api/social/status', (req: Request, res: Response) => {
+    reconcilePendingJobsWithAccounts();
     const reqOrigin = resolveRequestOrigin(req);
     const appUrl = getPublicAppBaseUrl(reqOrigin);
     const tregSession = getTregSessionPublic();
@@ -328,11 +334,16 @@ export function createSocialRouter(): express.Router {
       accessToken?: string;
       igUserId?: string;
       connected?: boolean;
+      tregConnectionId?: string;
+      tregConnectionName?: string;
     };
 
     const patch: Record<string, unknown> = {};
     if (body.route && ['oauth', 'treg', 'manual'].includes(body.route)) {
       patch.route = body.route;
+      if (body.route === 'treg' || body.route === 'manual') {
+        patch.lastError = undefined;
+      }
     }
     if (typeof body.fallbackToManual === 'boolean') {
       patch.fallbackToManual = body.fallbackToManual;
@@ -351,6 +362,34 @@ export function createSocialRouter(): express.Router {
     }
     if (typeof body.igUserId === 'string') {
       patch.igUserId = body.igUserId.trim();
+    }
+    if (typeof body.tregConnectionId === 'string' && body.tregConnectionId.trim()) {
+      const selectedId = body.tregConnectionId.trim();
+      const sessionConns = readTregSession()?.connections || [];
+      const matched = sessionConns.find(
+        (c) => c.id === selectedId && c.platform === platform
+      );
+      patch.tregConnectionId = selectedId;
+      patch.tregConnectionName = matched?.name || body.tregConnectionName?.trim();
+      patch.route = 'treg';
+      patch.connected = true;
+      patch.lastError = undefined;
+      if (matched) {
+        patch.tregAuthorizationMethod = matched.authorizationMethod;
+        patch.tregSetupRequired = Boolean(matched.setupRequired);
+        patch.tregSetupDetail = matched.setupRequired ? matched.healthDetail : undefined;
+        if (matched.resourceRef) {
+          patch.tregResourceRef = matched.resourceRef;
+          if (platform === 'instagram' && /^\d+$/.test(matched.resourceRef)) {
+            patch.igUserId = matched.resourceRef;
+          }
+        }
+        if (matched.name) {
+          patch.accountName = matched.name;
+        }
+      }
+    } else if (typeof body.tregConnectionName === 'string' && body.tregConnectionName.trim()) {
+      patch.tregConnectionName = body.tregConnectionName.trim();
     }
     if (typeof body.clientId === 'string' && body.clientId.trim()) {
       patch.clientId = body.clientId.trim();
@@ -374,11 +413,64 @@ export function createSocialRouter(): express.Router {
     }
 
     const updated = saveRawSocialAccount(platform, patch);
+    reconcilePendingJobsWithAccounts([platform]);
     const treg = inspectTregStatus();
     res.json({
       success: true,
       account: toPublicAccountConfig(updated, new Set(treg.connectedPlatforms)),
     });
+  });
+
+  router.post(
+    '/api/social/accounts/:platform/test',
+    async (req: Request, res: Response) => {
+      const platform = req.params.platform;
+      if (!isValidPlatform(platform)) {
+        res.status(400).json({ error: 'Plateforme invalide.' });
+        return;
+      }
+      try {
+        const publicBase = getPublicAppBaseUrl(resolveRequestOrigin(req));
+        const result = await probeSocialConnection(platform, publicBase);
+        const treg = inspectTregStatus();
+        const raw = getRawSocialAccounts();
+        res.json({
+          success: result.ok,
+          result,
+          account: toPublicAccountConfig(raw[platform], new Set(treg.connectedPlatforms)),
+          tregSession: getTregSessionPublic(),
+        });
+      } catch (err) {
+        res.status(500).json({
+          error: err instanceof Error ? err.message : 'Erreur test connexion',
+        });
+      }
+    }
+  );
+
+  router.post('/api/social/test-connections', async (req: Request, res: Response) => {
+    try {
+      const publicBase = getPublicAppBaseUrl(resolveRequestOrigin(req));
+      const results = await probeAllSocialConnections(publicBase);
+      reconcilePendingJobsWithAccounts();
+      const treg = inspectTregStatus();
+      const tregSet = new Set(treg.connectedPlatforms);
+      const raw = getRawSocialAccounts();
+      const accounts = (['youtube', 'instagram', 'tiktok'] as SocialPlatform[]).map((p) =>
+        toPublicAccountConfig(raw[p], tregSet)
+      );
+      res.json({
+        success: results.every((r) => r.ok),
+        results,
+        accounts,
+        tregSession: getTregSessionPublic(),
+        queue: getScheduledQueue(),
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur test global connexions',
+      });
+    }
   });
 
   router.post(
@@ -401,6 +493,10 @@ export function createSocialRouter(): express.Router {
         igUserId: undefined,
         igPageId: undefined,
         tregConnectionId: undefined,
+        tregConnectionName: undefined,
+        tregAuthorizationMethod: undefined,
+        tregSetupRequired: undefined,
+        tregSetupDetail: undefined,
         tregResourceRef: undefined,
         lastError: undefined,
       });
@@ -670,6 +766,7 @@ Propose un branding unifié cohérent en français en JSON strict avec exactemen
   router.post('/api/social/treg/sync', async (_req: Request, res: Response) => {
     try {
       await syncTregConnections();
+      reconcilePendingJobsWithAccounts();
       res.json({ success: true, session: getTregSessionPublic() });
     } catch (err) {
       res.status(500).json({
@@ -709,6 +806,9 @@ Propose un branding unifié cohérent en français en JSON strict avec exactemen
     }
     try {
       const result = await pollTregProviderOAuth(state, platform);
+      if (result.status === 'done') {
+        reconcilePendingJobsWithAccounts([platform]);
+      }
       res.json(result);
     } catch (err) {
       res.status(500).json({
@@ -925,11 +1025,36 @@ Propose un branding unifié cohérent en français en JSON strict avec exactemen
     res.json({ success: true, job: saved, queue: getScheduledQueue() });
   });
 
+  router.post('/api/social/queue/retry-all', async (_req: Request, res: Response) => {
+    try {
+      reconcilePendingJobsWithAccounts();
+      const queue = getScheduledQueue();
+      const recoverable = queue.filter(
+        (j) => j.status === 'failed' || j.status === 'awaiting_manual'
+      );
+      const results: ScheduledPostItem[] = [];
+      for (const job of recoverable) {
+        results.push(await executeScheduledJob(job.id, { isManualRetry: true }));
+      }
+      res.json({
+        success: true,
+        retriedCount: results.length,
+        publishedCount: results.filter((r) => r.status === 'published').length,
+        queue: getScheduledQueue(),
+        logs: getPublishLogs(60),
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Échec relance groupée',
+      });
+    }
+  });
+
   router.post(
     '/api/social/queue/:id/publish-now',
     async (req: Request, res: Response) => {
       try {
-        const updated = await executeScheduledJob(req.params.id);
+        const updated = await executeScheduledJob(req.params.id, { isManualRetry: true });
         res.json({
           success: true,
           job: updated,

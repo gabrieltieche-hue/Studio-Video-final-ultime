@@ -208,6 +208,14 @@ export function condenseVisualHeadline(text: string, maxWords = 5, maxChars = 38
   const clean = sanitizeScriptText(text).replace(/[.:;!?]+$/g, '');
   if (!clean) return 'Décryptage';
   const words = clean.split(/\s+/).filter(Boolean).slice(0, maxWords);
+  while (
+    words.length > 2 &&
+    /^(et|ou|de|du|des|le|la|les|un|une|à|au|aux|en|pour|sur|par|dans|avec|sans)$/i.test(
+      words[words.length - 1]
+    )
+  ) {
+    words.pop();
+  }
   let joined = words.join(' ');
   if (joined.length > maxChars) {
     joined = joined.slice(0, maxChars).replace(/\s+\S*$/, '').trim();
@@ -370,10 +378,23 @@ export function alignmentToWords(
     flush();
 
     if (words.length > 0) {
-      const lastEnd = words[words.length - 1].end;
+      let lastEnd = words[words.length - 1].end;
+      // Lock subtitle timeline tightly to measured post-atempo audio duration if drift > 2.5%
+      if (fallbackDurationSec > 4 && lastEnd > 2) {
+        const expectedSpeechEnd = Math.max(2, fallbackDurationSec - 0.12);
+        const relDiff = Math.abs(lastEnd - expectedSpeechEnd) / lastEnd;
+        if (relDiff > 0.025 && relDiff < 0.45) {
+          const factor = expectedSpeechEnd / lastEnd;
+          for (const w of words) {
+            w.start = Number((w.start * factor).toFixed(3));
+            w.end = Number(Math.max(w.start + 0.06, w.end * factor).toFixed(3));
+          }
+          lastEnd = words[words.length - 1].end;
+        }
+      }
       return {
         words,
-        durationSec: Number((lastEnd + 0.85).toFixed(2)),
+        durationSec: Number(Math.max(fallbackDurationSec + 0.45, lastEnd + 0.85).toFixed(2)),
       };
     }
   }
@@ -424,6 +445,7 @@ export function assignBeatTimingsAndTranscript(
   const totalSpecWords = beatWordCounts.reduce((a, b) => a + b, 0);
 
   let wordCursor = 0;
+  let cumSpecWords = 0;
   let prevEnd = 0;
   const maxSingleBeatSpan = Math.max(5.5, safeDuration * 0.24);
 
@@ -431,6 +453,7 @@ export function assignBeatTimingsAndTranscript(
     const isFirst = idx === 0;
     const isLast = idx === beatsSpec.length - 1;
     const from = isFirst ? 0 : prevEnd;
+    cumSpecWords += beatWordCounts[idx];
 
     let to: number;
     if (isLast) {
@@ -440,7 +463,7 @@ export function assignBeatTimingsAndTranscript(
         words.length - 1,
         Math.max(
           wordCursor,
-          Math.round(((wordCursor + beatWordCounts[idx]) / totalSpecWords) * words.length) - 1
+          Math.round((cumSpecWords / totalSpecWords) * words.length) - 1
         )
       );
       const nextWordStart =

@@ -15,6 +15,7 @@ import type {
   PreparedMediaAssets,
   ScheduledPostItem,
   SocialAccountSecretRecord,
+  SocialConnectionProbeResult,
   SocialPlatform,
   TregConnectionSummary,
   TregSessionPublic,
@@ -426,24 +427,86 @@ function numericConnId(c: TregConnectionSummary): number {
 }
 
 export function selectPreferredInstagramConnection(
-  connections: TregConnectionSummary[]
+  connections: TregConnectionSummary[],
+  preferredConnId?: string
 ): TregConnectionSummary | undefined {
   const igConns = connections.filter((c) => c.platform === 'instagram');
   if (igConns.length === 0) return undefined;
 
   const sorted = [...igConns].sort((a, b) => numericConnId(b) - numericConnId(a));
+  const healthyFbPages = sorted.filter(
+    (c) =>
+      isFacebookPageConnection(c) &&
+      Boolean(c.resourceRef?.trim()) &&
+      !c.setupRequired
+  );
+  if (preferredConnId) {
+    const pinnedHealthyFb = healthyFbPages.find((c) => c.id === preferredConnId);
+    if (pinnedHealthyFb) return pinnedHealthyFb;
+  }
+  if (healthyFbPages.length > 0) {
+    return healthyFbPages[0];
+  }
+
+  if (preferredConnId) {
+    const pinnedExplicit = sorted.find((c) => c.id === preferredConnId);
+    if (pinnedExplicit) return pinnedExplicit;
+  }
+
   return (
-    sorted.find(
-      (c) =>
-        isFacebookPageConnection(c) &&
-        Boolean(c.resourceRef?.trim()) &&
-        !c.setupRequired
-    ) ||
     sorted.find((c) => isFacebookPageConnection(c) && Boolean(c.resourceRef?.trim())) ||
     sorted.find((c) => isFacebookPageConnection(c)) ||
+    sorted.find((c) => Boolean(c.resourceRef?.trim()) && !c.setupRequired) ||
     sorted.find((c) => Boolean(c.resourceRef?.trim())) ||
     sorted[0]
   );
+}
+
+export function selectPreferredConnection(
+  connections: TregConnectionSummary[],
+  platform: SocialPlatform,
+  preferredConnId?: string
+): TregConnectionSummary | undefined {
+  if (platform === 'instagram') {
+    return selectPreferredInstagramConnection(connections, preferredConnId);
+  }
+  const matching = connections.filter((c) => c.platform === platform);
+  if (matching.length === 0) return undefined;
+  const sorted = [...matching].sort((a, b) => numericConnId(b) - numericConnId(a));
+  const isHealthy = (c: TregConnectionSummary) =>
+    !c.setupRequired && c.health !== 'error' && c.health !== 'expired';
+
+  if (preferredConnId) {
+    const pinned = sorted.find((c) => c.id === preferredConnId);
+    if (pinned && isHealthy(pinned)) {
+      return pinned;
+    }
+  }
+
+  return (
+    sorted.find((c) => isHealthy(c) && Boolean(c.resourceRef?.trim())) ||
+    sorted.find((c) => isHealthy(c)) ||
+    sorted[0]
+  );
+}
+
+export function buildNamedTregCallPath(
+  connectionName: string | undefined,
+  upstreamPath: string,
+  fallbackCatalogPath: string
+): string {
+  const cleanName = (connectionName || '').trim();
+  const cleanUpstream = upstreamPath.replace(/^\/+/, '');
+  if (cleanName) {
+    return `/call/${encodeURIComponent(cleanName)}/${cleanUpstream}`;
+  }
+  return fallbackCatalogPath;
+}
+
+export function isTregAmbiguous409Error(status: number, bodyText: string): boolean {
+  if (status !== 409) return false;
+  const lower = (bodyText || '').toLowerCase();
+  return lower.includes('ambiguous') || lower.includes('multiple tools');
 }
 
 export function resolveInstagramPublishTarget(params: {
@@ -570,7 +633,8 @@ async function discoverFacebookPageInstagramAccount(
             };
           }>;
         }>(fbRes.text);
-        const withIg = (fbJson?.data || []).find((p) => p.instagram_business_account?.id);
+        const pages = fbJson?.data || [];
+        const withIg = pages.find((p) => p.instagram_business_account?.id);
         const ig = withIg?.instagram_business_account;
         if (ig?.id) {
           await tregFetch(`/connections/${encodeURIComponent(connId)}/resource`, {
@@ -589,12 +653,14 @@ async function discoverFacebookPageInstagramAccount(
           };
         }
         setupRequired = true;
-        if ((fbJson?.data || []).length === 0) {
+        const pageNames = pages
+          .map((p) => (p.name || p.id || '').trim())
+          .filter(Boolean);
+        if (pageNames.length === 0) {
           setupDetail =
             "Aucune Page Facebook n'a été retournée sur le profil Facebook autorisé. Liez votre compte Instagram Pro à une Page Facebook puis reconnectez en cochant bien la Page.";
         } else {
-          setupDetail =
-            "Votre Page Facebook n'est liée à aucun compte Instagram Professionnel. Liez @votre_compte dans Instagram → Modifier le profil → Page.";
+          setupDetail = `Facebook a bien trouvé votre Page « ${pageNames.join(', ')} », mais aucun compte Instagram Professionnel n’y est encore rattaché. Dans l’app Instagram → Modifier le profil → Page, liez votre compte à « ${pageNames[0]} » puis cliquez sur « Reconnecter Page Facebook (Reels) ».`;
         }
       }
     } catch {
@@ -688,21 +754,23 @@ export async function syncTregConnections(): Promise<TregConnectionSummary[]> {
 
   saveTregSession({ ...session, connections: mapped });
 
-  // Sync discovered connections into accounts.json cleanly (prefer facebook-page for Instagram)
+  // Sync discovered connections into accounts.json cleanly (prefer newest healthy & facebook-page for Instagram)
   const rawAccounts = getRawSocialAccounts();
   for (const platform of ['youtube', 'instagram', 'tiktok'] as SocialPlatform[]) {
-    const conn =
-      platform === 'instagram'
-        ? selectPreferredInstagramConnection(mapped)
-        : mapped.find((c) => c.platform === platform);
+    const existingAcc = rawAccounts[platform];
+    // Respect explicit selection when tregConnectionName is already persisted; otherwise pick newest healthy
+    const preferredId = existingAcc.tregConnectionName
+      ? existingAcc.tregConnectionId
+      : undefined;
+    const conn = selectPreferredConnection(mapped, platform, preferredId);
     if (!conn) continue;
 
-    const acc = rawAccounts[platform];
     const isIgFbPage = platform === 'instagram' && isFacebookPageConnection(conn);
     const patch: Partial<SocialAccountSecretRecord> = {
       tregConnectionId: conn.id,
-      tregResourceRef: conn.resourceRef || (isIgFbPage ? undefined : acc.tregResourceRef),
-      tregAuthorizationMethod: conn.authorizationMethod || acc.tregAuthorizationMethod,
+      tregConnectionName: conn.name,
+      tregResourceRef: conn.resourceRef || (isIgFbPage ? undefined : existingAcc.tregResourceRef),
+      tregAuthorizationMethod: conn.authorizationMethod || existingAcc.tregAuthorizationMethod,
       tregSetupRequired: Boolean(conn.setupRequired || (isIgFbPage && !conn.resourceRef)),
       tregSetupDetail:
         conn.setupRequired || (isIgFbPage && !conn.resourceRef)
@@ -720,14 +788,19 @@ export async function syncTregConnections(): Promise<TregConnectionSummary[]> {
       }
       if (discoveredPageMeta?.avatarUrl) patch.avatarUrl = discoveredPageMeta.avatarUrl;
     }
-    if (!acc.connected) {
+    if (
+      !existingAcc.connected ||
+      existingAcc.route === 'manual' ||
+      (existingAcc.route === 'oauth' && !existingAcc.accessToken)
+    ) {
       patch.route = 'treg';
       patch.connected = true;
-      patch.accountName = discoveredPageMeta?.name || conn.name || acc.accountName || `Treg (${conn.provider})`;
-      patch.connectedAt = acc.connectedAt || new Date().toISOString();
+      patch.accountName =
+        discoveredPageMeta?.name || conn.name || existingAcc.accountName || `Treg (${conn.provider})`;
+      patch.connectedAt = existingAcc.connectedAt || new Date().toISOString();
       patch.lastError = undefined;
-    } else if (acc.route === 'treg') {
-      patch.accountName = discoveredPageMeta?.name || conn.name || acc.accountName;
+    } else if (existingAcc.route === 'treg') {
+      patch.accountName = discoveredPageMeta?.name || existingAcc.accountName || conn.name;
       patch.lastError = undefined;
     }
     saveRawSocialAccount(platform, patch);
@@ -828,9 +901,7 @@ export async function pollTregProviderOAuth(
   const connections = await syncTregConnections();
   const match =
     connections.find((c) => c.id === String(data.secret_id)) ||
-    (platform === 'instagram'
-      ? selectPreferredInstagramConnection(connections)
-      : connections.find((c) => c.platform === platform));
+    selectPreferredConnection(connections, platform);
 
   let setupWarningDetail: string | undefined;
 
@@ -897,10 +968,11 @@ export async function pollTregProviderOAuth(
     route: 'treg',
     connected: true,
     tregConnectionId: match?.id || String(data.secret_id || ''),
+    tregConnectionName: match?.name || data?.name,
     tregAuthorizationMethod: match?.authorizationMethod,
     tregSetupRequired: Boolean(setupWarningDetail || match?.setupRequired),
     tregSetupDetail: setupWarningDetail || match?.healthDetail,
-    accountName: data?.name || match?.name || `Treg · ${platform}`,
+    accountName: match?.name || data?.name || `Treg · ${platform}`,
     connectedAt: new Date().toISOString(),
     lastError: undefined,
   });
@@ -953,6 +1025,178 @@ export function getTregSessionPublic(): TregSessionPublic {
   };
 }
 
+function orderCandidateConnections(
+  connections: TregConnectionSummary[],
+  platform: SocialPlatform,
+  preferredConnId?: string,
+  preferredConnName?: string
+): TregConnectionSummary[] {
+  const matching = connections.filter((c) => c.platform === platform && Boolean(c.name?.trim()));
+  if (matching.length === 0) return [];
+  const preferred =
+    selectPreferredConnection(connections, platform, preferredConnId) ||
+    (preferredConnName
+      ? matching.find((c) => c.name === preferredConnName)
+      : undefined);
+
+  const rest = matching
+    .filter((c) => c.id !== preferred?.id)
+    .sort((a, b) => numericConnId(b) - numericConnId(a));
+
+  const healthyRest = rest.filter(
+    (c) => !c.setupRequired && c.health !== 'error' && c.health !== 'expired'
+  );
+  const otherRest = rest.filter((c) => !healthyRest.includes(c));
+  return [preferred, ...healthyRest, ...otherRest].filter(
+    (c): c is TregConnectionSummary => Boolean(c)
+  );
+}
+
+export async function callTregWithNamedFallback(params: {
+  platform: SocialPlatform;
+  account: Pick<SocialAccountSecretRecord, 'tregConnectionId' | 'tregConnectionName'>;
+  session: TregSessionRecord;
+  upstreamPath: string;
+  fallbackCatalogPath: string;
+  method?: string;
+  query?: Record<string, string | number | boolean | undefined>;
+  headers?: Record<string, string>;
+  body?: string | Buffer;
+  skipPersistUsedConnection?: boolean;
+}): Promise<{
+  status: number;
+  headers: Headers;
+  text: string;
+  usedConnection?: TregConnectionSummary;
+}> {
+  let conns = params.session.connections?.length
+    ? params.session.connections
+    : await syncTregConnections();
+  let candidates = orderCandidateConnections(
+    conns,
+    params.platform,
+    params.account.tregConnectionId,
+    params.account.tregConnectionName
+  );
+
+  // If account had tregConnectionName cached even before connections array populated
+  const fallbackNamed = params.account.tregConnectionName?.trim();
+  const triedPaths = new Set<string>();
+  let lastRes: { status: number; headers: Headers; text: string } | null = null;
+  let lastConn: TregConnectionSummary | undefined;
+
+  const invoke = async (apiPath: string) =>
+    tregFetch(apiPath, {
+      method: params.method,
+      query: params.query,
+      headers: params.headers,
+      body: params.body,
+      session: params.session,
+    });
+
+  // 1. Try known named connections in priority order
+  for (const conn of candidates) {
+    const apiPath = buildNamedTregCallPath(
+      conn.name,
+      params.upstreamPath,
+      params.fallbackCatalogPath
+    );
+    if (triedPaths.has(apiPath)) continue;
+    triedPaths.add(apiPath);
+    const res = await invoke(apiPath);
+    lastRes = res;
+    lastConn = conn;
+    if (res.status < 400) {
+      if (
+        !params.skipPersistUsedConnection &&
+        (conn.id !== params.account.tregConnectionId ||
+          conn.name !== params.account.tregConnectionName)
+      ) {
+        saveRawSocialAccount(params.platform, {
+          tregConnectionId: conn.id,
+          tregConnectionName: conn.name,
+        });
+      }
+      return { ...res, usedConnection: conn };
+    }
+    // Retry next connection only on Treg tool ambiguity or auth/permission failure
+    if (
+      !isTregAmbiguous409Error(res.status, res.text) &&
+      res.status !== 401 &&
+      res.status !== 403 &&
+      res.status !== 404
+    ) {
+      return { ...res, usedConnection: conn };
+    }
+  }
+
+  // 2. If account stored a tregConnectionName not in candidates, try it
+  if (fallbackNamed) {
+    const directPath = buildNamedTregCallPath(
+      fallbackNamed,
+      params.upstreamPath,
+      params.fallbackCatalogPath
+    );
+    if (!triedPaths.has(directPath)) {
+      triedPaths.add(directPath);
+      const res = await invoke(directPath);
+      lastRes = res;
+      if (res.status < 400) {
+        return { ...res, usedConnection: lastConn };
+      }
+    }
+  }
+
+  // 3. Fallback to generic catalog path ONLY if no named candidate existed or returned 404
+  if (candidates.length === 0 && !triedPaths.has(params.fallbackCatalogPath)) {
+    const catalogRes = await invoke(params.fallbackCatalogPath);
+    lastRes = catalogRes;
+    if (catalogRes.status < 400) {
+      return { ...catalogRes };
+    }
+    // Dynamic recovery: if Treg returns 409 ambiguous, refresh /connections live and retry named tools!
+    if (isTregAmbiguous409Error(catalogRes.status, catalogRes.text)) {
+      conns = await syncTregConnections();
+      candidates = orderCandidateConnections(
+        conns,
+        params.platform,
+        params.account.tregConnectionId,
+        params.account.tregConnectionName
+      );
+      for (const conn of candidates) {
+        const apiPath = buildNamedTregCallPath(
+          conn.name,
+          params.upstreamPath,
+          params.fallbackCatalogPath
+        );
+        if (triedPaths.has(apiPath)) continue;
+        triedPaths.add(apiPath);
+        const retryRes = await invoke(apiPath);
+        lastRes = retryRes;
+        lastConn = conn;
+        if (retryRes.status < 400) {
+          if (!params.skipPersistUsedConnection) {
+            saveRawSocialAccount(params.platform, {
+              tregConnectionId: conn.id,
+              tregConnectionName: conn.name,
+            });
+          }
+          return { ...retryRes, usedConnection: conn };
+        }
+      }
+    }
+  }
+
+  return {
+    ...(lastRes || {
+      status: 502,
+      headers: new Headers(),
+      text: `Aucune connexion Treg active disponible pour ${params.platform}.`,
+    }),
+    usedConnection: lastConn,
+  };
+}
+
 export async function publishViaTregHttp(
   job: ScheduledPostItem,
   account: SocialAccountSecretRecord,
@@ -984,9 +1228,13 @@ export async function publishViaTregHttp(
       },
     };
 
-    const initRes = await tregFetch('/call/youtube.youtube.video.upload', {
-      method: 'POST',
+    const initRes = await callTregWithNamedFallback({
+      platform: 'youtube',
+      account,
       session,
+      upstreamPath: 'upload/youtube/v3/videos',
+      fallbackCatalogPath: '/call/youtube.youtube.video.upload',
+      method: 'POST',
       query: {
         part: 'id,snippet,status',
         uploadType: 'resumable',
@@ -1002,7 +1250,7 @@ export async function publishViaTregHttp(
     const uploadUrl = initRes.headers.get('location');
     if (initRes.status >= 400 || !uploadUrl) {
       throw new Error(
-        `Treg YouTube init HTTP ${initRes.status}: ${initRes.text.slice(0, 220)}`
+        `Treg YouTube init HTTP ${initRes.status}: ${initRes.text.slice(0, 260)}`
       );
     }
 
@@ -1027,7 +1275,12 @@ export async function publishViaTregHttp(
 
     if (pack.coverPath && fs.existsSync(pack.coverPath)) {
       try {
-        await tregFetch('/call/youtube.youtube.video.thumbnail.set', {
+        const thumbPath = buildNamedTregCallPath(
+          initRes.usedConnection?.name || account.tregConnectionName,
+          'upload/youtube/v3/thumbnails/set',
+          '/call/youtube.youtube.video.thumbnail.set'
+        );
+        await tregFetch(thumbPath, {
           method: 'POST',
           session,
           query: { videoId: putJson.id, uploadType: 'media' },
@@ -1057,14 +1310,14 @@ export async function publishViaTregHttp(
     }
 
     let conns = session.connections?.length ? session.connections : await syncTregConnections();
-    let preferredIgConn = selectPreferredInstagramConnection(conns);
+    let preferredIgConn = selectPreferredInstagramConnection(conns, account.tregConnectionId);
 
     if (
       !preferredIgConn ||
       (isFacebookPageConnection(preferredIgConn) && !preferredIgConn.resourceRef)
     ) {
       conns = await syncTregConnections();
-      preferredIgConn = selectPreferredInstagramConnection(conns);
+      preferredIgConn = selectPreferredInstagramConnection(conns, account.tregConnectionId);
     }
 
     const target = resolveInstagramPublishTarget({
@@ -1074,9 +1327,11 @@ export async function publishViaTregHttp(
     let igUserId = target.igUserId;
 
     if (target.missingFacebookPage) {
-      throw new Error(
-        `Page Facebook non détectée sur votre profil Facebook : Facebook a bien autorisé "${preferredIgConn?.name || 'studio-instagram-page'}", mais 0 Page Facebook liée à un compte Instagram Professionnel n'a été retournée par Meta. Dans l’app Instagram → Modifier le profil → Page, créez ou liez une Page Facebook gérée par votre profil Facebook, puis cliquez sur « Reconnecter Page Facebook (Reels) » et cochez bien la Page dans Facebook.`
-      );
+      const detail =
+        preferredIgConn?.healthDetail ||
+        account.tregSetupDetail ||
+        `Page Facebook non liée à un compte Instagram Professionnel sur "${preferredIgConn?.name || 'studio-instagram-page'}".`;
+      throw new Error(detail);
     }
 
     if (!igUserId && preferredIgConn?.id) {
@@ -1096,7 +1351,7 @@ export async function publishViaTregHttp(
     const videoUrl = `${publicBaseUrl}/api/social/public-media/${mediaToken}/social.mp4`;
     const thumbOffsetMs = Math.max(0, Math.round((job.coverTimestampSec || 1.4) * 1000));
 
-    // Use explicit named tool path when multiple IG connections exist (e.g. studio-instagram-page)
+    // Use explicit named tool path when multiple IG connections exist (e.g. studio-instagram-page-2)
     const namedTool = target.namedTool;
     const createPath = namedTool
       ? `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(igUserId)}/media`
@@ -1132,7 +1387,7 @@ export async function publishViaTregHttp(
         rawMsg.toLowerCase().includes('does not have permission')
       ) {
         throw new Error(
-          `Permission Meta (#10) refusée sur "${namedTool || 'studio-instagram'}" (${preferredIgConn?.authorizationMethod || 'instagram-login'}). Meta bloque souvent la publication Reels via Instagram Login : connectez Instagram via « Page Facebook (Treg) » dans Comptes connectés (avec un compte Pro lié à une Page Facebook), ou utilisez OAuth Direct Meta.`
+          `Permission Meta (#10) refusée sur "${namedTool || 'studio-instagram'}" (${preferredIgConn?.authorizationMethod || 'instagram-login'}). Meta bloque souvent la publication Reels via Instagram Login : liez votre compte Instagram Pro à votre Page Facebook puis cliquez sur « Reconnecter Page Facebook (Reels) », ou utilisez OAuth Direct Meta.`
         );
       }
       throw new Error(
@@ -1187,15 +1442,15 @@ export async function publishViaTregHttp(
 
     let permalink = `https://www.instagram.com/reel/${pubJson.id}/`;
     try {
-      const linkPath = namedTool
-        ? `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(pubJson.id)}`
-        : `/call/instagram.instagram.user.profile`;
       if (namedTool) {
-        const linkRes = await tregFetch(linkPath, {
-          method: 'GET',
-          session,
-          query: { fields: 'permalink' },
-        });
+        const linkRes = await tregFetch(
+          `/call/${encodeURIComponent(namedTool)}/${encodeURIComponent(pubJson.id)}`,
+          {
+            method: 'GET',
+            session,
+            query: { fields: 'permalink' },
+          }
+        );
         const linkJson = parseJsonSafe<{ permalink?: string }>(linkRes.text);
         if (linkJson?.permalink) permalink = linkJson.permalink;
       }
@@ -1209,7 +1464,7 @@ export async function publishViaTregHttp(
     };
   }
 
-  // TikTok via Treg
+  // TikTok via Treg (409-proof named tool calls + dynamic creator_info privacy resolution)
   const videoPath = pack.socialMp4Path || pack.masterMp4Path;
   if (!videoPath || !fs.existsSync(videoPath)) {
     throw new Error('Fichier MP4 introuvable pour TikTok via Treg.');
@@ -1217,15 +1472,59 @@ export async function publishViaTregHttp(
   const buffer = fs.readFileSync(videoPath);
   const size = buffer.byteLength;
 
+  let privacyOptions: string[] = ['PUBLIC_TO_EVERYONE', 'SELF_ONLY'];
+  let creatorUsername = account.accountHandle;
+  try {
+    const creatorRes = await callTregWithNamedFallback({
+      platform: 'tiktok',
+      account,
+      session,
+      upstreamPath: 'v2/post/publish/creator_info/query/',
+      fallbackCatalogPath: '/call/tiktok.tiktok.creator.info.query',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (creatorRes.status < 400) {
+      const creatorJson = parseJsonSafe<{
+        data?: {
+          privacy_level_options?: string[];
+          creator_username?: string;
+        };
+      }>(creatorRes.text);
+      if (Array.isArray(creatorJson?.data?.privacy_level_options) && creatorJson.data.privacy_level_options.length > 0) {
+        privacyOptions = creatorJson.data.privacy_level_options;
+      }
+      if (creatorJson?.data?.creator_username) {
+        creatorUsername = `@${creatorJson.data.creator_username.replace(/^@/, '')}`;
+      }
+    }
+  } catch {
+    // keep default privacy options
+  }
+
+  const privacyLevel =
+    job.privacy === 'private' && privacyOptions.includes('SELF_ONLY')
+      ? 'SELF_ONLY'
+      : privacyOptions.includes('PUBLIC_TO_EVERYONE')
+        ? 'PUBLIC_TO_EVERYONE'
+        : privacyOptions.includes('MUTUAL_FOLLOW_FRIENDS')
+          ? 'MUTUAL_FOLLOW_FRIENDS'
+          : privacyOptions[0] || 'SELF_ONLY';
+
   let isInbox = false;
-  let initRes = await tregFetch('/call/tiktok.tiktok.video.publish.init', {
-    method: 'POST',
+  let initRes = await callTregWithNamedFallback({
+    platform: 'tiktok',
+    account,
     session,
+    upstreamPath: 'v2/post/publish/video/init/',
+    fallbackCatalogPath: '/call/tiktok.tiktok.video.publish.init',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       post_info: {
         title: (job.tiktokCaption || job.caption).slice(0, 2200),
-        privacy_level: job.privacy === 'private' ? 'SELF_ONLY' : 'PUBLIC_TO_EVERYONE',
+        privacy_level: privacyLevel,
         disable_comment: false,
         disable_duet: false,
         disable_stitch: false,
@@ -1251,9 +1550,13 @@ export async function publishViaTregHttp(
     !initJson?.data?.upload_url
   ) {
     isInbox = true;
-    initRes = await tregFetch('/call/tiktok.tiktok.video.inbox.init', {
-      method: 'POST',
+    initRes = await callTregWithNamedFallback({
+      platform: 'tiktok',
+      account,
       session,
+      upstreamPath: 'v2/post/publish/inbox/video/init/',
+      fallbackCatalogPath: '/call/tiktok.tiktok.video.inbox.init',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         source_info: {
@@ -1293,7 +1596,7 @@ export async function publishViaTregHttp(
     externalPostId: initJson.data.publish_id,
     publishedUrl: isInbox
       ? 'https://www.tiktok.com/creator-center/content'
-      : `https://www.tiktok.com/${account.accountHandle || ''}`,
+      : `https://www.tiktok.com/${creatorUsername || ''}`,
     inboxOnly: isInbox,
   };
 }
@@ -1361,9 +1664,13 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
     }
   } else if (session?.token && ytSnapshot.connected) {
     try {
-      const ytRes = await tregFetch('/call/youtube.youtube.channel.profile', {
-        method: 'GET',
+      const ytRes = await callTregWithNamedFallback({
+        platform: 'youtube',
+        account: ytAcc,
         session,
+        upstreamPath: 'youtube/v3/channels',
+        fallbackCatalogPath: '/call/youtube.youtube.channel.profile',
+        method: 'GET',
         query: { part: 'snippet,statistics', mine: true },
       });
       if (ytRes.status === 200) {
@@ -1381,10 +1688,13 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
         }>(ytRes.text);
         const ch = ytData?.items?.[0];
         if (ch?.snippet) {
+          const handle = ch.snippet.customUrl
+            ? `@${ch.snippet.customUrl.replace(/^@/, '')}`
+            : ytSnapshot.liveHandle;
           ytSnapshot = {
             ...ytSnapshot,
             liveName: ch.snippet.title || ytSnapshot.liveName,
-            liveHandle: ch.snippet.customUrl || ytSnapshot.liveHandle,
+            liveHandle: handle,
             liveBio: ch.snippet.description,
             liveAvatarUrl: ch.snippet.thumbnails?.default?.url,
             followersCount: ch.statistics?.subscriberCount
@@ -1395,6 +1705,14 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
               ? `https://studio.youtube.com/channel/${ch.id}/editing/details`
               : ytSnapshot.editProfileUrl,
           };
+          saveRawSocialAccount('youtube', {
+            ...(ch.snippet.title ? { accountName: ch.snippet.title } : {}),
+            ...(handle ? { accountHandle: handle } : {}),
+            ...(ch.id ? { accountId: ch.id } : {}),
+            ...(ch.snippet.thumbnails?.default?.url
+              ? { avatarUrl: ch.snippet.thumbnails.default.url }
+              : {}),
+          });
         }
       }
     } catch {
@@ -1419,13 +1737,18 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
       'Meta interdit le changement de pseudo, bio et photo de profil par API — utilisez les boutons Copier/Télécharger puis collez dans Modifier le profil.',
     editProfileUrl: 'https://www.instagram.com/accounts/edit/',
   };
-  if (session?.token && igUserId) {
+  if (session?.token && igSnapshot.connected) {
     try {
-      const igRes = await tregFetch('/call/instagram.instagram.user.profile', {
-        method: 'GET',
+      const igPath = igUserId ? `${encodeURIComponent(igUserId)}` : 'me';
+      const igRes = await callTregWithNamedFallback({
+        platform: 'instagram',
+        account: igAcc,
         session,
+        upstreamPath: igPath,
+        fallbackCatalogPath: '/call/instagram.instagram.user.profile',
+        method: 'GET',
         query: {
-          ig_user_id: igUserId,
+          ...(igUserId ? {} : { ig_user_id: igUserId }),
           fields: 'id,username,name,biography,profile_picture_url,followers_count,media_count',
         },
       });
@@ -1439,16 +1762,24 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
           media_count?: number;
         }>(igRes.text);
         if (igData?.username || igData?.name) {
+          const handle = igData.username
+            ? `@${igData.username.replace(/^@/, '')}`
+            : igSnapshot.liveHandle;
           igSnapshot = {
             ...igSnapshot,
             connected: true,
             liveName: igData.name || igSnapshot.liveName,
-            liveHandle: igData.username ? `@${igData.username.replace(/^@/, '')}` : igSnapshot.liveHandle,
+            liveHandle: handle,
             liveBio: igData.biography,
             liveAvatarUrl: igData.profile_picture_url || igSnapshot.liveAvatarUrl,
             followersCount: igData.followers_count,
             mediaCount: igData.media_count,
           };
+          saveRawSocialAccount('instagram', {
+            ...(igData.name ? { accountName: igData.name } : {}),
+            ...(handle ? { accountHandle: handle } : {}),
+            ...(igData.profile_picture_url ? { avatarUrl: igData.profile_picture_url } : {}),
+          });
         }
       }
     } catch {
@@ -1459,7 +1790,7 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
 
   // 3. TikTok
   const ttAcc = rawAccounts.tiktok;
-  const ttSnapshot: LiveChannelProfileSnapshot = {
+  let ttSnapshot: LiveChannelProfileSnapshot = {
     platform: 'tiktok',
     connected: Boolean(ttAcc.connected || session?.connections?.some((c) => c.platform === 'tiktok')),
     liveName: ttAcc.accountName,
@@ -1470,9 +1801,508 @@ export async function fetchLiveChannelProfiles(): Promise<LiveChannelProfileSnap
       'TikTok interdit la modification du nom, @handle, bio et avatar par API — utilisez les boutons Copier/Télécharger puis collez dans Modifier le profil.',
     editProfileUrl: 'https://www.tiktok.com/',
   };
+  if (ttAcc.route === 'oauth' && ttAcc.accessToken) {
+    try {
+      const ttRes = await fetch(
+        'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,username,avatar_url',
+        { headers: { Authorization: `Bearer ${ttAcc.accessToken}` } }
+      );
+      if (ttRes.ok) {
+        const ttJson = (await ttRes.json()) as {
+          data?: { user?: { display_name?: string; username?: string; avatar_url?: string } };
+        };
+        const u = ttJson.data?.user;
+        if (u) {
+          const handle = u.username ? `@${u.username.replace(/^@/, '')}` : ttSnapshot.liveHandle;
+          ttSnapshot = {
+            ...ttSnapshot,
+            liveName: u.display_name || ttSnapshot.liveName,
+            liveHandle: handle,
+            liveAvatarUrl: u.avatar_url || ttSnapshot.liveAvatarUrl,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  } else if (session?.token && ttSnapshot.connected) {
+    try {
+      const ttRes = await callTregWithNamedFallback({
+        platform: 'tiktok',
+        account: ttAcc,
+        session,
+        upstreamPath: 'v2/user/info/',
+        fallbackCatalogPath: '/call/tiktok.tiktok.user.info',
+        method: 'GET',
+        query: { fields: 'open_id,display_name,username,avatar_url' },
+      });
+      if (ttRes.status === 200) {
+        const ttJson = parseJsonSafe<{
+          data?: { user?: { open_id?: string; display_name?: string; username?: string; avatar_url?: string } };
+        }>(ttRes.text);
+        const u = ttJson?.data?.user;
+        if (u) {
+          const handle = u.username ? `@${u.username.replace(/^@/, '')}` : ttSnapshot.liveHandle;
+          ttSnapshot = {
+            ...ttSnapshot,
+            connected: true,
+            liveName: u.display_name || ttSnapshot.liveName,
+            liveHandle: handle,
+            liveAvatarUrl: u.avatar_url || ttSnapshot.liveAvatarUrl,
+            ...(u.username ? { editProfileUrl: `https://www.tiktok.com/@${u.username.replace(/^@/, '')}` } : {}),
+          };
+          saveRawSocialAccount('tiktok', {
+            ...(u.display_name ? { accountName: u.display_name } : {}),
+            ...(handle ? { accountHandle: handle } : {}),
+            ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
+          });
+        }
+      }
+    } catch {
+      // keep cached metadata
+    }
+  }
   snapshots.push(ttSnapshot);
 
   return snapshots;
+}
+
+export async function probeSocialConnection(
+  platform: SocialPlatform,
+  publicBaseUrl?: string
+): Promise<SocialConnectionProbeResult> {
+  const checkedAt = new Date().toISOString();
+  const session = readTregSession();
+  if (session?.token) {
+    await syncTregConnections().catch(() => []);
+  }
+  const rawAccounts = getRawSocialAccounts();
+  const acc = rawAccounts[platform];
+
+  if (acc.route === 'manual') {
+    return {
+      platform,
+      ok: true,
+      route: 'manual',
+      detail: 'Mode Kit Manuel prêt (MP4 ≤ 30 Mo + cover JPG + légende).',
+      checkedAt,
+    };
+  }
+
+  if (acc.route === 'oauth') {
+    if (!acc.accessToken) {
+      return {
+        platform,
+        ok: false,
+        route: 'oauth',
+        detail: `OAuth Direct sélectionné mais aucun token connecté pour ${platform}.`,
+        checkedAt,
+      };
+    }
+    try {
+      if (platform === 'youtube') {
+        const r = await fetch(
+          'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+          { headers: { Authorization: `Bearer ${acc.accessToken}` } }
+        );
+        const j = (await r.json().catch(() => ({}))) as {
+          items?: Array<{ id?: string; snippet?: { title?: string; customUrl?: string } }>;
+          error?: { message?: string };
+        };
+        const ch = j.items?.[0];
+        if (!r.ok || !ch) {
+          throw new Error(j.error?.message || `HTTP ${r.status}`);
+        }
+        const handle = ch.snippet?.customUrl ? `@${ch.snippet.customUrl.replace(/^@/, '')}` : acc.accountHandle;
+        saveRawSocialAccount('youtube', {
+          accountName: ch.snippet?.title || acc.accountName,
+          accountHandle: handle,
+          accountId: ch.id,
+          lastError: undefined,
+        });
+        return {
+          platform,
+          ok: true,
+          route: 'oauth',
+          accountName: ch.snippet?.title,
+          accountHandle: handle,
+          detail: `OAuth OK · Chaîne « ${ch.snippet?.title || ch.id} » prête à publier.`,
+          checkedAt,
+        };
+      }
+      if (platform === 'instagram') {
+        if (!acc.igUserId) {
+          throw new Error('igUserId manquant sur le compte Instagram OAuth.');
+        }
+        const r = await fetch(
+          `https://graph.facebook.com/v21.0/${encodeURIComponent(acc.igUserId)}?fields=id,username,name&access_token=${encodeURIComponent(acc.accessToken)}`
+        );
+        const j = (await r.json().catch(() => ({}))) as {
+          id?: string;
+          username?: string;
+          name?: string;
+          error?: { message?: string };
+        };
+        if (!r.ok || !j.id) {
+          throw new Error(j.error?.message || `HTTP ${r.status}`);
+        }
+        const handle = j.username ? `@${j.username.replace(/^@/, '')}` : acc.accountHandle;
+        saveRawSocialAccount('instagram', {
+          accountName: j.name || acc.accountName,
+          accountHandle: handle,
+          lastError: undefined,
+        });
+        return {
+          platform,
+          ok: true,
+          route: 'oauth',
+          accountName: j.name,
+          accountHandle: handle,
+          detail: `OAuth OK · Compte ${handle || j.id} prêt à publier.`,
+          warning:
+            publicBaseUrl && isNonPublicBaseUrlForMeta(publicBaseUrl)
+              ? 'Aperçu AI Studio détecté : pour publier un Reel sur Instagram, utilisez votre URL publique Railway.'
+              : undefined,
+          checkedAt,
+        };
+      }
+      const r = await fetch(
+        'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,username',
+        { headers: { Authorization: `Bearer ${acc.accessToken}` } }
+      );
+      const j = (await r.json().catch(() => ({}))) as {
+        data?: { user?: { display_name?: string; username?: string } };
+        error?: { message?: string };
+      };
+      const u = j.data?.user;
+      if (!r.ok || !u) {
+        throw new Error(j.error?.message || `HTTP ${r.status}`);
+      }
+      const handle = u.username ? `@${u.username.replace(/^@/, '')}` : acc.accountHandle;
+      saveRawSocialAccount('tiktok', {
+        accountName: u.display_name || acc.accountName,
+        accountHandle: handle,
+        lastError: undefined,
+      });
+      return {
+        platform,
+        ok: true,
+        route: 'oauth',
+        accountName: u.display_name,
+        accountHandle: handle,
+        detail: `OAuth OK · Compte ${handle || u.display_name} prêt.`,
+        checkedAt,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur OAuth';
+      saveRawSocialAccount(platform, { lastError: msg });
+      return { platform, ok: false, route: 'oauth', detail: msg, checkedAt };
+    }
+  }
+
+  // Treg 1-Clic probe
+  if (!session?.token) {
+    return {
+      platform,
+      ok: false,
+      route: 'treg',
+      detail: 'Session Treg non connectée.',
+      checkedAt,
+    };
+  }
+
+  if (platform === 'youtube') {
+    const res = await callTregWithNamedFallback({
+      platform: 'youtube',
+      account: acc,
+      session,
+      upstreamPath: 'youtube/v3/channels',
+      fallbackCatalogPath: '/call/youtube.youtube.channel.profile',
+      method: 'GET',
+      query: { part: 'snippet,statistics', mine: true },
+    });
+    const parsed = parseJsonSafe<{
+      items?: Array<{ id?: string; snippet?: { title?: string; customUrl?: string; thumbnails?: { default?: { url?: string } } } }>;
+      detail?: string;
+      error?: { message?: string };
+    }>(res.text);
+    const ch = parsed?.items?.[0];
+    if (res.status < 400 && ch?.id) {
+      const handle = ch.snippet?.customUrl ? `@${ch.snippet.customUrl.replace(/^@/, '')}` : undefined;
+      saveRawSocialAccount('youtube', {
+        connected: true,
+        accountName: ch.snippet?.title || res.usedConnection?.name || acc.accountName,
+        ...(handle ? { accountHandle: handle } : {}),
+        accountId: ch.id,
+        ...(ch.snippet?.thumbnails?.default?.url ? { avatarUrl: ch.snippet.thumbnails.default.url } : {}),
+        ...(res.usedConnection
+          ? {
+              tregConnectionId: res.usedConnection.id,
+              tregConnectionName: res.usedConnection.name,
+            }
+          : {}),
+        lastError: undefined,
+      });
+      return {
+        platform: 'youtube',
+        ok: true,
+        route: 'treg',
+        connectionId: res.usedConnection?.id || acc.tregConnectionId,
+        connectionName: res.usedConnection?.name || acc.tregConnectionName,
+        accountName: ch.snippet?.title,
+        accountHandle: handle,
+        detail: `Connecté (${res.usedConnection?.name || acc.tregConnectionName || 'treg'}) · Chaîne « ${ch.snippet?.title || ch.id} » prête à publier.`,
+        checkedAt,
+      };
+    }
+    const errMsg =
+      parsed?.error?.message ||
+      parsed?.detail ||
+      `Échec test YouTube (HTTP ${res.status}): ${res.text.slice(0, 180)}`;
+    saveRawSocialAccount('youtube', { lastError: errMsg });
+    return {
+      platform: 'youtube',
+      ok: false,
+      route: 'treg',
+      connectionId: res.usedConnection?.id || acc.tregConnectionId,
+      connectionName: res.usedConnection?.name || acc.tregConnectionName,
+      detail: errMsg,
+      checkedAt,
+    };
+  }
+
+  if (platform === 'instagram') {
+    const conns = readTregSession()?.connections || [];
+    const preferredIgConn = selectPreferredInstagramConnection(conns, acc.tregConnectionId);
+    const target = resolveInstagramPublishTarget({ conn: preferredIgConn, account: acc });
+
+    if (target.missingFacebookPage && preferredIgConn?.id) {
+      const fbProbe = await discoverFacebookPageInstagramAccount(
+        preferredIgConn.id,
+        preferredIgConn.name,
+        session
+      );
+      if (fbProbe.igUserId) {
+        const handle = fbProbe.username ? `@${fbProbe.username.replace(/^@/, '')}` : undefined;
+        saveRawSocialAccount('instagram', {
+          connected: true,
+          igUserId: fbProbe.igUserId,
+          igPageId: fbProbe.igPageId,
+          tregConnectionId: preferredIgConn.id,
+          tregConnectionName: preferredIgConn.name,
+          tregResourceRef: fbProbe.igUserId,
+          tregSetupRequired: false,
+          tregSetupDetail: undefined,
+          ...(fbProbe.name ? { accountName: fbProbe.name } : {}),
+          ...(handle ? { accountHandle: handle } : {}),
+          ...(fbProbe.avatarUrl ? { avatarUrl: fbProbe.avatarUrl } : {}),
+          lastError: undefined,
+        });
+        return {
+          platform: 'instagram',
+          ok: true,
+          route: 'treg',
+          connectionId: preferredIgConn.id,
+          connectionName: preferredIgConn.name,
+          accountName: fbProbe.name,
+          accountHandle: handle,
+          detail: `Page Facebook reliée (${preferredIgConn.name}) · Compte ${handle || fbProbe.igUserId} prêt.`,
+          warning:
+            publicBaseUrl && isNonPublicBaseUrlForMeta(publicBaseUrl)
+              ? 'Note : Meta bloque les vidéos hébergées sur l’aperçu AI Studio ; la publication Instagram Reels automatique passe depuis votre URL Railway.'
+              : undefined,
+          checkedAt,
+        };
+      }
+      saveRawSocialAccount('instagram', {
+        tregConnectionId: preferredIgConn.id,
+        tregConnectionName: preferredIgConn.name,
+        tregSetupRequired: true,
+        tregSetupDetail: fbProbe.setupDetail,
+      });
+      return {
+        platform: 'instagram',
+        ok: false,
+        route: 'treg',
+        connectionId: preferredIgConn.id,
+        connectionName: preferredIgConn.name,
+        detail: fbProbe.setupDetail || 'Page Facebook non liée à un compte Instagram Pro.',
+        checkedAt,
+      };
+    }
+
+    if (!target.igUserId) {
+      return {
+        platform: 'instagram',
+        ok: false,
+        route: 'treg',
+        connectionId: preferredIgConn?.id || acc.tregConnectionId,
+        connectionName: preferredIgConn?.name || acc.tregConnectionName,
+        detail: 'Aucun IG User ID trouvé sur cette connexion Instagram.',
+        checkedAt,
+      };
+    }
+
+    const res = await tregFetch(
+      buildNamedTregCallPath(
+        target.namedTool,
+        `${encodeURIComponent(target.igUserId)}`,
+        '/call/instagram.instagram.user.profile'
+      ),
+      {
+        method: 'GET',
+        session,
+        query: {
+          ...(target.namedTool ? {} : { ig_user_id: target.igUserId }),
+          fields: 'id,username,name,profile_picture_url',
+        },
+      }
+    );
+    const j = parseJsonSafe<{
+      id?: string;
+      username?: string;
+      name?: string;
+      profile_picture_url?: string;
+      error?: { message?: string };
+    }>(res.text);
+    if (res.status < 400 && (j?.id || j?.username)) {
+      const handle = j.username ? `@${j.username.replace(/^@/, '')}` : acc.accountHandle;
+      saveRawSocialAccount('instagram', {
+        connected: true,
+        tregConnectionId: preferredIgConn?.id || acc.tregConnectionId,
+        tregConnectionName: target.namedTool || acc.tregConnectionName,
+        tregSetupRequired: false,
+        tregSetupDetail: undefined,
+        ...(j.name ? { accountName: j.name } : {}),
+        ...(handle ? { accountHandle: handle } : {}),
+        ...(j.profile_picture_url ? { avatarUrl: j.profile_picture_url } : {}),
+        lastError: undefined,
+      });
+      return {
+        platform: 'instagram',
+        ok: true,
+        route: 'treg',
+        connectionId: preferredIgConn?.id,
+        connectionName: target.namedTool,
+        accountName: j.name,
+        accountHandle: handle,
+        detail: `Connecté (${target.namedTool || 'treg'}) · Compte ${handle || j.id} actif.${preferredIgConn?.authorizationMethod === 'instagram-login' ? ' (Mode Instagram Login : certains comptes exigent la liaison Page Facebook pour Reels).' : ''}`,
+        warning:
+          publicBaseUrl && isNonPublicBaseUrlForMeta(publicBaseUrl)
+            ? 'Note : Meta bloque l’aperçu AI Studio ; déclenchez la publication Instagram Reels depuis votre URL Railway.'
+            : undefined,
+        checkedAt,
+      };
+    }
+    const errMsg = j?.error?.message || `HTTP ${res.status}: ${res.text.slice(0, 180)}`;
+    saveRawSocialAccount('instagram', { lastError: errMsg });
+    return {
+      platform: 'instagram',
+      ok: false,
+      route: 'treg',
+      connectionId: preferredIgConn?.id,
+      connectionName: target.namedTool,
+      detail: errMsg,
+      checkedAt,
+    };
+  }
+
+  // TikTok probe via Treg
+  const userRes = await callTregWithNamedFallback({
+    platform: 'tiktok',
+    account: acc,
+    session,
+    upstreamPath: 'v2/user/info/',
+    fallbackCatalogPath: '/call/tiktok.tiktok.user.info',
+    method: 'GET',
+    query: { fields: 'open_id,display_name,username,avatar_url' },
+  });
+  const userJson = parseJsonSafe<{
+    data?: { user?: { open_id?: string; display_name?: string; username?: string; avatar_url?: string } };
+    error?: { code?: string; message?: string };
+    detail?: string;
+  }>(userRes.text);
+  const u = userJson?.data?.user;
+
+  let privacyList = '';
+  try {
+    const crRes = await callTregWithNamedFallback({
+      platform: 'tiktok',
+      account: acc,
+      session,
+      upstreamPath: 'v2/post/publish/creator_info/query/',
+      fallbackCatalogPath: '/call/tiktok.tiktok.creator.info.query',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const crJson = parseJsonSafe<{
+      data?: { privacy_level_options?: string[] };
+    }>(crRes.text);
+    if (crJson?.data?.privacy_level_options?.length) {
+      privacyList = crJson.data.privacy_level_options.join(', ');
+    }
+  } catch {
+    // ignore optional creator_info error
+  }
+
+  if (userRes.status < 400 && u) {
+    const handle = u.username ? `@${u.username.replace(/^@/, '')}` : undefined;
+    saveRawSocialAccount('tiktok', {
+      connected: true,
+      accountName: u.display_name || resNameFallback(userRes.usedConnection?.name, acc.accountName),
+      ...(handle ? { accountHandle: handle } : {}),
+      ...(u.open_id ? { accountId: u.open_id } : {}),
+      ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
+      ...(userRes.usedConnection
+        ? {
+            tregConnectionId: userRes.usedConnection.id,
+            tregConnectionName: userRes.usedConnection.name,
+          }
+        : {}),
+      lastError: undefined,
+    });
+    return {
+      platform: 'tiktok',
+      ok: true,
+      route: 'treg',
+      connectionId: userRes.usedConnection?.id || acc.tregConnectionId,
+      connectionName: userRes.usedConnection?.name || acc.tregConnectionName,
+      accountName: u.display_name,
+      accountHandle: handle,
+      detail: `Connecté (${userRes.usedConnection?.name || acc.tregConnectionName || 'treg'}) · ${handle || u.display_name} prêt à publier${privacyList ? ` (${privacyList})` : ''}.`,
+      checkedAt,
+    };
+  }
+
+  const ttErr =
+    userJson?.error?.message ||
+    userJson?.detail ||
+    `Échec test TikTok (HTTP ${userRes.status}): ${userRes.text.slice(0, 180)}`;
+  saveRawSocialAccount('tiktok', { lastError: ttErr });
+  return {
+    platform: 'tiktok',
+    ok: false,
+    route: 'treg',
+    connectionId: userRes.usedConnection?.id || acc.tregConnectionId,
+    connectionName: userRes.usedConnection?.name || acc.tregConnectionName,
+    detail: ttErr,
+    checkedAt,
+  };
+}
+
+function resNameFallback(a?: string, b?: string): string {
+  return a || b || 'TikTok';
+}
+
+export async function probeAllSocialConnections(
+  publicBaseUrl?: string
+): Promise<SocialConnectionProbeResult[]> {
+  const results: SocialConnectionProbeResult[] = [];
+  for (const p of ['youtube', 'instagram', 'tiktok'] as SocialPlatform[]) {
+    results.push(await probeSocialConnection(p, publicBaseUrl));
+  }
+  return results;
 }
 
 export async function pushYouTubeDescriptionDirect(description: string): Promise<{

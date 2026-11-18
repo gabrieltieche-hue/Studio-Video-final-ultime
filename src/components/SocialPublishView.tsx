@@ -20,6 +20,7 @@ import type {
   ScheduledPostItem,
   SchedulerState,
   SocialAccountConfig,
+  SocialConnectionProbeResult,
   SocialPlatform,
   TregSessionPublic,
 } from '../types/social';
@@ -76,6 +77,12 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
   const [banner, setBanner] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [kitJob, setKitJob] = useState<ScheduledPostItem | null>(null);
+  const [testResults, setTestResults] = useState<
+    Partial<Record<SocialPlatform, SocialConnectionProbeResult>>
+  >({});
+  const [testingPlatform, setTestingPlatform] = useState<SocialPlatform | null>(null);
+  const [testingAll, setTestingAll] = useState(false);
+  const [retryingAll, setRetryingAll] = useState(false);
   const [pendingOAuthFlow, setPendingOAuthFlow] = useState<{
     platform: SocialPlatform;
     url: string;
@@ -144,6 +151,12 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       void fetchRailwayEnv(includeTregInRailway);
     }
   }, [showDeployGuide, includeTregInRailway, fetchRailwayEnv]);
+
+  useEffect(() => {
+    if (!railwayUrlInput && hosting?.syncedRailwayUrl) {
+      setRailwayUrlInput(hosting.syncedRailwayUrl);
+    }
+  }, [hosting?.syncedRailwayUrl, railwayUrlInput]);
 
   useEffect(() => {
     void loadAll(false);
@@ -244,6 +257,8 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       accessToken?: string;
       igUserId?: string;
       connected?: boolean;
+      tregConnectionId?: string;
+      tregConnectionName?: string;
     }
   ) => {
     setErrorBanner(null);
@@ -261,6 +276,117 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       setAccounts((prev) =>
         prev.map((a) => (a.platform === platform ? data.account! : a))
       );
+    }
+    if (patch.tregConnectionId || patch.route) {
+      void loadAll(true);
+    }
+  };
+
+  const handleTestPlatform = async (platform: SocialPlatform) => {
+    if (testingPlatform || testingAll) return;
+    setTestingPlatform(platform);
+    setErrorBanner(null);
+    try {
+      const res = await fetch(
+        `/api/social/accounts/${encodeURIComponent(platform)}/test`,
+        { method: 'POST' }
+      );
+      const data = (await res.json()) as {
+        success?: boolean;
+        result?: SocialConnectionProbeResult;
+        account?: SocialAccountConfig;
+        tregSession?: TregSessionPublic;
+        error?: string;
+      };
+      if (!res.ok || !data.result) {
+        throw new Error(data.error || `Test ${platform} impossible.`);
+      }
+      setTestResults((prev) => ({ ...prev, [platform]: data.result! }));
+      if (data.account) {
+        setAccounts((prev) =>
+          prev.map((a) => (a.platform === platform ? data.account! : a))
+        );
+      }
+      if (data.tregSession) setTregSession(data.tregSession);
+      if (data.result.ok) {
+        setBanner(
+          data.result.warning
+            ? `${data.result.detail} (${data.result.warning})`
+            : data.result.detail
+        );
+      } else {
+        setErrorBanner(data.result.detail);
+      }
+    } catch (err) {
+      setErrorBanner(err instanceof Error ? err.message : 'Erreur test connexion');
+    } finally {
+      setTestingPlatform(null);
+    }
+  };
+
+  const handleTestAll = async () => {
+    if (testingAll || testingPlatform) return;
+    setTestingAll(true);
+    setErrorBanner(null);
+    try {
+      const res = await fetch('/api/social/test-connections', { method: 'POST' });
+      const data = (await res.json()) as {
+        results?: SocialConnectionProbeResult[];
+        accounts?: SocialAccountConfig[];
+        tregSession?: TregSessionPublic;
+        queue?: ScheduledPostItem[];
+        error?: string;
+      };
+      if (!res.ok || !data.results) {
+        throw new Error(data.error || 'Diagnostic global impossible.');
+      }
+      const nextMap: Partial<Record<SocialPlatform, SocialConnectionProbeResult>> = {};
+      for (const r of data.results) {
+        nextMap[r.platform] = r;
+      }
+      setTestResults(nextMap);
+      if (data.accounts) setAccounts(data.accounts);
+      if (data.tregSession) setTregSession(data.tregSession);
+      if (data.queue) setQueue(data.queue);
+      const okCount = data.results.filter((r) => r.ok).length;
+      setBanner(
+        `Diagnostic terminé : ${okCount}/${data.results.length} réseau(x) prêts pour la publication automatique.`
+      );
+    } catch (err) {
+      setErrorBanner(err instanceof Error ? err.message : 'Erreur diagnostic');
+    } finally {
+      setTestingAll(false);
+    }
+  };
+
+  const handleRetryAllQueue = async () => {
+    if (retryingAll) return;
+    setRetryingAll(true);
+    setErrorBanner(null);
+    try {
+      const res = await fetch('/api/social/queue/retry-all', { method: 'POST' });
+      const data = (await res.json()) as {
+        retriedCount?: number;
+        publishedCount?: number;
+        queue?: ScheduledPostItem[];
+        logs?: PublishLogEntry[];
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error || 'Relance groupée impossible.');
+      }
+      if (data.queue) setQueue(data.queue);
+      if (data.logs) setLogs(data.logs);
+      await loadAll(true);
+      setBanner(
+        data.retriedCount
+          ? `Relance terminée : ${data.publishedCount || 0}/${data.retriedCount} publication(s) envoyée(s).`
+          : 'Aucune publication récupérable dans la file.'
+      );
+    } catch (err) {
+      setErrorBanner(err instanceof Error ? err.message : 'Erreur relance file');
+    } finally {
+      setRetryingAll(false);
     }
   };
 
@@ -358,6 +484,7 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
     }
     if (data.queue) setQueue(data.queue);
     if (data.logs) setLogs(data.logs);
+    await loadAll(true);
   };
 
   const handleCancelJob = async (jobId: string) => {
@@ -650,6 +777,12 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
         accounts={accounts}
         callbacks={callbacks}
         tregSession={tregSession}
+        hosting={hosting}
+        testResults={testResults}
+        testingPlatform={testingPlatform}
+        testingAll={testingAll}
+        onTestPlatform={handleTestPlatform}
+        onTestAll={handleTestAll}
         onUpdateAccount={handleUpdateAccount}
         onStartOAuth={handleStartOAuth}
         onDisconnect={handleDisconnect}
@@ -676,6 +809,9 @@ export const SocialPublishView: React.FC<SocialPublishViewProps> = ({
       <PublishQueuePanel
         queue={queue}
         logs={logs}
+        accounts={accounts}
+        retryingAll={retryingAll}
+        onRetryAll={handleRetryAllQueue}
         onPublishNow={handlePublishJobNow}
         onCancelJob={handleCancelJob}
         onOpenManualKit={(job) => setKitJob(job)}

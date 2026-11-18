@@ -8,12 +8,14 @@ import {
   History,
   Loader2,
   Play,
+  RefreshCw,
   Trash2,
 } from 'lucide-react';
 import type {
   PublishLogEntry,
   ScheduledPostItem,
   ScheduledPostStatus,
+  SocialAccountConfig,
 } from '../../types/social';
 import {
   PLATFORM_META,
@@ -23,6 +25,9 @@ import {
 interface PublishQueuePanelProps {
   queue: ScheduledPostItem[];
   logs: PublishLogEntry[];
+  accounts?: SocialAccountConfig[];
+  retryingAll?: boolean;
+  onRetryAll?: () => Promise<void>;
   onPublishNow: (jobId: string) => Promise<void>;
   onCancelJob: (jobId: string) => Promise<void>;
   onOpenManualKit: (job: ScheduledPostItem) => void;
@@ -51,6 +56,9 @@ const STATUS_STYLE: Record<ScheduledPostStatus, string> = {
 export const PublishQueuePanel: React.FC<PublishQueuePanelProps> = ({
   queue,
   logs,
+  accounts,
+  retryingAll,
+  onRetryAll,
   onPublishNow,
   onCancelJob,
   onOpenManualKit,
@@ -110,15 +118,33 @@ export const PublishQueuePanel: React.FC<PublishQueuePanelProps> = ({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowLogs((s) => !s)}
-          aria-expanded={showLogs}
-          className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-xs font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap self-start sm:self-auto"
-        >
-          <History className="w-3.5 h-3.5 text-[#5C5F68]" aria-hidden="true" />
-          Journal cron ({logs.length})
-        </button>
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {onRetryAll && counts.failed + counts.manual > 0 && (
+            <button
+              type="button"
+              disabled={Boolean(retryingAll)}
+              onClick={() => void onRetryAll()}
+              data-testid="retry-all-queue-btn"
+              className="h-8 px-3 rounded-lg bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-60 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors"
+            >
+              {retryingAll ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              Relancer tout ({counts.failed + counts.manual})
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowLogs((s) => !s)}
+            aria-expanded={showLogs}
+            className="h-8 px-3 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] text-xs font-semibold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <History className="w-3.5 h-3.5 text-[#5C5F68]" aria-hidden="true" />
+            Journal cron ({logs.length})
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -163,6 +189,10 @@ export const PublishQueuePanel: React.FC<PublishQueuePanelProps> = ({
           {filtered.map((job) => {
             const dual = formatScheduleDualTime(job.scheduledAt);
             const isBusy = runningId === job.id;
+            const acc = accounts?.find((a) => a.platform === job.platform);
+            const canRetryAuto =
+              ['scheduled', 'failed', 'awaiting_manual'].includes(job.status) &&
+              (job.route !== 'manual' || Boolean(acc && acc.route !== 'manual'));
 
             return (
               <article
@@ -197,13 +227,14 @@ export const PublishQueuePanel: React.FC<PublishQueuePanelProps> = ({
                     <span className="font-mono text-[10px]">{dual.relativeLabel}</span>
                   </div>
 
-                  {(job.errorMessage || job.notes) && (
-                    <p
-                      className={`text-[11px] leading-snug ${
-                        job.errorMessage ? 'text-[#DC2626]' : 'text-[#5C5F68]'
-                      }`}
-                    >
-                      {job.errorMessage || job.notes}
+                  {job.errorMessage && (
+                    <p className="text-[11px] leading-snug text-[#DC2626] break-words">
+                      {job.errorMessage}
+                    </p>
+                  )}
+                  {job.notes && job.notes !== job.errorMessage && (
+                    <p className="text-[11px] leading-snug text-[#5C5F68] break-words">
+                      {job.notes}
                     </p>
                   )}
                 </div>
@@ -234,7 +265,7 @@ export const PublishQueuePanel: React.FC<PublishQueuePanelProps> = ({
                       </button>
                     )}
 
-                  {['scheduled', 'failed'].includes(job.status) && (
+                  {canRetryAuto && (
                     <button
                       type="button"
                       disabled={isBusy}
@@ -246,7 +277,7 @@ export const PublishQueuePanel: React.FC<PublishQueuePanelProps> = ({
                       ) : (
                         <Play className="w-3 h-3" aria-hidden="true" />
                       )}
-                      Exécuter
+                      {job.status === 'scheduled' ? 'Exécuter' : 'Relancer auto'}
                     </button>
                   )}
 
