@@ -202,7 +202,11 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (tool !== 'draw' || !canvasRef.current) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore if pointerId is inactive (e.g. synthetic pointer event)
+    }
     const pos = getPointerPos(e);
     activeStrokeRef.current = {
       color: penColor,

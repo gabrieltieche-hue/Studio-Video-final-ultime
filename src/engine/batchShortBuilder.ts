@@ -1061,7 +1061,7 @@ export function buildFallbackBatchScript(input: {
       title: preset.ctaTitle,
       shortLabel: 'CTA',
       screenLabel: 'SUITE EN DIRECT',
-      spokenLine: `Tu étais déjà au courant ? Dis-le en commentaire et abonne-toi pour le prochain décryptage.`,
+      spokenLine: `Abonne-toi et active la cloche pour recevoir les prochains décryptages chaque semaine.`,
       brollKey: 'studio',
       brollCaption: 'Décryptage · @alex.decode',
       iconKind: 'rocket',
@@ -1109,7 +1109,7 @@ export function buildFallbackBatchScript(input: {
   return {
     hookText: hookLine,
     youtubeTitle: cleanTheme.slice(0, 58),
-    caption: `${hookLine}\n\nTu en penses quoi ? Dis-le en commentaire.`,
+    caption: `${hookLine}\n\nEnregistre ce Short et abonne-toi pour recevoir les prochains décryptages.`,
     hashtags: [`#${catTag || 'decryptage'}`, '#actualite', '#france', '#shorts'].slice(0, 4),
     beats,
   };

@@ -22,7 +22,9 @@ import {
   withProjectMediaStatus,
 } from './storageManager';
 import {
+  alignmentToWords,
   assignBeatTimingsAndTranscript,
+  buildFallbackBatchScript,
   resolveBeatLayout,
   sanitizeScriptText,
 } from '../engine/batchShortBuilder';
@@ -473,7 +475,7 @@ export const MCP_TOOLS = [
   },
 ];
 
-function buildStructuredShortAssets(params: {
+export function buildStructuredShortAssets(params: {
   title: string;
   hookText: string;
   angle?: string;
@@ -483,138 +485,46 @@ function buildStructuredShortAssets(params: {
   duration: number;
   mode: ShortProject['mode'];
 }) {
-  const duration = Math.max(15, Math.min(180, params.duration || 50));
-  const layoutMode: 'split' | 'fullscreen' =
-    params.mode === 'split_screen_clips' ? 'split' : 'fullscreen';
-
-  const hookLine =
-    params.hookText.trim() ||
-    `${params.title} : ce que presque personne n'a vu venir.`;
-  const angleLine =
-    params.angle?.trim() ||
-    `Voici les chiffres clés et le vrai mécanisme derrière ${params.title}.`;
-  const proofLine = params.sources?.trim()
-    ? `Selon les données récentes (${params.sources}), l'impact concret change la donne dès maintenant.`
-    : `Les données récentes montrent un écart massif entre le discours officiel et la réalité du terrain.`;
-  const ctaLine =
-    `Enregistre ce Short pour suivre l'évolution et dis-moi en commentaire si tu étais au courant.`;
-
-  const beatSpecs = [
-    {
-      id: 'beat-1',
-      title: params.title,
-      shortLabel: 'Hook',
-      screenLabel: params.hookScreen || (params.category ? `${params.category.toUpperCase()} · ALERTE` : 'HOOK PRINCIPAL'),
-      spokenLine: hookLine,
-      weight: 0.22,
-      type: 'typography' as const,
-      color: '#258EFF',
-    },
-    {
-      id: 'beat-2',
-      title: 'Le vrai mécanisme',
-      shortLabel: 'Analyse',
-      screenLabel: 'LE CONSTAT CHIFFRÉ',
-      spokenLine: angleLine,
-      weight: 0.28,
-      type: 'chart' as const,
-      color: '#14161B',
-    },
-    {
-      id: 'beat-3',
-      title: 'Preuves & Impact réel',
-      shortLabel: 'Preuves',
-      screenLabel: 'SOURCES & FAITS',
-      spokenLine: proofLine,
-      weight: 0.3,
-      type: 'card' as const,
-      color: '#059669',
-    },
-    {
-      id: 'beat-4',
-      title: 'Ce qu’il faut retenir',
-      shortLabel: 'Conclusion',
-      screenLabel: 'À RETENIR',
-      spokenLine: ctaLine,
-      weight: 0.2,
-      type: 'rocket' as const,
-      color: '#D97706',
-    },
-  ];
-
-  let cursor = 0;
-  const beats: Array<{
-    id: string;
-    title: string;
-    shortLabel: string;
-    screenLabel: string;
-    spokenLine: string;
-    from: number;
-    to: number;
-    layout: 'split' | 'fullscreen';
-  }> = [];
-  const motionTrack: ShortProject['motionTrack'] = [];
-  const transcript: ShortProject['transcript'] = [];
-  let wordCounter = 0;
-
-  beatSpecs.forEach((spec, idx) => {
-    const isLast = idx === beatSpecs.length - 1;
-    const rawEnd = isLast ? duration : Number((cursor + duration * spec.weight).toFixed(2));
-    const from = Number(cursor.toFixed(2));
-    const to = Number(Math.max(from + 2, rawEnd).toFixed(2));
-
-    beats.push({
-      id: spec.id,
-      title: spec.title,
-      shortLabel: spec.shortLabel,
-      screenLabel: spec.screenLabel,
-      spokenLine: spec.spokenLine,
-      from,
-      to,
-      layout: layoutMode,
-    });
-
-    motionTrack.push({
-      id: `mot-${spec.id}`,
-      componentId: idx === 0 ? 'comp-hook-shatter' : `comp-${spec.id}`,
-      name: spec.title,
-      start: from,
-      end: to,
-      type: spec.type,
-      color: spec.color,
-    });
-
-    const words = spec.spokenLine.split(/\s+/).filter(Boolean);
-    const beatSpan = Math.max(1, to - from - 0.25);
-    const step = words.length > 0 ? Math.min(0.42, beatSpan / words.length) : 0.35;
-    words.forEach((word, wIdx) => {
-      const wStart = Number((from + wIdx * step).toFixed(2));
-      const wEnd = Number((wStart + Math.max(0.18, step * 0.88)).toFixed(2));
-      wordCounter += 1;
-      transcript.push({
-        id: `w-${wordCounter}`,
-        word,
-        start: wStart,
-        end: wEnd,
-        confidence: 0.98,
-      });
-    });
-
-    cursor = to;
+  const targetDuration = Math.max(20, Math.min(180, params.duration || 45));
+  const fallback = buildFallbackBatchScript({
+    theme: params.title,
+    category: params.category || 'Tech & Société',
+    angle: params.angle,
+    hookHint: params.hookText,
+    sources: params.sources,
   });
 
+  if (params.hookScreen?.trim() && fallback.beats[0]) {
+    fallback.beats[0].screenLabel = sanitizeScriptText(params.hookScreen).toUpperCase().slice(0, 32);
+  }
+
+  const fullText = fallback.beats.map((b) => b.spokenLine).join(' ');
+  const { words, durationSec } = alignmentToWords(null, fullText, 1.05, targetDuration);
+  const timed = assignBeatTimingsAndTranscript(fallback.beats, words, durationSec);
+
+  const forcedMode: 'split' | null =
+    params.mode === 'split_screen_clips' ? 'split' : null;
+
+  const layoutTrack = timed.beats.map((beat, idx) => ({
+    id: `layout-${beat.id}`,
+    layout: forcedMode || resolveBeatLayout(beat, idx, timed.beats.length),
+    start: beat.from,
+    end: beat.to,
+  }));
+
+  const normalizedBeats = timed.beats.map((beat, idx) => ({
+    ...beat,
+    layout: layoutTrack[idx]?.layout || beat.layout,
+  }));
+
   return {
-    beats,
-    motionTrack,
-    transcript,
-    layoutTrack: [
-      {
-        id: 'layout-main',
-        layout: layoutMode,
-        start: 0,
-        end: duration,
-      },
-    ],
+    hookText: fallback.hookText,
+    duration: timed.durationSec,
+    beats: normalizedBeats,
+    motionTrack: timed.motionTrack,
+    transcript: words,
+    sfxTrack: timed.sfxTrack,
+    layoutTrack,
   };
 }
 
@@ -1246,11 +1156,11 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         title: rawTitle.slice(0, 160),
         ...(topicRow?.id || topicId ? { topicId: topicRow?.id || topicId } : {}),
         ...(category ? { topicCategory: category } : {}),
-        ...(hookText ? { hookText } : {}),
+        ...(hookText || generated.hookText ? { hookText: hookText || generated.hookText } : {}),
         mode,
         platform: (args.platform as ShortProject['platform']) || 'youtube_shorts',
         status: 'draft',
-        duration,
+        duration: generated.duration,
         fps: 25,
         resolution: { width: 1080, height: 1920 },
         currentVersion: 'v1',
@@ -1259,7 +1169,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
             version: 'v1',
             createdAt: now,
             status: 'draft',
-            duration,
+            duration: generated.duration,
             fps: 25,
             notes: topicRow
               ? `Créé depuis la veille CSV (${topicRow.id} · ${topicRow.categorie}).`
@@ -1274,10 +1184,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         transcript: generated.transcript,
         motionTrack: generated.motionTrack,
         layoutTrack: generated.layoutTrack,
-        sfxTrack: [
-          { id: 'sfx-1', sound: 'whoosh.mp3', start: generated.beats[1]?.from || 8, volume: 0.7 },
-          { id: 'sfx-2', sound: 'pop.mp3', start: generated.beats[2]?.from || 22, volume: 0.75 },
-        ],
+        sfxTrack: generated.sfxTrack,
         musicTrack: {
           trackName: 'Bright_Corporate_Groove_8c962467.mp3',
           volume: 0.24,
@@ -1381,10 +1288,11 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         duration,
         mode: proj.mode,
       });
-      proj.duration = duration;
+      proj.duration = generated.duration;
       proj.editSpec = { ...(proj.editSpec || {}), beats: generated.beats };
       proj.motionTrack = generated.motionTrack;
       proj.layoutTrack = generated.layoutTrack;
+      proj.sfxTrack = generated.sfxTrack;
       if (!proj.transcript || proj.transcript.length < 10) {
         proj.transcript = generated.transcript;
       }

@@ -67,10 +67,12 @@ test('sanitizeHashtags strips banned #fyp/#viral tags, normalizes accents, and l
   assert.ok(tags.length >= 3 && tags.length <= 5);
 });
 
-test('buildTemplateSocialCopy produces YouTube title <= 60 chars, caption and hashtags', () => {
+test('buildTemplateSocialCopy produces YouTube title <= 60 chars, caption and hashtags without comment bait', () => {
   const pack = buildTemplateSocialCopy(sampleProject);
   assert.ok(pack.youtubeTitle.length <= 60);
   assert.ok(pack.caption.includes('moins de 15 ans'));
+  assert.ok(!/commentaire/i.test(pack.caption));
+  assert.ok(!/commentaire/i.test(pack.tiktokCaption));
   assert.ok(pack.tiktokCaption.length > 10);
   assert.ok(pack.hashtags.length >= 3);
   assert.equal(pack.generatedBy, 'template');

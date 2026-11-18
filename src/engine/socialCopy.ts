@@ -140,7 +140,7 @@ export function buildTemplateSocialCopy(project: ShortProject): SocialCopyPack {
       ? `${spoken.slice(0, 175).trim()}…`
       : spoken,
     '',
-    'Dis-moi en commentaire ton avis et enregistre ce Short pour ne rien rater.',
+    'Enregistre ce Short et abonne-toi pour ne rater aucun décryptage.',
     '',
     hashtags.join(' '),
   ];
@@ -148,7 +148,7 @@ export function buildTemplateSocialCopy(project: ShortProject): SocialCopyPack {
   const caption = captionLines.join('\n');
   const tiktokCaption = [
     firstHookLine,
-    'Tu étais au courant ? Dis-le en commentaire.',
+    'Abonne-toi pour plus de décryptages Tech & Société.',
     hashtags.slice(0, 4).join(' '),
   ].join('\n\n');
 

@@ -246,3 +246,14 @@ test('every SFX asset scheduled by buildFallbackBatchScript exists on disk via r
     assert.ok(resolved, `Missing SFX audio asset for "${s.sound}"`);
   }
 });
+
+test('buildFallbackBatchScript enforces subscribe/bell CTA with zero commentaire ask', () => {
+  const script = buildFallbackBatchScript({
+    theme: 'Les agents IA en entreprise',
+    category: 'Business',
+  });
+  const lastBeat = script.beats[script.beats.length - 1];
+  assert.ok(!/commentaire/i.test(lastBeat.spokenLine));
+  assert.ok(/abonne|cloche/i.test(lastBeat.spokenLine));
+  assert.ok(!/commentaire/i.test(script.caption));
+});

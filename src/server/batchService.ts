@@ -325,7 +325,7 @@ export async function generateScriptForBatchItem(
       `   - Beat 5 (Comparaison / Impact) : montre l'avant vs maintenant avec des chiffres réalistes.`,
       `   - Beat 6 (Action concrète) : donne 3 réflexes ou règles pratiques adaptées AU SUJET.`,
       `   - Beat 7 (Preuve & verdict) : cite la source réelle et synthétise ce qu'il faut retenir.`,
-      `   - Beat 8 (CTA) : pose une question engageante sur le sujet + @alex.decode.`,
+      `   - Beat 8 (CTA) : invite à s'abonner et activer la cloche pour ne rater aucun décryptage (@alex.decode), sans jamais demander de commentaire ni de mot-clé en commentaire.`,
       `3. INTERDICTIONS : zéro tiret cadratin (—), zéro phrase creuse ("bonjour", "dans cette vidéo"), zéro blabla générique ("méthode 2022", "pipeline automatique", "45 min vs 2 min") si le sujet ne parle pas de ça.${!isDev ? ' N’utilise JAMAIS de jargon terminal/code/bash sur ce sujet !' : ''}`,
       `4. Chaque "title" écran doit faire 2 à 5 mots percutants (< 35 caractères).`,
       `5. Remplis ces champs courts adaptés au sujet (toujours en français, sans remplissage générique) :`,
@@ -522,7 +522,11 @@ export async function generateScriptForBatchItem(
       };
 
       const rawSpoken = sanitizeScriptText(b.spokenLine || fb.spokenLine);
-      const spokenLine = trimSpokenLineForPacing(rawSpoken, idx === 0 ? 15 : 18);
+      const safeSpoken =
+        idx === rawBeats.length - 1 && /commentaire/i.test(rawSpoken)
+          ? fb.spokenLine
+          : rawSpoken;
+      const spokenLine = trimSpokenLineForPacing(safeSpoken, idx === 0 ? 15 : 18);
 
       const iconKind = validIcons.has(b.iconKind as DynamicIconKind)
         ? (b.iconKind as DynamicIconKind)

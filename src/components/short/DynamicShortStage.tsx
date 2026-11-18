@@ -2035,7 +2035,7 @@ function renderDynamicBeatScene(
 
   return (
     <div
-      className="w-full flex flex-col items-center justify-center pt-[32px]"
+      className="w-full flex flex-col items-center justify-center"
       style={{
         opacity: clamp(enter * 2.8, 0, 1) * exit,
         transform: `translateY(${(34 * (1 - enter) - 30 * (1 - exit)).toFixed(1)}px)`,
@@ -2108,21 +2108,29 @@ function renderDynamicBeatScene(
         </div>
       </div>
 
-      {/* Bottom Interactive Prompt Pills */}
+      {/* Bottom Subscribe & Save Benefit Pills (zero comment bait) */}
       <div className="w-full grid grid-cols-2 gap-[16px]">
         <div
-          className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between"
-          style={{ backgroundColor: look.sheet, borderColor: look.line }}
+          className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between transition-colors"
+          style={{
+            backgroundColor: clicked ? 'rgba(5,150,105,0.1)' : look.sheet,
+            borderColor: clicked ? '#059669' : look.line,
+          }}
         >
-          <span className="text-[24px] font-bold" style={{ color: look.ink }}>Donne ton avis</span>
-          <span className="text-[22px] font-mono font-extrabold" style={{ color: look.accent }}>COMMENTAIRE ↓</span>
+          <span className="text-[24px] font-bold" style={{ color: look.ink }}>Plus de décryptages</span>
+          <span
+            className="text-[22px] font-mono font-extrabold"
+            style={{ color: clicked ? '#059669' : look.accent }}
+          >
+            {clicked ? 'CLOCHE ON 🔔' : 'ACTIVE LA 🔔'}
+          </span>
         </div>
         <div
           className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between"
           style={{ backgroundColor: look.sheet, borderColor: look.line }}
         >
           <span className="text-[24px] font-bold" style={{ color: look.ink }}>Enregistre le post</span>
-          <span className="text-[22px] font-mono font-extrabold" style={{ color: '#059669' }}>SAUVEGARDER ★</span>
+          <span className="text-[22px] font-mono font-extrabold" style={{ color: '#059669' }}>À REVOIR ★</span>
         </div>
       </div>
     </div>
@@ -2438,8 +2446,14 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
           </div>
         )}
 
-        {/* Upper Kinetic Motion Stage (z-20, symmetric px-[56px] above TikTok right rail) */}
-        <div className="relative z-20 w-full h-full pt-[186px] px-[56px] pointer-events-none">
+        {/* Upper Kinetic Motion Stage (z-20, balanced vertically inside safe zone above captions) */}
+        <div
+          className="absolute inset-x-0 z-20 px-[56px] flex flex-col justify-center pointer-events-none"
+          style={{
+            top: '196px',
+            height: `${(seam >= 1650 ? 1104 : seam > 300 ? Math.max(580, seam - 300) : 1020).toFixed(0)}px`,
+          }}
+        >
           {renderDynamicBeatScene(activeBeat, beatLocalT, beatSpan, look)}
         </div>
 

@@ -390,7 +390,7 @@ export async function generateAiSocialCopy(
       `Durée : ${Math.round(project.duration)}s`,
       'Règles :',
       '- youtubeTitle : <= 58 caractères, promesse claire, sans clickbait vide.',
-      '- caption (Instagram) : 1ère ligne accrocheuse (<120 chars, différente du hook mot pour mot), puis 2-3 lignes courtes sur ce que le spectateur retient, question finale pour commentaires, puis 3 à 5 hashtags pertinents.',
+      '- caption (Instagram) : 1ère ligne accrocheuse (<120 chars, différente du hook mot pour mot), puis 2-3 lignes courtes sur ce que le spectateur retient, appel clair à enregistrer ou s’abonner (sans demander de commentaire), puis 3 à 5 hashtags pertinents.',
       '- tiktokCaption : plus direct et court que Instagram, avec 3 à 4 hashtags.',
       '- youtubeDescription : résumé clair + hashtags en fin.',
       '- coverTimestampSec : entre 0.5 et 2.5 secondes.',
