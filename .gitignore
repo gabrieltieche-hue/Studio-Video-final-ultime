@@ -9,3 +9,6 @@ coverage/
 storage/
 .playwright-cli/
 .aistudio/
+
+# Outils locaux de rendu (binaires ffmpeg/Chromium, non versionnés)
+.tools/

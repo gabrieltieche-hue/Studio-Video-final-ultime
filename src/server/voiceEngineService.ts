@@ -352,8 +352,8 @@ export async function synthesizeWithEdgeNeural(params: {
 
     await new Promise<void>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        reject(new Error('Edge Neural TTS stream timeout (25s)'));
-      }, 25_000);
+        reject(new Error('Edge Neural TTS stream timeout (90s)'));
+      }, 90_000);
 
       let audioEnded = false;
       let metaEnded = !metadataStream;
@@ -368,7 +368,12 @@ export async function synthesizeWithEdgeNeural(params: {
       audioStream.on('data', (chunk: Buffer) => audioChunks.push(Buffer.from(chunk)));
       audioStream.on('end', () => {
         audioEnded = true;
-        finishIfDone();
+        // The word-boundary stream is not always closed by the service: do not
+        // block a finished voiceover on it, resolve right after the grace window.
+        setTimeout(() => {
+          metaEnded = true;
+          finishIfDone();
+        }, 800);
       });
       audioStream.on('error', (err: Error) => {
         clearTimeout(timeoutId);
