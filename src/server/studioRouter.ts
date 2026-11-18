@@ -24,12 +24,11 @@ import {
 import {
   alignmentToWords,
   assignBeatTimingsAndTranscript,
-  buildFallbackBatchScript,
   resolveBeatLayout,
   sanitizeScriptText,
 } from '../engine/batchShortBuilder';
 import { renderDynamicProjectToMp4 } from './batchRenderer';
-import { synthesizeVoiceoverForProject } from './batchService';
+import { generateScriptForBatchItem, synthesizeVoiceoverForProject } from './batchService';
 import { triggerAutoSyncInBackground } from './syncManager';
 import type { LookId } from '../data/shortSpec';
 import type { BatchBeatSpec } from '../types/batch';
@@ -475,7 +474,7 @@ export const MCP_TOOLS = [
   },
 ];
 
-export function buildStructuredShortAssets(params: {
+export async function buildStructuredShortAssets(params: {
   title: string;
   hookText: string;
   angle?: string;
@@ -486,7 +485,7 @@ export function buildStructuredShortAssets(params: {
   mode: ShortProject['mode'];
 }) {
   const targetDuration = Math.max(20, Math.min(180, params.duration || 45));
-  const fallback = buildFallbackBatchScript({
+  const script = await generateScriptForBatchItem({
     theme: params.title,
     category: params.category || 'Tech & Société',
     angle: params.angle,
@@ -494,13 +493,13 @@ export function buildStructuredShortAssets(params: {
     sources: params.sources,
   });
 
-  if (params.hookScreen?.trim() && fallback.beats[0]) {
-    fallback.beats[0].screenLabel = sanitizeScriptText(params.hookScreen).toUpperCase().slice(0, 32);
+  if (params.hookScreen?.trim() && script.beats[0]) {
+    script.beats[0].screenLabel = sanitizeScriptText(params.hookScreen).toUpperCase().slice(0, 32);
   }
 
-  const fullText = fallback.beats.map((b) => b.spokenLine).join(' ');
+  const fullText = script.beats.map((b) => b.spokenLine).join(' ');
   const { words, durationSec } = alignmentToWords(null, fullText, 1.05, targetDuration);
-  const timed = assignBeatTimingsAndTranscript(fallback.beats, words, durationSec);
+  const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
 
   const forcedMode: 'split' | null =
     params.mode === 'split_screen_clips' ? 'split' : null;
@@ -518,7 +517,12 @@ export function buildStructuredShortAssets(params: {
   }));
 
   return {
-    hookText: fallback.hookText,
+    hookText: script.hookText,
+    youtubeTitle: script.youtubeTitle,
+    caption: script.caption,
+    hashtags: script.hashtags,
+    archetypeLabel: script.archetypeLabel,
+    generatedBy: script.generatedBy,
     duration: timed.durationSec,
     beats: normalizedBeats,
     motionTrack: timed.motionTrack,
@@ -1138,7 +1142,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
       const duration = Math.max(15, Math.min(180, Number(args.duration) || 50));
       const hookText = String(args.hook_text || topicRow?.hook_propose || '');
       const category = String(args.category || topicRow?.categorie || '');
-      const generated = buildStructuredShortAssets({
+      const generated = await buildStructuredShortAssets({
         title: rawTitle.slice(0, 160),
         hookText,
         angle: args.angle ? String(args.angle) : topicRow?.angle_viral_fr,
@@ -1279,7 +1283,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
       const proj = getProject(String(args.project_id || ''));
       if (!proj) throw new Error(`Projet "${args.project_id}" introuvable.`);
       const duration = Math.max(15, Math.min(180, Number(args.duration) || proj.duration || 50));
-      const generated = buildStructuredShortAssets({
+      const generated = await buildStructuredShortAssets({
         title: proj.title,
         hookText: proj.hookText || '',
         angle: args.angle ? String(args.angle) : undefined,

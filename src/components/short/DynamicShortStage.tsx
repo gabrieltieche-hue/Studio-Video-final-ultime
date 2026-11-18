@@ -199,6 +199,180 @@ function animateStatValue(rawStat: string | undefined, progress: number): string
   return `${prefix}${formatted}${suffix}`;
 }
 
+function CursorPointer({
+  x,
+  y,
+  pressing = false,
+  visible = true,
+}: {
+  x: number;
+  y: number;
+  pressing?: boolean;
+  visible?: boolean;
+}) {
+  if (!visible) return null;
+  return (
+    <div
+      className="absolute z-40 pointer-events-none"
+      style={{
+        left: `${x.toFixed(1)}px`,
+        top: `${y.toFixed(1)}px`,
+        transform: `translate(-4px, -3px) scale(${pressing ? 0.84 : 1})`,
+        filter: 'drop-shadow(0 10px 18px rgba(17,24,39,0.34))',
+      }}
+    >
+      <svg width="42" height="48" viewBox="0 0 28 32" fill="none">
+        <path
+          d="M4 2.5L23.5 16.5L14.4 18.2L18.6 26.8L14.4 28.8L10.2 20.1L4 25.4V2.5Z"
+          fill="#111827"
+          stroke="#FFFFFF"
+          strokeWidth="2.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+function ClickRipple({
+  x,
+  y,
+  progress,
+  color = '#258EFF',
+}: {
+  x: number;
+  y: number;
+  progress: number;
+  color?: string;
+}) {
+  if (progress <= 0 || progress >= 1) return null;
+  const size = 28 + progress * 92;
+  return (
+    <div
+      className="absolute z-30 rounded-full border-4 pointer-events-none"
+      style={{
+        left: `${x.toFixed(1)}px`,
+        top: `${y.toFixed(1)}px`,
+        width: `${size.toFixed(1)}px`,
+        height: `${size.toFixed(1)}px`,
+        borderColor: color,
+        transform: 'translate(-50%, -50%)',
+        opacity: clamp(1 - progress, 0, 1) * 0.85,
+      }}
+    />
+  );
+}
+
+function HighlighterSweep({
+  text,
+  highlight,
+  progress,
+  highlightColor = '#FDE047',
+}: {
+  text: string;
+  highlight?: string;
+  progress: number;
+  highlightColor?: string;
+}) {
+  const cleanHighlight = (highlight || '').trim();
+  const sweepPct = Math.round(clamp(progress, 0, 1) * 100);
+  if (!cleanHighlight) {
+    return <span>{text}</span>;
+  }
+  const idx = text.toLowerCase().indexOf(cleanHighlight.toLowerCase());
+  if (idx === -1) {
+    return (
+      <span>
+        {text}{' '}
+        <span
+          className="px-[8px] py-[2px] rounded-[8px] font-extrabold"
+          style={{
+            backgroundImage: `linear-gradient(90deg, ${highlightColor} ${sweepPct}%, transparent ${sweepPct}%)`,
+          }}
+        >
+          {cleanHighlight}
+        </span>
+      </span>
+    );
+  }
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + cleanHighlight.length);
+  const after = text.slice(idx + cleanHighlight.length);
+  return (
+    <span>
+      {before}
+      <span
+        className="px-[6px] py-[1px] rounded-[8px] font-extrabold"
+        style={{
+          backgroundImage: `linear-gradient(90deg, ${highlightColor} ${sweepPct}%, rgba(253,224,71,0.14) ${sweepPct}%)`,
+        }}
+      >
+        {match}
+      </span>
+      {after}
+    </span>
+  );
+}
+
+function MacWindowChrome({
+  url,
+  badge,
+  dark = false,
+  children,
+}: {
+  url: string;
+  badge?: string;
+  dark?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="w-full rounded-[30px] border-2 overflow-hidden"
+      style={{
+        backgroundColor: dark ? '#14161B' : '#FFFFFF',
+        borderColor: dark ? 'rgba(255,255,255,0.14)' : '#D9D3C7',
+        boxShadow: '0 28px 56px -18px rgba(20,22,27,0.22)',
+      }}
+    >
+      <div
+        className="px-[24px] py-[14px] border-b flex items-center justify-between gap-[16px]"
+        style={{
+          backgroundColor: dark ? '#1C2029' : '#F6F4EE',
+          borderColor: dark ? 'rgba(255,255,255,0.08)' : '#E4DFD4',
+        }}
+      >
+        <div className="flex items-center gap-[9px] shrink-0">
+          <span className="w-[14px] h-[14px] rounded-full bg-[#FF5F56]" />
+          <span className="w-[14px] h-[14px] rounded-full bg-[#FFBD2E]" />
+          <span className="w-[14px] h-[14px] rounded-full bg-[#27C93F]" />
+        </div>
+        <div
+          className="flex-1 mx-[14px] rounded-[12px] px-[18px] py-[7px] text-[22px] font-mono truncate text-center border"
+          style={{
+            backgroundColor: dark ? '#111318' : '#FFFFFF',
+            borderColor: dark ? 'rgba(255,255,255,0.08)' : '#E4DFD4',
+            color: dark ? '#93C5FD' : '#4B5563',
+          }}
+        >
+          🔒 {url}
+        </div>
+        {badge && (
+          <span
+            className="text-[20px] font-mono font-bold px-[12px] py-[4px] rounded-[10px] shrink-0"
+            style={{
+              backgroundColor: dark ? 'rgba(37,142,255,0.18)' : 'rgba(37,142,255,0.12)',
+              color: dark ? '#60A5FA' : '#258EFF',
+            }}
+          >
+            {badge}
+          </span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function renderDynamicBeatScene(
   beat: DynamicBeat,
   localT: number,
@@ -371,7 +545,7 @@ function renderDynamicBeatScene(
 
         <div className="relative w-full grid grid-cols-2 gap-[24px] items-stretch">
           <div
-            className="rounded-[30px] p-[28px] border-2 flex flex-col justify-between min-h-[340px]"
+            className="rounded-[30px] p-[28px] pr-[48px] border-2 flex flex-col justify-between min-h-[340px]"
             style={{
               backgroundColor: look.sheet,
               borderColor: look.line,
@@ -394,7 +568,7 @@ function renderDynamicBeatScene(
           </div>
 
           <div
-            className="rounded-[30px] p-[28px] border-2 flex flex-col justify-between min-h-[340px]"
+            className="rounded-[30px] p-[28px] pl-[48px] border-2 flex flex-col justify-between min-h-[340px]"
             style={{
               backgroundColor: '#14161B',
               borderColor: clashed ? '#DC2626' : look.accent,
@@ -417,12 +591,12 @@ function renderDynamicBeatScene(
           </div>
 
           <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[82px] h-[82px] rounded-full border-4 flex items-center justify-center text-[32px] font-extrabold"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[74px] h-[74px] rounded-full border-4 flex items-center justify-center text-[30px] font-extrabold"
             style={{
               backgroundColor: clashed ? '#DC2626' : look.accent,
               borderColor: look.paper,
               color: '#FFFFFF',
-              transform: `scale(${(clashed ? 1.15 - 0.15 * stampP : 0.92).toFixed(3)})`,
+              transform: `scale(${(clashed ? 1.12 - 0.12 * stampP : 0.92).toFixed(3)})`,
               boxShadow: '0 16px 32px rgba(20,22,27,0.28)',
             }}
           >
@@ -1404,6 +1578,453 @@ function renderDynamicBeatScene(
     );
   }
 
+  // 3D. SOURCE QUOTE (Verified document excerpt + HighlighterSweep + slamming stamp badge)
+  if (vType === 'source_quote') {
+    const hlProgress = seg(localT, 0.35, Math.min(2.2, beatSpan * 0.58));
+    const stampAt = Math.min(2.1, beatSpan * 0.54);
+    const stamped = localT >= stampAt;
+    const stampP = spring(localT - stampAt, 20);
+    const quoteBody =
+      beat.quoteText ||
+      beat.statLabel ||
+      'Les chiffres mesurés confirment une rupture nette dès cette année.';
+    const quoteHl = beat.quoteHighlight || beat.statValue || '';
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(24 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        {/* Top Dark Source Banner */}
+        <div
+          className="w-full rounded-[26px] px-[28px] py-[20px] mb-[18px] flex items-center justify-between gap-[16px]"
+          style={{
+            backgroundColor: '#14161B',
+            boxShadow: '0 22px 44px -16px rgba(20,22,27,0.28)',
+          }}
+        >
+          <div className="flex items-center gap-[16px] min-w-0">
+            <div
+              className="w-[54px] h-[54px] rounded-[16px] flex items-center justify-center shrink-0"
+              style={{ backgroundColor: look.accent }}
+            >
+              <BeatVectorIcon kind={iconKind} size={30} color="#FFFFFF" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[20px] font-mono font-bold uppercase text-[#60A5FA] truncate">
+                {beat.screenLabel && beat.screenLabel !== 'COMPARAISON' ? beat.screenLabel : 'DOCUMENT SOURCÉ'}
+              </div>
+              <div className="text-[30px] font-extrabold text-white truncate" style={{ fontFamily: look.fontDisplay }}>
+                {beat.sourceLabel || beat.title}
+              </div>
+            </div>
+          </div>
+          <span className="px-[16px] py-[7px] rounded-[12px] bg-white/10 text-[22px] font-mono font-bold text-[#34D399] shrink-0">
+            {beat.dateBadge || 'VÉRIFIÉ 2026'}
+          </span>
+        </div>
+
+        {/* Highlighted Editorial Excerpt Card */}
+        <div
+          className="relative w-full rounded-[32px] p-[34px] border-2 mb-[18px] overflow-hidden"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: stamped ? look.accent : look.line,
+            boxShadow: '0 26px 52px -18px rgba(20,22,27,0.18)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-[14px]">
+            <span className="text-[22px] font-mono font-bold uppercase" style={{ color: look.accent }}>
+              {beat.title}
+            </span>
+            <span className="text-[52px] leading-none font-serif font-bold" style={{ color: `${look.accent}55` }}>
+              “”
+            </span>
+          </div>
+
+          <div
+            className="text-[38px] font-bold leading-[1.24] tracking-[-0.02em]"
+            style={{ color: look.ink, fontFamily: look.fontDisplay }}
+          >
+            <HighlighterSweep
+              text={quoteBody}
+              highlight={quoteHl}
+              progress={hlProgress}
+              highlightColor="rgba(250, 204, 21, 0.58)"
+            />
+          </div>
+
+          <div className="mt-[22px] pt-[16px] border-t flex items-center justify-between gap-[14px]" style={{ borderColor: look.line }}>
+            <span className="text-[23px] font-semibold truncate" style={{ color: look.ink2 }}>
+              {beat.statLabel || 'Extrait vérifié en direct'}
+            </span>
+            <div
+              className="px-[20px] py-[8px] rounded-[14px] text-[24px] font-mono font-extrabold uppercase shrink-0"
+              style={{
+                backgroundColor: stamped ? '#DC2626' : look.paper,
+                color: stamped ? '#FFFFFF' : look.ink2,
+                transform: stamped ? `scale(${(1.12 - 0.12 * stampP).toFixed(3)}) rotate(-2deg)` : 'scale(0.96)',
+              }}
+            >
+              {beat.stampWord || 'PREUVE'} · {beat.statValue || '2026'}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Context Delta Strip */}
+        <div className="w-full grid grid-cols-2 gap-[16px]">
+          <div
+            className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between gap-[10px]"
+            style={{ backgroundColor: look.sheet, borderColor: look.line }}
+          >
+            <span className="text-[22px] font-bold truncate" style={{ color: look.ink2 }}>
+              {beat.leftCard?.label || 'Avant'}
+            </span>
+            <span className="text-[28px] font-extrabold font-mono shrink-0" style={{ color: '#DC2626' }}>
+              {beat.leftCard?.value || 'Subi'}
+            </span>
+          </div>
+          <div
+            className="rounded-[22px] px-[24px] py-[18px] flex items-center justify-between gap-[10px]"
+            style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+          >
+            <span className="text-[22px] font-bold text-white/80 truncate">
+              {beat.rightCard?.label || 'Constat'}
+            </span>
+            <span className="text-[28px] font-extrabold font-mono text-[#34D399] shrink-0">
+              {beat.rightCard?.value || beat.statValue || 'Confirmé'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3E. CHART CURVE (Animated SVG trend curve + area gradient + live milestone callouts)
+  if (vType === 'chart_curve') {
+    const rawPts =
+      beat.chartPoints && beat.chartPoints.length >= 3
+        ? beat.chartPoints.slice(0, 5)
+        : [
+            { label: '2022', value: 100 },
+            { label: '2023', value: 94 },
+            { label: '2024', value: 86 },
+            { label: '2025', value: 78 },
+            { label: '2026', value: 72, highlight: true },
+          ];
+    const unit = beat.chartUnit ?? '%';
+    const minVal = Math.min(...rawPts.map((p) => p.value));
+    const maxVal = Math.max(...rawPts.map((p) => p.value));
+    const valSpan = Math.max(1, maxVal - minVal);
+    const padMin = minVal - valSpan * 0.22;
+    const padSpan = valSpan * 1.44;
+
+    const svgW = 860;
+    const svgH = 340;
+    const padX = 58;
+    const padTop = 52;
+    const padBot = 54;
+    const plotW = svgW - padX * 2;
+    const plotH = svgH - padTop - padBot;
+
+    const coords = rawPts.map((pt, i) => {
+      const x = padX + (i / Math.max(1, rawPts.length - 1)) * plotW;
+      const y = padTop + (1 - (pt.value - padMin) / padSpan) * plotH;
+      return { ...pt, x, y };
+    });
+
+    // Smooth cubic bezier SVG path
+    let linePath = `M ${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+    for (let i = 1; i < coords.length; i++) {
+      const prev = coords[i - 1];
+      const curr = coords[i];
+      const cx = ((prev.x + curr.x) / 2).toFixed(1);
+      linePath += ` C ${cx} ${prev.y.toFixed(1)}, ${cx} ${curr.y.toFixed(1)}, ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}`;
+    }
+    const areaPath = `${linePath} L ${coords[coords.length - 1].x.toFixed(1)} ${(svgH - padBot).toFixed(1)} L ${coords[0].x.toFixed(1)} ${(svgH - padBot).toFixed(1)} Z`;
+
+    const drawP = seg(localT, 0.14, Math.max(1.25, beatSpan * 0.44));
+    const approxPathLen = 1100;
+    const isDrop = coords[coords.length - 1].value < coords[0].value;
+    const curveColor = isDrop ? '#DC2626' : look.accent;
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(26 * (1 - enter) - 20 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-end justify-between gap-[16px] mb-[18px]">
+          <div className="min-w-0">
+            <div className="text-[24px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+              {beat.screenLabel || 'TRAJECTOIRE CHIFFRÉE'}
+            </div>
+            <div
+              className="text-[54px] font-extrabold leading-[1.06] tracking-[-0.03em] mt-[4px] truncate"
+              style={{ color: look.ink, fontFamily: look.fontDisplay }}
+            >
+              {beat.title}
+            </div>
+          </div>
+          <div
+            className="px-[22px] py-[12px] rounded-[20px] shrink-0 text-right"
+            style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+          >
+            <div className="text-[18px] font-mono uppercase text-white/60">Évolution</div>
+            <div className="text-[40px] font-extrabold font-mono leading-none tabular-nums" style={{ color: isDrop ? '#F87171' : '#60A5FA' }}>
+              {beat.statValue || `${coords[coords.length - 1].value}${unit}`}
+            </div>
+          </div>
+        </div>
+
+        {/* SVG Chart Card */}
+        <div
+          className="w-full rounded-[32px] px-[28px] py-[24px] border mb-[18px]"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: look.line,
+            boxShadow: '0 28px 56px -18px rgba(20,22,27,0.18)',
+          }}
+        >
+          <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} className="overflow-visible">
+            <defs>
+              <linearGradient id={`areaGrad-${beat.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={curveColor} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={curveColor} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+
+            {/* Horizontal dashed reference lines */}
+            {[0.2, 0.5, 0.8].map((frac, idx) => {
+              const gy = padTop + frac * plotH;
+              return (
+                <line
+                  key={idx}
+                  x1={padX}
+                  y1={gy}
+                  x2={svgW - padX}
+                  y2={gy}
+                  stroke={look.line}
+                  strokeWidth="2"
+                  strokeDasharray="8 8"
+                />
+              );
+            })}
+
+            {/* Area Fill (fades in smoothly as curve draws) */}
+            <path d={areaPath} fill={`url(#areaGrad-${beat.id})`} opacity={clamp(drawP * 1.15, 0, 1)} />
+
+            {/* Animated Spline Curve */}
+            <path
+              d={linePath}
+              fill="none"
+              stroke={curveColor}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={approxPathLen}
+              strokeDashoffset={(approxPathLen * (1 - drawP)).toFixed(1)}
+            />
+
+            {/* Data Nodes + Labels */}
+            {coords.map((pt, idx) => {
+              const threshold = idx / Math.max(1, coords.length - 1);
+              const nodeP = spring(drawP - threshold * 0.72, 18);
+              const visible = drawP >= threshold * 0.72;
+              const isFocus = pt.highlight || idx === coords.length - 1;
+              return (
+                <g key={pt.label + idx} opacity={visible ? clamp(nodeP * 2.4, 0.35, 1) : 0}>
+                  {isFocus && (
+                    <circle
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={20 + 6 * Math.abs(Math.sin(localT * 5))}
+                      fill={curveColor}
+                      opacity="0.18"
+                    />
+                  )}
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={isFocus ? 12 : 9}
+                    fill={isFocus ? curveColor : '#FFFFFF'}
+                    stroke={curveColor}
+                    strokeWidth="5"
+                  />
+                  <rect
+                    x={pt.x - 42}
+                    y={pt.y - 52}
+                    width="84"
+                    height="32"
+                    rx="10"
+                    fill={isFocus ? curveColor : '#14161B'}
+                  />
+                  <text
+                    x={pt.x}
+                    y={pt.y - 30}
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="20"
+                    fontWeight="800"
+                    fontFamily="monospace"
+                  >
+                    {pt.value}{unit}
+                  </text>
+                  <text
+                    x={pt.x}
+                    y={svgH - 14}
+                    textAnchor="middle"
+                    fill={isFocus ? look.ink : look.ink3}
+                    fontSize="24"
+                    fontWeight="800"
+                  >
+                    {pt.label}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Bottom Insight Bar */}
+        <div className="w-full grid grid-cols-2 gap-[16px]">
+          <div
+            className="rounded-[22px] px-[24px] py-[18px] border flex items-center justify-between gap-[10px]"
+            style={{ backgroundColor: look.sheet, borderColor: look.line }}
+          >
+            <span className="text-[22px] font-bold truncate" style={{ color: look.ink2 }}>
+              {beat.comparisonLeft?.label || 'Point de départ'}
+            </span>
+            <span className="text-[28px] font-extrabold font-mono shrink-0" style={{ color: look.ink }}>
+              {beat.comparisonLeft?.value || `${coords[0].value}${unit}`}
+            </span>
+          </div>
+          <div
+            className="rounded-[22px] px-[24px] py-[18px] flex items-center justify-between gap-[10px]"
+            style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}
+          >
+            <span className="text-[22px] font-bold text-[#93C5FD] truncate">
+              {beat.statLabel || 'Tendance 2026'}
+            </span>
+            <span className="text-[26px] font-extrabold font-mono text-white shrink-0">
+              {beat.multiplierBadge || beat.stampWord || 'COURBE'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3F. UI WINDOW (macOS Safari recreated interface + animated CursorPointer + ClickRipple on primary CTA)
+  if (vType === 'ui_window') {
+    const rows = (
+      beat.bullets && beat.bullets.length > 0
+        ? beat.bullets
+        : ['Vérification du dossier', 'Calcul du taux réel', 'Validation en direct']
+    ).slice(0, 3);
+    const clickAt = clamp(beatSpan * 0.48, 1.0, 2.2);
+    const clicked = localT >= clickAt;
+    const rippleP = seg(localT, clickAt, clickAt + 0.65);
+    const cursorMoveP = seg(localT, 0.28, clickAt - 0.1);
+    const cursorX = 340 + cursorMoveP * 440;
+    const cursorY = 120 + cursorMoveP * 224;
+    const pressing = localT >= clickAt - 0.08 && localT <= clickAt + 0.14;
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(24 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[16px]">
+          <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+            {beat.title}
+          </span>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#60A5FA] shrink-0">
+            {beat.screenLabel || 'INTERFACE'}
+          </span>
+        </div>
+
+        <MacWindowChrome
+          url={beat.uiUrl || 'portail.service-public.fr/2026'}
+          badge={clicked ? 'CONFIRMÉ ✓' : 'EN DIRECT'}
+        >
+          <div className="relative p-[28px] space-y-[14px]">
+            {rows.map((label, idx) => {
+              const rowActive = localT >= 0.25 + idx * 0.45;
+              const rp = spring(localT - (0.25 + idx * 0.45), 16);
+              return (
+                <div
+                  key={idx}
+                  className="rounded-[20px] px-[22px] py-[16px] border flex items-center justify-between gap-[14px]"
+                  style={{
+                    backgroundColor: clicked ? 'rgba(5,150,105,0.08)' : rowActive ? '#F8FAFC' : '#FFFFFF',
+                    borderColor: clicked ? '#10B981' : rowActive ? look.accent : '#E5E7EB',
+                    transform: `translateX(${((1 - (rowActive ? rp : 0)) * 14).toFixed(1)}px)`,
+                  }}
+                >
+                  <div className="flex items-center gap-[14px] min-w-0">
+                    <span
+                      className="w-[36px] h-[36px] rounded-[10px] flex items-center justify-center text-[20px] font-mono font-extrabold shrink-0"
+                      style={{
+                        backgroundColor: clicked ? '#059669' : rowActive ? look.accent : '#E5E7EB',
+                        color: '#FFFFFF',
+                      }}
+                    >
+                      {clicked || rowActive ? '✓' : idx + 1}
+                    </span>
+                    <span className="text-[29px] font-bold truncate" style={{ color: '#111827' }}>
+                      {label}
+                    </span>
+                  </div>
+                  <span
+                    className="text-[20px] font-mono font-bold shrink-0"
+                    style={{ color: clicked ? '#059669' : rowActive ? look.accent : '#9CA3AF' }}
+                  >
+                    {clicked ? 'APPLIQUÉ' : rowActive ? 'PRÊT' : 'ATTENTE'}
+                  </span>
+                </div>
+              );
+            })}
+
+            {/* Bottom Interactive Action Bar inside the window */}
+            <div className="pt-[10px] flex items-center justify-between gap-[16px]">
+              <div className="text-[24px] font-semibold truncate" style={{ color: '#4B5563' }}>
+                {beat.statLabel || 'Action vérifiée en 1 clic'}
+              </div>
+              <div
+                className="relative px-[30px] py-[16px] rounded-[18px] text-[27px] font-extrabold shrink-0"
+                style={{
+                  backgroundColor: clicked ? '#059669' : look.accent,
+                  color: '#FFFFFF',
+                  transform: `scale(${pressing ? 0.94 : 1})`,
+                }}
+              >
+                {clicked ? 'Validé ✓' : beat.uiActionLabel || 'Lancer la vérif'}
+              </div>
+            </div>
+
+            <ClickRipple x={780} y={344} progress={rippleP} color="#059669" />
+            <CursorPointer x={cursorX} y={cursorY} pressing={pressing} />
+          </div>
+        </MacWindowChrome>
+
+        <div className="w-full mt-[16px] rounded-[22px] px-[26px] py-[16px] bg-[#14161B] text-white flex items-center justify-between gap-[14px]">
+          <span className="text-[24px] font-bold truncate">{beat.sourceLabel || 'Résultat vérifié'}</span>
+          <span className="text-[26px] font-extrabold font-mono text-[#60A5FA] shrink-0">
+            {beat.statValue || '2026'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   // 4. GAUGE (Full-paper 2-row composition: Live Scrolling Feed + 270° Speedometer Needle + 3 Pillar Cards + Dark Insight Ticker)
   if (vType === 'gauge') {
     const gaugeTarget = clamp(beat.gaugePct ?? 88, 15, 99) / 100;
@@ -1795,7 +2416,7 @@ function renderDynamicBeatScene(
           </span>
         </div>
 
-        <div className="w-full space-y-[16px]">
+        <div className="relative w-full space-y-[16px]">
           {items.map((item, idx) => {
             const flipAt = Math.min(beatSpan - 0.6, 0.5 + idx * 0.72);
             const flipped = localT >= flipAt;
@@ -1839,6 +2460,29 @@ function renderDynamicBeatScene(
               </div>
             );
           })}
+          {(() => {
+            const flipTimes = items.map((_, i) => Math.min(beatSpan - 0.6, 0.5 + i * 0.72));
+            let activeIdx = 0;
+            for (let i = 0; i < flipTimes.length; i++) {
+              if (localT >= flipTimes[i] - 0.25) activeIdx = i;
+            }
+            const prevIdx = Math.max(0, activeIdx - 1);
+            const targetAt = flipTimes[activeIdx] ?? 0.5;
+            const moveP = activeIdx === 0 ? seg(localT, 0.08, targetAt - 0.05) : seg(localT, flipTimes[prevIdx] + 0.12, targetAt - 0.05);
+            const yPositions = [58, 192, 326];
+            const startY = activeIdx === 0 ? 18 : yPositions[prevIdx];
+            const endY = yPositions[activeIdx] ?? 58;
+            const cy = startY + (endY - startY) * moveP;
+            const cx = 865 - (1 - moveP) * (activeIdx === 0 ? 180 : 0);
+            const pressing = localT >= targetAt - 0.07 && localT <= targetAt + 0.12;
+            const rippleP = seg(localT, targetAt, targetAt + 0.55);
+            return (
+              <>
+                <ClickRipple x={885} y={endY} progress={rippleP} color={items[activeIdx]?.activeAfter ? '#059669' : '#DC2626'} />
+                <CursorPointer x={cx} y={cy} pressing={pressing} />
+              </>
+            );
+          })()}
         </div>
 
         {/* Bottom Dark Status Summary Strip */}
@@ -1886,7 +2530,7 @@ function renderDynamicBeatScene(
           </span>
         </div>
 
-        <div className="w-full space-y-[16px]">
+        <div className="relative w-full space-y-[16px]">
           {items.map((label, idx) => {
             const checkAt = Math.min(beatSpan - 0.5, 0.35 + idx * 0.65);
             const checked = localT >= checkAt;
@@ -1932,6 +2576,29 @@ function renderDynamicBeatScene(
               </div>
             );
           })}
+          {(() => {
+            const checkTimes = items.map((_, i) => Math.min(beatSpan - 0.5, 0.35 + i * 0.65));
+            let activeIdx = 0;
+            for (let i = 0; i < checkTimes.length; i++) {
+              if (localT >= checkTimes[i] - 0.2) activeIdx = i;
+            }
+            const prevIdx = Math.max(0, activeIdx - 1);
+            const targetAt = checkTimes[activeIdx] ?? 0.35;
+            const moveP = activeIdx === 0 ? seg(localT, 0.05, targetAt - 0.04) : seg(localT, checkTimes[prevIdx] + 0.1, targetAt - 0.04);
+            const yPositions = [48, 162, 276];
+            const startY = activeIdx === 0 ? 14 : yPositions[prevIdx];
+            const endY = yPositions[activeIdx] ?? 48;
+            const cy = startY + (endY - startY) * moveP;
+            const cx = 890 - (1 - moveP) * (activeIdx === 0 ? 120 : 0);
+            const pressing = localT >= targetAt - 0.06 && localT <= targetAt + 0.12;
+            const rippleP = seg(localT, targetAt, targetAt + 0.52);
+            return (
+              <>
+                <ClickRipple x={895} y={endY} progress={rippleP} color="#059669" />
+                <CursorPointer x={cx} y={cy} pressing={pressing} />
+              </>
+            );
+          })()}
         </div>
 
         <div className="w-full mt-[18px] rounded-[22px] px-[28px] py-[18px] flex items-center justify-between" style={{ backgroundColor: '#14161B', color: '#FFFFFF' }}>
@@ -2106,6 +2773,16 @@ function renderDynamicBeatScene(
             />
           )}
         </div>
+        {(() => {
+          const hopBellP = seg(localT, clickAt + 0.18, clickAt + 0.45);
+          const approachP = seg(localT, 0.15, clickAt - 0.08);
+          const cx = 560 + approachP * 195 + hopBellP * 135;
+          const cy = 148 - approachP * 58;
+          const pressing =
+            (localT >= clickAt - 0.08 && localT <= clickAt + 0.1) ||
+            (localT >= clickAt + 0.44 && localT <= clickAt + 0.58);
+          return <CursorPointer x={cx} y={cy} pressing={pressing} />;
+        })()}
       </div>
 
       {/* Bottom Subscribe & Save Benefit Pills (zero comment bait) */}
@@ -2193,12 +2870,12 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
           text: w.word,
           start: w.start,
           end: w.end,
-          emph: w.word.length >= 7 || /\d|%/.test(w.word),
+          emph: false,
         })),
     [project.transcript]
   );
 
-  const chunks = useMemo(() => buildCaptionChunks(wordCues, 4, 24), [wordCues]);
+  const chunks = useMemo(() => buildCaptionChunks(wordCues, 3, 20), [wordCues]);
   const activeChunk = getActiveCaptionChunk(t, chunks, []);
 
   const beatLocalT = Math.max(0, t - activeBeat.from);
@@ -2490,7 +3167,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                     style={{
                       fontFamily: look.fontDisplay,
                       fontSize: '66px',
-                      color: isActive || w.emph ? highlightColor : baseColor,
+                      color: isActive ? highlightColor : baseColor,
                       transform: isActive ? 'scale(1.07) translateY(-2px)' : 'scale(1)',
                     }}
                   >

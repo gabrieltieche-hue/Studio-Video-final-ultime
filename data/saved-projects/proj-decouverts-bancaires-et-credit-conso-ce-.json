@@ -8,7 +8,7 @@
   "mode": "faceless_explainer",
   "platform": "youtube_shorts",
   "status": "ready",
-  "duration": 42.68,
+  "duration": 47.88,
   "fps": 25,
   "resolution": {
     "width": 1080,
@@ -20,9 +20,9 @@
       "version": "v1",
       "createdAt": "2026-11-17T18:42:43.601Z",
       "status": "done",
-      "duration": 42.68,
+      "duration": 47.88,
       "fps": 25,
-      "notes": "Alerte Règle & Échéance (Structuré) · Look Papier signature",
+      "notes": "Alerte Règle & Échéance (Melvyn V2 · fallback) · Look Papier signature",
       "outputMp4": "/renders/decouverts-bancaires-et-credit-conso-ce-_v1.mp4",
       "contactSheetUrl": "/renders/decouverts-bancaires-et-credit-conso-ce-_v1_contact.jpg",
       "hasMp4": true
@@ -33,798 +33,896 @@
       "id": "w-1",
       "word": "À",
       "start": 0.08,
-      "end": 0.206,
+      "end": 0.207,
       "confidence": 0.95
     },
     {
       "id": "w-2",
       "word": "partir",
-      "start": 0.217,
-      "end": 0.597,
+      "start": 0.218,
+      "end": 0.599,
       "confidence": 0.95
     },
     {
       "id": "w-3",
       "word": "du",
-      "start": 0.63,
-      "end": 0.756,
+      "start": 0.632,
+      "end": 0.759,
       "confidence": 0.95
     },
     {
       "id": "w-4",
       "word": "20",
-      "start": 0.767,
-      "end": 0.894,
+      "start": 0.77,
+      "end": 0.897,
       "confidence": 0.95
     },
     {
       "id": "w-5",
       "word": "novembre,",
-      "start": 0.905,
-      "end": 1.473,
+      "start": 0.908,
+      "end": 1.479,
       "confidence": 0.95
     },
     {
       "id": "w-6",
       "word": "ta",
-      "start": 1.523,
-      "end": 1.649,
+      "start": 1.529,
+      "end": 1.655,
       "confidence": 0.95
     },
     {
       "id": "w-7",
       "word": "banque",
-      "start": 1.66,
-      "end": 2.04,
+      "start": 1.666,
+      "end": 2.047,
       "confidence": 0.95
     },
     {
       "id": "w-8",
       "word": "n'a",
-      "start": 2.073,
-      "end": 2.262,
+      "start": 2.08,
+      "end": 2.271,
       "confidence": 0.95
     },
     {
       "id": "w-9",
       "word": "plus",
-      "start": 2.279,
-      "end": 2.532,
+      "start": 2.287,
+      "end": 2.541,
       "confidence": 0.95
     },
     {
       "id": "w-10",
       "word": "le",
-      "start": 2.554,
-      "end": 2.68,
+      "start": 2.563,
+      "end": 2.69,
       "confidence": 0.95
     },
     {
       "id": "w-11",
       "word": "droit",
-      "start": 2.691,
-      "end": 3.007,
+      "start": 2.701,
+      "end": 3.018,
       "confidence": 0.95
     },
     {
       "id": "w-12",
       "word": "de",
-      "start": 3.034,
-      "end": 3.161,
+      "start": 3.046,
+      "end": 3.173,
       "confidence": 0.95
     },
     {
       "id": "w-13",
       "word": "gérer",
-      "start": 3.172,
-      "end": 3.488,
+      "start": 3.184,
+      "end": 3.501,
       "confidence": 0.95
     },
     {
       "id": "w-14",
       "word": "ton",
-      "start": 3.515,
-      "end": 3.705,
+      "start": 3.529,
+      "end": 3.719,
       "confidence": 0.95
     },
     {
       "id": "w-15",
       "word": "découvert",
-      "start": 3.722,
-      "end": 4.29,
+      "start": 3.736,
+      "end": 4.307,
       "confidence": 0.95
     },
     {
       "id": "w-16",
       "word": "comme",
-      "start": 4.34,
-      "end": 4.656,
+      "start": 4.357,
+      "end": 4.674,
       "confidence": 0.95
     },
     {
       "id": "w-17",
       "word": "avant.",
-      "start": 4.684,
-      "end": 5.063,
+      "start": 4.702,
+      "end": 5.082,
       "confidence": 0.95
     },
     {
       "id": "w-18",
-      "word": "Décryptage",
-      "start": 5.096,
-      "end": 5.728,
+      "word": "La",
+      "start": 5.115,
+      "end": 5.242,
       "confidence": 0.95
     },
     {
       "id": "w-19",
-      "word": "concret",
-      "start": 5.783,
-      "end": 6.225,
+      "word": "directive",
+      "start": 5.253,
+      "end": 5.824,
       "confidence": 0.95
     },
     {
       "id": "w-20",
-      "word": "des",
-      "start": 6.264,
-      "end": 6.453,
+      "word": "européenne",
+      "start": 5.874,
+      "end": 6.509,
       "confidence": 0.95
     },
     {
       "id": "w-21",
-      "word": "nouvelles",
-      "start": 6.47,
-      "end": 7.039,
+      "word": "impose",
+      "start": 6.564,
+      "end": 6.945,
       "confidence": 0.95
     },
     {
       "id": "w-22",
-      "word": "règles",
-      "start": 7.088,
-      "end": 7.468,
+      "word": "une",
+      "start": 6.978,
+      "end": 7.168,
       "confidence": 0.95
     },
     {
       "id": "w-23",
-      "word": "applicables",
-      "start": 7.501,
-      "end": 8.196,
+      "word": "vérification",
+      "start": 7.185,
+      "end": 7.946,
       "confidence": 0.95
     },
     {
       "id": "w-24",
-      "word": "au",
-      "start": 8.256,
-      "end": 8.383,
+      "word": "claire",
+      "start": 8.012,
+      "end": 8.393,
       "confidence": 0.95
     },
     {
       "id": "w-25",
-      "word": "20",
-      "start": 8.394,
-      "end": 8.52,
+      "word": "du",
+      "start": 8.426,
+      "end": 8.553,
       "confidence": 0.95
     },
     {
       "id": "w-26",
-      "word": "novembre",
-      "start": 8.531,
-      "end": 9.037,
+      "word": "budget",
+      "start": 8.564,
+      "end": 8.945,
       "confidence": 0.95
     },
     {
       "id": "w-27",
-      "word": "sur",
-      "start": 9.081,
-      "end": 9.271,
+      "word": "avant",
+      "start": 8.978,
+      "end": 9.295,
       "confidence": 0.95
     },
     {
       "id": "w-28",
-      "word": "les",
-      "start": 9.287,
-      "end": 9.477,
+      "word": "toute",
+      "start": 9.323,
+      "end": 9.64,
       "confidence": 0.95
     },
     {
       "id": "w-29",
-      "word": "découverts",
-      "start": 9.493,
-      "end": 10.125,
+      "word": "autorisation",
+      "start": 9.668,
+      "end": 10.429,
       "confidence": 0.95
     },
     {
       "id": "w-30",
-      "word": "et",
-      "start": 10.18,
-      "end": 10.307,
+      "word": "automatique.",
+      "start": 10.496,
+      "end": 11.257,
       "confidence": 0.95
     },
     {
       "id": "w-31",
-      "word": "les",
-      "start": 10.318,
-      "end": 10.507,
+      "word": "Trois",
+      "start": 11.323,
+      "end": 11.641,
       "confidence": 0.95
     },
     {
       "id": "w-32",
-      "word": "frais",
-      "start": 10.524,
-      "end": 10.84,
+      "word": "garde-fous",
+      "start": 11.668,
+      "end": 12.303,
       "confidence": 0.95
     },
     {
       "id": "w-33",
-      "word": "cachés",
-      "start": 10.867,
-      "end": 11.247,
+      "word": "arrivent",
+      "start": 12.358,
+      "end": 12.866,
       "confidence": 0.95
     },
     {
       "id": "w-34",
-      "word": "Concrètement,",
-      "start": 11.28,
-      "end": 12.101,
+      "word": ":",
+      "start": 12.91,
+      "end": 13.037,
       "confidence": 0.95
     },
     {
       "id": "w-35",
-      "word": "tout",
-      "start": 12.173,
-      "end": 12.426,
+      "word": "contrôle",
+      "start": 13.048,
+      "end": 13.556,
       "confidence": 0.95
     },
     {
       "id": "w-36",
-      "word": "s’enchaîne",
-      "start": 12.448,
-      "end": 13.08,
+      "word": "des",
+      "start": 13.6,
+      "end": 13.79,
       "confidence": 0.95
     },
     {
       "id": "w-37",
-      "word": "en",
-      "start": 13.135,
-      "end": 13.261,
+      "word": "revenus,",
+      "start": 13.807,
+      "end": 14.314,
       "confidence": 0.95
     },
     {
       "id": "w-38",
-      "word": "quatre",
-      "start": 13.272,
-      "end": 13.651,
+      "word": "TAEG",
+      "start": 14.358,
+      "end": 14.612,
       "confidence": 0.95
     },
     {
       "id": "w-39",
-      "word": "étapes",
-      "start": 13.684,
-      "end": 14.064,
+      "word": "lisible,",
+      "start": 14.634,
+      "end": 15.142,
       "confidence": 0.95
     },
     {
       "id": "w-40",
-      "word": "précises",
-      "start": 14.097,
-      "end": 14.602,
+      "word": "et",
+      "start": 15.186,
+      "end": 15.313,
       "confidence": 0.95
     },
     {
       "id": "w-41",
-      "word": "qui",
-      "start": 14.646,
-      "end": 14.836,
+      "word": "plafonnement",
+      "start": 15.324,
+      "end": 16.086,
       "confidence": 0.95
     },
     {
       "id": "w-42",
-      "word": "modifient",
-      "start": 14.852,
-      "end": 15.421,
+      "word": "des",
+      "start": 16.152,
+      "end": 16.342,
       "confidence": 0.95
     },
     {
       "id": "w-43",
-      "word": "la",
-      "start": 15.471,
-      "end": 15.597,
+      "word": "commissions",
+      "start": 16.359,
+      "end": 17.057,
       "confidence": 0.95
     },
     {
       "id": "w-44",
-      "word": "suite.",
-      "start": 15.608,
-      "end": 15.988,
+      "word": "d’intervention.",
+      "start": 17.118,
+      "end": 18.069,
       "confidence": 0.95
     },
     {
       "id": "w-45",
-      "word": "Le",
-      "start": 16.021,
-      "end": 16.147,
+      "word": "La",
+      "start": 18.152,
+      "end": 18.279,
       "confidence": 0.95
     },
     {
       "id": "w-46",
-      "word": "vrai",
-      "start": 16.158,
-      "end": 16.411,
+      "word": "courbe",
+      "start": 18.29,
+      "end": 18.671,
       "confidence": 0.95
     },
     {
       "id": "w-47",
-      "word": "point",
-      "start": 16.433,
-      "end": 16.749,
+      "word": "du",
+      "start": 18.704,
+      "end": 18.831,
       "confidence": 0.95
     },
     {
       "id": "w-48",
-      "word": "de",
-      "start": 16.776,
-      "end": 16.903,
+      "word": "coût",
+      "start": 18.842,
+      "end": 19.096,
       "confidence": 0.95
     },
     {
       "id": "w-49",
-      "word": "bascule",
-      "start": 16.914,
-      "end": 17.356,
+      "word": "annuel",
+      "start": 19.118,
+      "end": 19.499,
       "confidence": 0.95
     },
     {
       "id": "w-50",
-      "word": "ne",
-      "start": 17.395,
-      "end": 17.521,
+      "word": "des",
+      "start": 19.532,
+      "end": 19.722,
       "confidence": 0.95
     },
     {
       "id": "w-51",
-      "word": "vient",
-      "start": 17.532,
-      "end": 17.848,
+      "word": "agios",
+      "start": 19.739,
+      "end": 20.056,
       "confidence": 0.95
     },
     {
       "id": "w-52",
-      "word": "pas",
-      "start": 17.876,
-      "end": 18.065,
+      "word": "subis",
+      "start": 20.084,
+      "end": 20.401,
       "confidence": 0.95
     },
     {
       "id": "w-53",
-      "word": "des",
-      "start": 18.082,
-      "end": 18.271,
+      "word": "peut",
+      "start": 20.429,
+      "end": 20.682,
       "confidence": 0.95
     },
     {
       "id": "w-54",
-      "word": "annonces,",
-      "start": 18.288,
-      "end": 18.857,
+      "word": "chuter",
+      "start": 20.704,
+      "end": 21.085,
       "confidence": 0.95
     },
     {
       "id": "w-55",
-      "word": "mais",
-      "start": 18.906,
-      "end": 19.159,
+      "word": "de",
+      "start": 21.118,
+      "end": 21.245,
       "confidence": 0.95
     },
     {
       "id": "w-56",
-      "word": "de",
-      "start": 19.181,
-      "end": 19.308,
+      "word": "180",
+      "start": 21.256,
+      "end": 21.447,
       "confidence": 0.95
     },
     {
       "id": "w-57",
-      "word": "l’effet",
-      "start": 19.319,
-      "end": 19.761,
+      "word": "euros",
+      "start": 21.463,
+      "end": 21.781,
       "confidence": 0.95
     },
     {
       "id": "w-58",
-      "word": "concret",
-      "start": 19.8,
-      "end": 20.242,
+      "word": "à",
+      "start": 21.808,
+      "end": 21.935,
       "confidence": 0.95
     },
     {
       "id": "w-59",
-      "word": "au",
-      "start": 20.28,
-      "end": 20.407,
+      "word": "24",
+      "start": 21.946,
+      "end": 22.073,
       "confidence": 0.95
     },
     {
       "id": "w-60",
-      "word": "quotidien.",
-      "start": 20.418,
-      "end": 21.05,
+      "word": "euros.",
+      "start": 22.084,
+      "end": 22.465,
       "confidence": 0.95
     },
     {
       "id": "w-61",
       "word": "Quand",
-      "start": 21.105,
-      "end": 21.421,
+      "start": 22.498,
+      "end": 22.815,
       "confidence": 0.95
     },
     {
       "id": "w-62",
-      "word": "on",
-      "start": 21.449,
-      "end": 21.575,
+      "word": "tu",
+      "start": 22.843,
+      "end": 22.97,
       "confidence": 0.95
     },
     {
       "id": "w-63",
-      "word": "compare",
-      "start": 21.586,
-      "end": 22.028,
+      "word": "compares",
+      "start": 22.981,
+      "end": 23.488,
       "confidence": 0.95
     },
     {
       "id": "w-64",
-      "word": "l’ancien",
-      "start": 22.067,
-      "end": 22.573,
+      "word": "un",
+      "start": 23.533,
+      "end": 23.659,
       "confidence": 0.95
     },
     {
       "id": "w-65",
-      "word": "fonctionnement",
-      "start": 22.617,
-      "end": 23.502,
+      "word": "découvert",
+      "start": 23.671,
+      "end": 24.242,
       "confidence": 0.95
     },
     {
       "id": "w-66",
-      "word": "avec",
-      "start": 23.579,
-      "end": 23.831,
+      "word": "subi",
+      "start": 24.291,
+      "end": 24.545,
       "confidence": 0.95
     },
     {
       "id": "w-67",
-      "word": "la",
-      "start": 23.853,
-      "end": 23.98,
+      "word": "toute",
+      "start": 24.567,
+      "end": 24.885,
       "confidence": 0.95
     },
     {
       "id": "w-68",
-      "word": "nouvelle",
-      "start": 23.991,
-      "end": 24.496,
+      "word": "l’année",
+      "start": 24.912,
+      "end": 25.356,
       "confidence": 0.95
     },
     {
       "id": "w-69",
-      "word": "situation,",
-      "start": 24.54,
-      "end": 25.173,
+      "word": "à",
+      "start": 25.395,
+      "end": 25.522,
       "confidence": 0.95
     },
     {
       "id": "w-70",
-      "word": "la",
-      "start": 25.228,
-      "end": 25.354,
+      "word": "un",
+      "start": 25.533,
+      "end": 25.66,
       "confidence": 0.95
     },
     {
       "id": "w-71",
-      "word": "différence",
-      "start": 25.365,
-      "end": 25.997,
+      "word": "plafond",
+      "start": 25.671,
+      "end": 26.115,
       "confidence": 0.95
     },
     {
       "id": "w-72",
-      "word": "saute",
-      "start": 26.052,
-      "end": 26.368,
+      "word": "encadré,",
+      "start": 26.154,
+      "end": 26.661,
       "confidence": 0.95
     },
     {
       "id": "w-73",
-      "word": "aux",
-      "start": 26.396,
-      "end": 26.585,
+      "word": "tu",
+      "start": 26.706,
+      "end": 26.832,
       "confidence": 0.95
     },
     {
       "id": "w-74",
-      "word": "yeux.",
-      "start": 26.602,
-      "end": 26.918,
+      "word": "divises",
+      "start": 26.844,
+      "end": 27.288,
       "confidence": 0.95
     },
     {
       "id": "w-75",
-      "word": "Pour",
-      "start": 26.945,
-      "end": 27.198,
+      "word": "la",
+      "start": 27.326,
+      "end": 27.453,
       "confidence": 0.95
     },
     {
       "id": "w-76",
-      "word": "t’adapter",
-      "start": 27.22,
-      "end": 27.789,
+      "word": "facture",
+      "start": 27.464,
+      "end": 27.909,
       "confidence": 0.95
     },
     {
       "id": "w-77",
-      "word": "dès",
-      "start": 27.838,
-      "end": 28.028,
+      "word": "par",
+      "start": 27.947,
+      "end": 28.138,
       "confidence": 0.95
     },
     {
       "id": "w-78",
-      "word": "cette",
-      "start": 28.045,
-      "end": 28.361,
+      "word": "sept.",
+      "start": 28.154,
+      "end": 28.471,
       "confidence": 0.95
     },
     {
       "id": "w-79",
-      "word": "semaine,",
-      "start": 28.388,
-      "end": 28.894,
+      "word": "Avant",
+      "start": 28.499,
+      "end": 28.816,
       "confidence": 0.95
     },
     {
       "id": "w-80",
-      "word": "garde",
-      "start": 28.938,
-      "end": 29.254,
+      "word": "la",
+      "start": 28.844,
+      "end": 28.971,
       "confidence": 0.95
     },
     {
       "id": "w-81",
-      "word": "ces",
-      "start": 29.281,
-      "end": 29.471,
+      "word": "date",
+      "start": 28.982,
+      "end": 29.236,
       "confidence": 0.95
     },
     {
       "id": "w-82",
-      "word": "trois",
-      "start": 29.488,
-      "end": 29.804,
+      "word": "clé,",
+      "start": 29.258,
+      "end": 29.512,
       "confidence": 0.95
     },
     {
       "id": "w-83",
-      "word": "repères",
-      "start": 29.831,
-      "end": 30.274,
+      "word": "ouvre",
+      "start": 29.534,
+      "end": 29.851,
       "confidence": 0.95
     },
     {
       "id": "w-84",
-      "word": "simples",
-      "start": 30.312,
-      "end": 30.755,
+      "word": "ton",
+      "start": 29.879,
+      "end": 30.069,
       "confidence": 0.95
     },
     {
       "id": "w-85",
-      "word": "sous",
-      "start": 30.793,
-      "end": 31.046,
+      "word": "application",
+      "start": 30.085,
+      "end": 30.784,
       "confidence": 0.95
     },
     {
       "id": "w-86",
-      "word": "les",
-      "start": 31.068,
-      "end": 31.257,
+      "word": "bancaire,",
+      "start": 30.844,
+      "end": 31.415,
       "confidence": 0.95
     },
     {
       "id": "w-87",
-      "word": "yeux.",
-      "start": 31.274,
-      "end": 31.59,
+      "word": "vérifie",
+      "start": 31.465,
+      "end": 31.909,
       "confidence": 0.95
     },
     {
       "id": "w-88",
-      "word": "D’après",
-      "start": 31.618,
-      "end": 32.06,
+      "word": "ton",
+      "start": 31.948,
+      "end": 32.138,
       "confidence": 0.95
     },
     {
       "id": "w-89",
-      "word": "Service",
-      "start": 32.098,
-      "end": 32.541,
+      "word": "plafond",
+      "start": 32.155,
+      "end": 32.599,
       "confidence": 0.95
     },
     {
       "id": "w-90",
-      "word": "Public,",
-      "start": 32.579,
-      "end": 33.022,
+      "word": "et",
+      "start": 32.638,
+      "end": 32.765,
       "confidence": 0.95
     },
     {
       "id": "w-91",
-      "word": "ceux",
-      "start": 33.06,
-      "end": 33.313,
+      "word": "active",
+      "start": 32.776,
+      "end": 33.156,
       "confidence": 0.95
     },
     {
       "id": "w-92",
-      "word": "qui",
-      "start": 33.335,
-      "end": 33.525,
+      "word": "l’alerte",
+      "start": 33.189,
+      "end": 33.697,
       "confidence": 0.95
     },
     {
       "id": "w-93",
-      "word": "anticipent",
-      "start": 33.541,
-      "end": 34.173,
+      "word": "de",
+      "start": 33.741,
+      "end": 33.868,
       "confidence": 0.95
     },
     {
       "id": "w-94",
-      "word": "ce",
-      "start": 34.228,
-      "end": 34.355,
+      "word": "solde.",
+      "start": 33.879,
+      "end": 34.26,
       "confidence": 0.95
     },
     {
       "id": "w-95",
-      "word": "changement",
-      "start": 34.366,
-      "end": 34.998,
+      "word": "Selon",
+      "start": 34.293,
+      "end": 34.61,
       "confidence": 0.95
     },
     {
       "id": "w-96",
-      "word": "évitent",
-      "start": 35.053,
-      "end": 35.495,
+      "word": "Service-Public",
+      "start": 34.638,
+      "end": 35.526,
       "confidence": 0.95
     },
     {
       "id": "w-97",
-      "word": "l’essentiel",
-      "start": 35.534,
-      "end": 36.229,
+      "word": "&",
+      "start": 35.604,
+      "end": 35.731,
       "confidence": 0.95
     },
     {
       "id": "w-98",
-      "word": "du",
-      "start": 36.29,
-      "end": 36.416,
+      "word": "Directive",
+      "start": 35.742,
+      "end": 36.313,
       "confidence": 0.95
     },
     {
       "id": "w-99",
-      "word": "choc.",
-      "start": 36.427,
-      "end": 36.743,
+      "word": "UE",
+      "start": 36.362,
+      "end": 36.489,
       "confidence": 0.95
     },
     {
       "id": "w-100",
-      "word": "Tu",
-      "start": 36.771,
-      "end": 36.897,
+      "word": "2026,",
+      "start": 36.5,
+      "end": 36.818,
       "confidence": 0.95
     },
     {
       "id": "w-101",
-      "word": "étais",
-      "start": 36.908,
-      "end": 37.224,
+      "word": "les",
+      "start": 36.845,
+      "end": 37.036,
       "confidence": 0.95
     },
     {
       "id": "w-102",
-      "word": "déjà",
-      "start": 37.252,
-      "end": 37.505,
+      "word": "foyers",
+      "start": 37.052,
+      "end": 37.433,
       "confidence": 0.95
     },
     {
       "id": "w-103",
-      "word": "au",
-      "start": 37.526,
-      "end": 37.653,
+      "word": "déjà",
+      "start": 37.466,
+      "end": 37.72,
       "confidence": 0.95
     },
     {
       "id": "w-104",
-      "word": "courant",
-      "start": 37.664,
-      "end": 38.106,
+      "word": "prévenus",
+      "start": 37.742,
+      "end": 38.25,
       "confidence": 0.95
     },
     {
       "id": "w-105",
-      "word": "?",
-      "start": 38.145,
-      "end": 38.271,
+      "word": "économisent",
+      "start": 38.294,
+      "end": 38.992,
       "confidence": 0.95
     },
     {
       "id": "w-106",
-      "word": "Dis-le",
-      "start": 38.282,
-      "end": 38.662,
+      "word": "l’essentiel",
+      "start": 39.053,
+      "end": 39.751,
       "confidence": 0.95
     },
     {
       "id": "w-107",
-      "word": "en",
-      "start": 38.695,
-      "end": 38.821,
+      "word": "des",
+      "start": 39.811,
+      "end": 40.002,
       "confidence": 0.95
     },
     {
       "id": "w-108",
-      "word": "commentaire",
-      "start": 38.832,
-      "end": 39.527,
+      "word": "frais",
+      "start": 40.018,
+      "end": 40.336,
       "confidence": 0.95
     },
     {
       "id": "w-109",
-      "word": "et",
-      "start": 39.588,
-      "end": 39.714,
+      "word": "cachés",
+      "start": 40.363,
+      "end": 40.744,
       "confidence": 0.95
     },
     {
       "id": "w-110",
-      "word": "abonne-toi",
-      "start": 39.725,
-      "end": 40.357,
+      "word": "dès",
+      "start": 40.777,
+      "end": 40.967,
       "confidence": 0.95
     },
     {
       "id": "w-111",
-      "word": "pour",
-      "start": 40.412,
-      "end": 40.665,
+      "word": "le",
+      "start": 40.984,
+      "end": 41.111,
       "confidence": 0.95
     },
     {
       "id": "w-112",
-      "word": "le",
-      "start": 40.687,
-      "end": 40.814,
+      "word": "premier",
+      "start": 41.122,
+      "end": 41.566,
       "confidence": 0.95
     },
     {
       "id": "w-113",
-      "word": "prochain",
-      "start": 40.825,
-      "end": 41.33,
+      "word": "mois.",
+      "start": 41.605,
+      "end": 41.922,
       "confidence": 0.95
     },
     {
       "id": "w-114",
-      "word": "décryptage.",
-      "start": 41.374,
-      "end": 42.07,
+      "word": "Abonne-toi",
+      "start": 41.95,
+      "end": 42.584,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-115",
+      "word": "et",
+      "start": 42.639,
+      "end": 42.766,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-116",
+      "word": "active",
+      "start": 42.777,
+      "end": 43.158,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-117",
+      "word": "la",
+      "start": 43.191,
+      "end": 43.318,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-118",
+      "word": "cloche",
+      "start": 43.329,
+      "end": 43.71,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-119",
+      "word": "pour",
+      "start": 43.743,
+      "end": 43.997,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-120",
+      "word": "ne",
+      "start": 44.019,
+      "end": 44.146,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-121",
+      "word": "rater",
+      "start": 44.157,
+      "end": 44.474,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-122",
+      "word": "aucune",
+      "start": 44.502,
+      "end": 44.883,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-123",
+      "word": "règle",
+      "start": 44.916,
+      "end": 45.233,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-124",
+      "word": "qui",
+      "start": 45.261,
+      "end": 45.451,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-125",
+      "word": "touche",
+      "start": 45.468,
+      "end": 45.848,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-126",
+      "word": "directement",
+      "start": 45.881,
+      "end": 46.58,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-127",
+      "word": "ton",
+      "start": 46.64,
+      "end": 46.831,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-128",
+      "word": "budget.",
+      "start": 46.847,
+      "end": 47.291,
       "confidence": 0.95
     }
   ],
@@ -834,7 +932,7 @@
       "componentId": "comp-beat-1",
       "name": "Découverts bancaires et crédit",
       "start": 0,
-      "end": 5.08,
+      "end": 5.1,
       "type": "typography",
       "color": "#258EFF"
     },
@@ -842,44 +940,44 @@
       "id": "mot-beat-2",
       "componentId": "comp-beat-2",
       "name": "Règle du 20 novembre",
-      "start": 5.08,
-      "end": 11.26,
+      "start": 5.1,
+      "end": 11.29,
       "type": "card",
       "color": "#14161B"
     },
     {
       "id": "mot-beat-3",
       "componentId": "comp-beat-3",
-      "name": "Mécanisme anti-agios",
-      "start": 11.26,
-      "end": 16,
-      "type": "counter",
+      "name": "Ce qui change en banque",
+      "start": 11.29,
+      "end": 18.11,
+      "type": "card",
       "color": "#14161B"
     },
     {
       "id": "mot-beat-4",
       "componentId": "comp-beat-4",
-      "name": "Coût réel des frais",
-      "start": 16,
-      "end": 21.08,
+      "name": "Chute du coût des agios",
+      "start": 18.11,
+      "end": 22.48,
       "type": "chart",
       "color": "#14161B"
     },
     {
       "id": "mot-beat-5",
       "componentId": "comp-beat-5",
-      "name": "Les 4 étapes bancaires",
-      "start": 21.08,
-      "end": 26.93,
-      "type": "card",
+      "name": "Coût réel des frais",
+      "start": 22.48,
+      "end": 28.48,
+      "type": "chart",
       "color": "#14161B"
     },
     {
       "id": "mot-beat-6",
       "componentId": "comp-beat-6",
-      "name": "3 réflexes compte sain",
-      "start": 26.93,
-      "end": 31.6,
+      "name": "Régler ton compte",
+      "start": 28.48,
+      "end": 34.28,
       "type": "card",
       "color": "#14161B"
     },
@@ -887,8 +985,8 @@
       "id": "mot-beat-7",
       "componentId": "comp-beat-7",
       "name": "Ce que fixe la loi",
-      "start": 31.6,
-      "end": 36.76,
+      "start": 34.28,
+      "end": 41.94,
       "type": "chart",
       "color": "#14161B"
     },
@@ -896,8 +994,8 @@
       "id": "mot-beat-8",
       "componentId": "comp-beat-8",
       "name": "Garde ton pouvoir d’achat",
-      "start": 36.76,
-      "end": 42.67,
+      "start": 41.94,
+      "end": 47.89,
       "type": "rocket",
       "color": "#059669"
     }
@@ -907,110 +1005,110 @@
       "id": "layout-beat-1",
       "layout": "split",
       "start": 0,
-      "end": 5.08
+      "end": 5.1
     },
     {
       "id": "layout-beat-2",
       "layout": "split",
-      "start": 5.08,
-      "end": 11.26
+      "start": 5.1,
+      "end": 11.29
     },
     {
       "id": "layout-beat-3",
       "layout": "split",
-      "start": 11.26,
-      "end": 16
+      "start": 11.29,
+      "end": 18.11
     },
     {
       "id": "layout-beat-4",
       "layout": "fullscreen",
-      "start": 16,
-      "end": 21.08
+      "start": 18.11,
+      "end": 22.48
     },
     {
       "id": "layout-beat-5",
-      "layout": "split",
-      "start": 21.08,
-      "end": 26.93
+      "layout": "fullscreen",
+      "start": 22.48,
+      "end": 28.48
     },
     {
       "id": "layout-beat-6",
       "layout": "split",
-      "start": 26.93,
-      "end": 31.6
+      "start": 28.48,
+      "end": 34.28
     },
     {
       "id": "layout-beat-7",
       "layout": "fullscreen",
-      "start": 31.6,
-      "end": 36.76
+      "start": 34.28,
+      "end": 41.94
     },
     {
       "id": "layout-beat-8",
       "layout": "split",
-      "start": 36.76,
-      "end": 42.67
+      "start": 41.94,
+      "end": 47.89
     }
   ],
   "sfxTrack": [
     {
       "id": "sfx-hook-shatter",
       "sound": "impact-boom",
-      "start": 2.44,
+      "start": 2.45,
       "volume": 0.46
     },
     {
       "id": "sfx-hook-boom",
       "sound": "riser",
-      "start": 2.44,
+      "start": 2.45,
       "volume": 0.38
     },
     {
       "id": "sfx-2",
-      "sound": "thud",
-      "start": 5.2,
+      "sound": "pop",
+      "start": 5.22,
       "volume": 0.34
     },
     {
       "id": "sfx-3",
       "sound": "thud",
-      "start": 11.38,
+      "start": 11.41,
       "volume": 0.34
     },
     {
       "id": "sfx-4",
-      "sound": "riser",
-      "start": 16.12,
-      "volume": 0.26
+      "sound": "zhhh",
+      "start": 18.23,
+      "volume": 0.34
     },
     {
       "id": "sfx-5",
-      "sound": "tap",
-      "start": 21.2,
-      "volume": 0.34
+      "sound": "riser",
+      "start": 22.6,
+      "volume": 0.26
     },
     {
       "id": "sfx-6",
       "sound": "tap",
-      "start": 27.05,
+      "start": 28.6,
       "volume": 0.34
     },
     {
       "id": "sfx-7",
       "sound": "zhhh",
-      "start": 31.72,
+      "start": 34.4,
       "volume": 0.34
     },
     {
       "id": "sfx-8",
       "sound": "pop-back",
-      "start": 37.46,
+      "start": 42.64,
       "volume": 0.34
     },
     {
       "id": "sfx-8-bell",
       "sound": "bell",
-      "start": 37.58,
+      "start": 42.76,
       "volume": 0.3
     }
   ],
@@ -1028,7 +1126,7 @@
     "hookText": "À partir du 20 novembre, ta banque n'a plus le droit de gérer ton découvert comme avant.",
     "sources": "service-public.gouv.fr (Nov 2026)",
     "youtubeTitle": "Découverts bancaires et crédit conso : ce qui change dès l",
-    "caption": "À partir du 20 novembre, ta banque n'a plus le droit de gérer ton découvert comme avant.\n\nTu en penses quoi ? Dis-le en commentaire.",
+    "caption": "À partir du 20 novembre, ta banque n'a plus le droit de gérer ton découvert comme avant.\n\nEnregistre ce Short et abonne-toi pour recevoir les prochains décryptages.",
     "hashtags": [
       "#actualite",
       "#actualite",
@@ -1043,14 +1141,14 @@
         "sfxKind": "impact-boom",
         "title": "Découverts bancaires et crédit",
         "shortLabel": "Hook",
-        "screenLabel": "ACTUALITÉ · ALERTE",
+        "screenLabel": "ALERTE · RÈGLES BANQUE",
         "spokenLine": "À partir du 20 novembre, ta banque n'a plus le droit de gérer ton découvert comme avant.",
         "brollKey": "economy",
-        "brollCaption": "Découverts bancaires et",
+        "brollCaption": "Découverts bancaires",
         "iconKind": "bank",
         "stampWord": "ENCADRÉ",
         "statValue": "20 NOV",
-        "statLabel": "Nouvelles règles bancaires",
+        "statLabel": "Réforme découvert bancaire",
         "dateBadge": "20 NOVEMBRE 2026",
         "leftCard": {
           "label": "Ancien découvert",
@@ -1058,47 +1156,50 @@
           "sub": "Frais surprises"
         },
         "rightCard": {
-          "label": "Règle 2026",
+          "label": "Dès le 20 nov",
           "value": "Encadré",
           "sub": "Crédit vérifié"
         },
         "subStats": [
           {
             "value": "20 NOV",
-            "label": "Signal clé"
+            "label": "Ancien découvert"
           },
           {
             "value": "÷7,5",
-            "label": "Écart réel"
+            "label": "Écart net"
           }
         ],
         "from": 0,
-        "to": 5.08,
+        "to": 5.1,
         "layout": "split"
       },
       {
         "id": "beat-2",
-        "visualType": "alert_rule",
+        "visualType": "source_quote",
         "layoutHint": "split",
-        "sfxKind": "thud",
+        "sfxKind": "pop",
         "title": "Règle du 20 novembre",
-        "shortLabel": "Constat",
-        "screenLabel": "FAIT VÉRIFIÉ",
-        "spokenLine": "Décryptage concret des nouvelles règles applicables au 20 novembre sur les découverts et les frais cachés",
+        "shortLabel": "Preuve source",
+        "screenLabel": "SOURCE VÉRIFIÉE",
+        "spokenLine": "La directive européenne impose une vérification claire du budget avant toute autorisation automatique.",
         "brollKey": "data_analytics",
-        "brollCaption": "Constat vérifié",
+        "brollCaption": "Document vérifié",
         "iconKind": "bank",
         "dateBadge": "20 NOVEMBRE 2026",
-        "sourceLabel": "service-public.gouv.fr (Nov 2026)",
+        "sourceLabel": "Service-Public & Directive UE 2026",
+        "quoteText": "Tout découvert bancaire devient un vrai crédit soumis à vérification claire des revenus dès novembre.",
+        "quoteHighlight": "un vrai crédit soumis à vérification",
+        "stampWord": "ENCADRÉ",
         "statValue": "20 NOV",
-        "statLabel": "Nouvelles règles bancaires",
+        "statLabel": "Réforme découvert bancaire",
         "leftCard": {
           "label": "Ancien découvert",
           "value": "Flou",
           "sub": "Frais surprises"
         },
         "rightCard": {
-          "label": "Règle 2026",
+          "label": "Dès le 20 nov",
           "value": "Encadré",
           "sub": "Crédit vérifié"
         },
@@ -1117,37 +1218,70 @@
           "Coût total affiché",
           "Frais d’incident plafonnés"
         ],
-        "from": 5.08,
-        "to": 11.26,
+        "from": 5.1,
+        "to": 11.29,
         "layout": "split"
       },
       {
         "id": "beat-3",
-        "visualType": "counter_flip",
+        "visualType": "alert_rule",
         "layoutHint": "split",
         "sfxKind": "thud",
-        "title": "Mécanisme anti-agios",
+        "title": "Ce qui change en banque",
         "shortLabel": "Mécanisme",
-        "screenLabel": "EN 4 TEMPS",
-        "spokenLine": "Concrètement, tout s’enchaîne en quatre étapes précises qui modifient la suite.",
+        "screenLabel": "EN DIRECT",
+        "spokenLine": "Trois garde-fous arrivent : contrôle des revenus, TAEG lisible, et plafonnement des commissions d’intervention.",
         "brollKey": "parliament",
-        "brollCaption": "Mécanique réelle",
+        "brollCaption": "Mécanisme en action",
         "iconKind": "bank",
+        "sourceLabel": "Service-Public & Directive UE 2026",
+        "uiUrl": "banque.service-public.fr/decouvert",
+        "uiActionLabel": "Fixer mon plafond",
+        "bullets": [
+          "Audit des rentrées nettes",
+          "Simulation TAEG réel",
+          "Blocage alerte 80 %"
+        ],
         "steps": [
           "Seuil fixé",
           "Vérif revenus",
           "Alerte SMS",
           "Frais bloqués"
         ],
+        "chartUnit": " €",
+        "chartPoints": [
+          {
+            "label": "2022",
+            "value": 195
+          },
+          {
+            "label": "2023",
+            "value": 188
+          },
+          {
+            "label": "2024",
+            "value": 180
+          },
+          {
+            "label": "2025",
+            "value": 162
+          },
+          {
+            "label": "2026",
+            "value": 24,
+            "highlight": true
+          }
+        ],
         "stampWord": "MESURÉ",
-        "statLabel": "Nouvelles règles bancaires",
+        "statValue": "20 NOV",
+        "statLabel": "Réforme découvert bancaire",
         "leftCard": {
           "label": "Ancien découvert",
           "value": "Flou",
           "sub": "Frais surprises"
         },
         "rightCard": {
-          "label": "Règle 2026",
+          "label": "Dès le 20 nov",
           "value": "Encadré",
           "sub": "Crédit vérifié"
         },
@@ -1161,24 +1295,48 @@
           "value": "24 €/an",
           "ratio": 0.24
         },
-        "from": 11.26,
-        "to": 16,
+        "from": 11.29,
+        "to": 18.11,
         "layout": "split"
       },
       {
         "id": "beat-4",
-        "visualType": "comparison_bars",
+        "visualType": "chart_curve",
         "layoutHint": "fullscreen",
-        "sfxKind": "riser",
-        "title": "Coût réel des frais",
-        "shortLabel": "Pivot",
+        "sfxKind": "zhhh",
+        "title": "Chute du coût des agios",
+        "shortLabel": "Courbe",
         "screenLabel": "PLEIN ÉCRAN",
-        "spokenLine": "Le vrai point de bascule ne vient pas des annonces, mais de l’effet concret au quotidien.",
+        "spokenLine": "La courbe du coût annuel des agios subis peut chuter de 180 euros à 24 euros.",
         "brollKey": "business",
         "iconKind": "bank",
+        "chartUnit": " €",
+        "chartPoints": [
+          {
+            "label": "2022",
+            "value": 195
+          },
+          {
+            "label": "2023",
+            "value": 188
+          },
+          {
+            "label": "2024",
+            "value": 180
+          },
+          {
+            "label": "2025",
+            "value": 162
+          },
+          {
+            "label": "2026",
+            "value": 24,
+            "highlight": true
+          }
+        ],
         "gaugePct": 78,
-        "statValue": "78 %",
-        "statLabel": "Nouvelles règles bancaires",
+        "statValue": "20 NOV",
+        "statLabel": "Réforme découvert bancaire",
         "comparisonLeft": {
           "label": "Découvert subi avant",
           "value": "180 €/an",
@@ -1195,21 +1353,24 @@
           "Coût total affiché",
           "Frais d’incident plafonnés"
         ],
-        "from": 16,
-        "to": 21.08,
+        "from": 18.11,
+        "to": 22.48,
         "layout": "fullscreen"
       },
       {
         "id": "beat-5",
-        "visualType": "timeline_steps",
-        "layoutHint": "split",
-        "sfxKind": "tap",
-        "title": "Les 4 étapes bancaires",
+        "visualType": "comparison_bars",
+        "layoutHint": "fullscreen",
+        "sfxKind": "riser",
+        "title": "Coût réel des frais",
         "shortLabel": "Écart chiffré",
         "screenLabel": "COMPARAISON",
-        "spokenLine": "Quand on compare l’ancien fonctionnement avec la nouvelle situation, la différence saute aux yeux.",
+        "spokenLine": "Quand tu compares un découvert subi toute l’année à un plafond encadré, tu divises la facture par sept.",
         "brollKey": "focus_clockwork",
         "iconKind": "bank",
+        "sourceLabel": "Service-Public & Directive UE 2026",
+        "quoteText": "Tout découvert bancaire devient un vrai crédit soumis à vérification claire des revenus dès novembre.",
+        "quoteHighlight": "un vrai crédit soumis à vérification",
         "comparisonLeft": {
           "label": "Découvert subi avant",
           "value": "180 €/an",
@@ -1222,7 +1383,7 @@
         },
         "multiplierBadge": "÷7,5",
         "statValue": "24 €/an",
-        "statLabel": "Nouvelles règles bancaires",
+        "statLabel": "Réforme découvert bancaire",
         "dateBadge": "20 NOVEMBRE 2026",
         "bullets": [
           "Solvabilité contrôlée",
@@ -1235,49 +1396,54 @@
           "Alerte SMS",
           "Frais bloqués"
         ],
-        "from": 21.08,
-        "to": 26.93,
-        "layout": "split"
+        "from": 22.48,
+        "to": 28.48,
+        "layout": "fullscreen"
       },
       {
         "id": "beat-6",
-        "visualType": "checklist_audit",
+        "visualType": "ui_window",
         "layoutHint": "split",
         "sfxKind": "tap",
-        "title": "3 réflexes compte sain",
+        "title": "Régler ton compte",
         "shortLabel": "Actions",
         "screenLabel": "PLAN CONCRET",
-        "spokenLine": "Pour t’adapter dès cette semaine, garde ces trois repères simples sous les yeux.",
+        "spokenLine": "Avant la date clé, ouvre ton application bancaire, vérifie ton plafond et active l’alerte de solde.",
         "brollKey": "economy",
-        "brollCaption": "Plan immédiat",
+        "brollCaption": "Plan d’action immédiat",
         "iconKind": "bank",
+        "uiUrl": "banque.service-public.fr/decouvert",
+        "uiActionLabel": "Fixer mon plafond",
         "toggles": [
           {
-            "label": "Découvert sans plafond clair",
+            "label": "Découvert automatique flou",
             "before": "ACTIF",
-            "after": "INTERDIT",
+            "after": "STOPPÉ",
             "activeAfter": false
           },
           {
-            "label": "Calcul complet avant accord",
+            "label": "Test de solvabilité écrit",
             "before": "OFF",
             "after": "OBLIGATOIRE",
             "activeAfter": true
           },
           {
-            "label": "Alerte avant frais bancaires",
+            "label": "Plafond réel de frais",
             "before": "OFF",
-            "after": "ACTIVÉE",
+            "after": "ACTIVÉ",
             "activeAfter": true
           }
         ],
         "bullets": [
-          "Solvabilité contrôlée",
-          "Coût total affiché",
-          "Frais d’incident plafonnés"
+          "Vérifier ton autorisation actuelle",
+          "Activer l’alerte SMS gratuite",
+          "Comparer le TAEG écrit"
         ],
-        "from": 26.93,
-        "to": 31.6,
+        "sourceLabel": "Service-Public & Directive UE 2026",
+        "statValue": "3/3 ACTIFS",
+        "statLabel": "Réflexes immédiats",
+        "from": 28.48,
+        "to": 34.28,
         "layout": "split"
       },
       {
@@ -1286,17 +1452,17 @@
         "layoutHint": "fullscreen",
         "sfxKind": "zhhh",
         "title": "Ce que fixe la loi",
-        "shortLabel": "Preuve",
+        "shortLabel": "Verdict",
         "screenLabel": "BILAN SOURCÉ",
-        "spokenLine": "D’après Service Public, ceux qui anticipent ce changement évitent l’essentiel du choc.",
+        "spokenLine": "Selon Service-Public & Directive UE 2026, les foyers déjà prévenus économisent l’essentiel des frais cachés dès le premier mois.",
         "brollKey": "data_analytics",
         "brollCaption": "Bilan sourcé",
         "iconKind": "bank",
-        "sourceLabel": "service-public.gouv.fr (Nov 2026)",
+        "sourceLabel": "Service-Public & Directive UE 2026",
         "bullets": [
-          "Solvabilité contrôlée",
-          "Coût total affiché",
-          "Frais d’incident plafonnés"
+          "Vérifier ton autorisation actuelle",
+          "Activer l’alerte SMS gratuite",
+          "Comparer le TAEG écrit"
         ],
         "gaugePct": 78,
         "comparisonLeft": {
@@ -1311,9 +1477,9 @@
         },
         "multiplierBadge": "÷7,5",
         "statValue": "20 NOV",
-        "statLabel": "Nouvelles règles bancaires",
-        "from": 31.6,
-        "to": 36.76,
+        "statLabel": "Réforme découvert bancaire",
+        "from": 34.28,
+        "to": 41.94,
         "layout": "fullscreen"
       },
       {
@@ -1324,14 +1490,14 @@
         "title": "Garde ton pouvoir d’achat",
         "shortLabel": "CTA",
         "screenLabel": "SUITE EN DIRECT",
-        "spokenLine": "Tu étais déjà au courant ? Dis-le en commentaire et abonne-toi pour le prochain décryptage.",
+        "spokenLine": "Abonne-toi et active la cloche pour ne rater aucune règle qui touche directement ton budget.",
         "brollKey": "studio",
         "brollCaption": "Décryptage · @alex.decode",
         "iconKind": "rocket",
         "statValue": "@alex.decode",
         "statLabel": "Argent, Banques & Décryptages",
-        "from": 36.76,
-        "to": 42.67,
+        "from": 41.94,
+        "to": 47.89,
         "layout": "split"
       }
     ]

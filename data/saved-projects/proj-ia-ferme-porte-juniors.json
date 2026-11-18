@@ -1,0 +1,1570 @@
+{
+  "id": "proj-ia-ferme-porte-juniors",
+  "slug": "ia-ferme-porte-juniors",
+  "title": "L'IA ne licencie pas les seniors : elle ferme la porte aux juniors (-28 % d'embauches)",
+  "topicId": "SH-002",
+  "topicCategory": "IA",
+  "hookText": "L'IA ne vire pas les seniors. Elle vient de couper 28 % des jobs juniors en France.",
+  "mode": "faceless_explainer",
+  "platform": "youtube_shorts",
+  "status": "draft",
+  "duration": 50.25,
+  "fps": 25,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "currentVersion": "v1",
+  "versions": [
+    {
+      "version": "v1",
+      "createdAt": "2026-11-18T14:38:10.250Z",
+      "status": "draft",
+      "duration": 50.25,
+      "fps": 25,
+      "notes": "Paradoxe & Duel Brut (Melvyn V2 · fallback) · Look Papier signature",
+      "hasMp4": false
+    }
+  ],
+  "editSpec": {
+    "sourceTopicId": "SH-002",
+    "sources": "Banque de France · HEC · Apec (Nov 2026)",
+    "beats": [
+      {
+        "id": "beat-1",
+        "visualType": "hook_versus",
+        "layoutHint": "split",
+        "sfxKind": "zhhh",
+        "title": "L'IA ne licencie pas",
+        "shortLabel": "Hook",
+        "screenLabel": "ALERTE · EMPLOI & IA",
+        "spokenLine": "L'IA ne vire pas les seniors. Elle vient de couper 28 % des jobs juniors en France.",
+        "brollKey": "startup_team",
+        "brollCaption": "L'IA ne licencie",
+        "iconKind": "users",
+        "stampWord": "FRACTURE",
+        "statValue": "-28 %",
+        "statLabel": "Offres juniors depuis 2023",
+        "dateBadge": "DÈS 2026",
+        "leftCard": {
+          "label": "Profils seniors",
+          "value": "98 %",
+          "sub": "Postes maintenus"
+        },
+        "rightCard": {
+          "label": "Jeunes diplômés",
+          "value": "-28 %",
+          "sub": "Offres fermées"
+        },
+        "subStats": [
+          {
+            "value": "-28 %",
+            "label": "Profils seniors"
+          },
+          {
+            "value": "-28 %",
+            "label": "Écart net"
+          }
+        ],
+        "from": 0,
+        "to": 4.79,
+        "layout": "split"
+      },
+      {
+        "id": "beat-2",
+        "visualType": "myth_vs_fact",
+        "layoutHint": "split",
+        "sfxKind": "pop",
+        "title": "Le piège des premiers CDI",
+        "shortLabel": "Preuve source",
+        "screenLabel": "SOURCE VÉRIFIÉE",
+        "spokenLine": "L’étude Stanford et Banque de France révèle moins vingt-huit pour cent d’offres juniors, sans baisse chez les seniors.",
+        "brollKey": "ai_lab",
+        "brollCaption": "Document vérifié",
+        "iconKind": "users",
+        "dateBadge": "DÈS 2026",
+        "sourceLabel": "Stanford & Banque de France 2026",
+        "quoteText": "Dans les métiers exposés à l’IA, les embauches juniors chutent alors que les postes seniors restent stables.",
+        "quoteHighlight": "les embauches juniors chutent",
+        "stampWord": "FRACTURE",
+        "statValue": "-28 %",
+        "statLabel": "Offres juniors depuis 2023",
+        "leftCard": {
+          "label": "Profils seniors",
+          "value": "98 %",
+          "sub": "Postes maintenus"
+        },
+        "rightCard": {
+          "label": "Jeunes diplômés",
+          "value": "-28 %",
+          "sub": "Offres fermées"
+        },
+        "comparisonLeft": {
+          "label": "Offres juniors 2023",
+          "value": "100 base",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Offres juniors 2026",
+          "value": "72 base",
+          "ratio": 0.56
+        },
+        "bullets": [
+          "Tâches d’entrée automatisées",
+          "Seniors 2× plus rapides",
+          "Attentes dès le jour 1"
+        ],
+        "from": 4.79,
+        "to": 11.8,
+        "layout": "split"
+      },
+      {
+        "id": "beat-3",
+        "visualType": "chart_curve",
+        "layoutHint": "fullscreen",
+        "sfxKind": "zhhh",
+        "title": "Courbe des offres juniors",
+        "shortLabel": "Mécanisme",
+        "screenLabel": "EN DIRECT",
+        "spokenLine": "La courbe s’effondre depuis 2023 sur les postes d’entrée : rédaction, support, code basique et analyse junior.",
+        "brollKey": "data_analytics",
+        "brollCaption": "Mécanisme en action",
+        "iconKind": "users",
+        "sourceLabel": "Stanford & Banque de France 2026",
+        "uiUrl": "emploi.observatoire.fr/juniors-2026",
+        "uiActionLabel": "Auditer mon profil",
+        "bullets": [
+          "1 projet déployé mesurable",
+          "Maîtrise revue & debug IA",
+          "Cas client chiffré clair"
+        ],
+        "steps": [
+          "Tâches simples",
+          "Reprises IA",
+          "Moins de CDI",
+          "Rôle seniorisé"
+        ],
+        "chartUnit": "",
+        "chartPoints": [
+          {
+            "label": "2022",
+            "value": 104
+          },
+          {
+            "label": "2023",
+            "value": 100
+          },
+          {
+            "label": "2024",
+            "value": 89
+          },
+          {
+            "label": "2025",
+            "value": 78
+          },
+          {
+            "label": "2026",
+            "value": 72,
+            "highlight": true
+          }
+        ],
+        "stampWord": "MESURÉ",
+        "statValue": "-28 %",
+        "statLabel": "Offres juniors depuis 2023",
+        "leftCard": {
+          "label": "Profils seniors",
+          "value": "98 %",
+          "sub": "Postes maintenus"
+        },
+        "rightCard": {
+          "label": "Jeunes diplômés",
+          "value": "-28 %",
+          "sub": "Offres fermées"
+        },
+        "comparisonLeft": {
+          "label": "Offres juniors 2023",
+          "value": "100 base",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Offres juniors 2026",
+          "value": "72 base",
+          "ratio": 0.56
+        },
+        "from": 11.8,
+        "to": 18.4,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-4",
+        "visualType": "comparison_bars",
+        "layoutHint": "fullscreen",
+        "sfxKind": "riser",
+        "title": "Seniors vs Débutants",
+        "shortLabel": "Courbe",
+        "screenLabel": "PLEIN ÉCRAN",
+        "spokenLine": "Pour un coût identique, un senior équipé d’outils IA produit le travail de deux profils juniors.",
+        "brollKey": "business",
+        "iconKind": "users",
+        "chartUnit": "",
+        "chartPoints": [
+          {
+            "label": "2022",
+            "value": 104
+          },
+          {
+            "label": "2023",
+            "value": 100
+          },
+          {
+            "label": "2024",
+            "value": 89
+          },
+          {
+            "label": "2025",
+            "value": 78
+          },
+          {
+            "label": "2026",
+            "value": 72,
+            "highlight": true
+          }
+        ],
+        "gaugePct": 72,
+        "statValue": "-28 %",
+        "statLabel": "Offres juniors depuis 2023",
+        "comparisonLeft": {
+          "label": "Offres juniors 2023",
+          "value": "100 base",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Offres juniors 2026",
+          "value": "72 base",
+          "ratio": 0.56
+        },
+        "multiplierBadge": "-28 %",
+        "bullets": [
+          "Tâches d’entrée automatisées",
+          "Seniors 2× plus rapides",
+          "Attentes dès le jour 1"
+        ],
+        "from": 18.4,
+        "to": 24.03,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-5",
+        "visualType": "source_quote",
+        "layoutHint": "split",
+        "sfxKind": "pop",
+        "title": "Ce que montrent les études",
+        "shortLabel": "Écart chiffré",
+        "screenLabel": "COMPARAISON",
+        "spokenLine": "En 2026, envoyer un simple CV académique suffit rarement face à des filtres automatisés ultra-exigeants.",
+        "brollKey": "economy",
+        "iconKind": "users",
+        "sourceLabel": "Stanford & Banque de France 2026",
+        "quoteText": "Dans les métiers exposés à l’IA, les embauches juniors chutent alors que les postes seniors restent stables.",
+        "quoteHighlight": "les embauches juniors chutent",
+        "comparisonLeft": {
+          "label": "Offres juniors 2023",
+          "value": "100 base",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Offres juniors 2026",
+          "value": "72 base",
+          "ratio": 0.56
+        },
+        "multiplierBadge": "-28 %",
+        "statValue": "72 base",
+        "statLabel": "Offres juniors depuis 2023",
+        "dateBadge": "DÈS 2026",
+        "bullets": [
+          "Tâches d’entrée automatisées",
+          "Seniors 2× plus rapides",
+          "Attentes dès le jour 1"
+        ],
+        "steps": [
+          "Tâches simples",
+          "Reprises IA",
+          "Moins de CDI",
+          "Rôle seniorisé"
+        ],
+        "from": 24.03,
+        "to": 30.33,
+        "layout": "split"
+      },
+      {
+        "id": "beat-6",
+        "visualType": "checklist_audit",
+        "layoutHint": "split",
+        "sfxKind": "tap",
+        "title": "3 preuves qui recrutent",
+        "shortLabel": "Actions",
+        "screenLabel": "PLAN CONCRET",
+        "spokenLine": "Pour passer devant, publie trois preuves concrètes : projets en ligne, audit IA rigoureux et chiffres réels.",
+        "brollKey": "startup_team",
+        "brollCaption": "Plan d’action immédiat",
+        "iconKind": "users",
+        "uiUrl": "emploi.observatoire.fr/juniors-2026",
+        "uiActionLabel": "Auditer mon profil",
+        "toggles": [
+          {
+            "label": "CV théorique sans démo",
+            "before": "CLASSIQUE",
+            "after": "FILTRÉ",
+            "activeAfter": false
+          },
+          {
+            "label": "Relecture critique d’agents",
+            "before": "OPTION",
+            "after": "EXIGÉ",
+            "activeAfter": true
+          },
+          {
+            "label": "Preuves live vérifiables",
+            "before": "RARE",
+            "after": "PRIORITÉ",
+            "activeAfter": true
+          }
+        ],
+        "bullets": [
+          "Publier des projets chiffrés en ligne",
+          "Auditer et corriger du code IA",
+          "Viser les PME à flux concrets"
+        ],
+        "sourceLabel": "Stanford & Banque de France 2026",
+        "statValue": "3/3 ACTIFS",
+        "statLabel": "Réflexes immédiats",
+        "from": 30.33,
+        "to": 36.82,
+        "layout": "split"
+      },
+      {
+        "id": "beat-7",
+        "visualType": "gauge",
+        "layoutHint": "fullscreen",
+        "sfxKind": "zhhh",
+        "title": "Verdict marché 2026",
+        "shortLabel": "Verdict",
+        "screenLabel": "BILAN SOURCÉ",
+        "spokenLine": "Les données de Stanford & Banque de France 2026 montrent que les profils capables de piloter ces outils restent très recherchés.",
+        "brollKey": "ai_lab",
+        "brollCaption": "Bilan sourcé",
+        "iconKind": "users",
+        "sourceLabel": "Stanford & Banque de France 2026",
+        "bullets": [
+          "Publier des projets chiffrés en ligne",
+          "Auditer et corriger du code IA",
+          "Viser les PME à flux concrets"
+        ],
+        "gaugePct": 72,
+        "comparisonLeft": {
+          "label": "Offres juniors 2023",
+          "value": "100 base",
+          "ratio": 0.9
+        },
+        "comparisonRight": {
+          "label": "Offres juniors 2026",
+          "value": "72 base",
+          "ratio": 0.56
+        },
+        "multiplierBadge": "-28 %",
+        "statValue": "-28 %",
+        "statLabel": "Offres juniors depuis 2023",
+        "from": 36.82,
+        "to": 44.38,
+        "layout": "fullscreen"
+      },
+      {
+        "id": "beat-8",
+        "visualType": "cta_card",
+        "layoutHint": "split",
+        "sfxKind": "pop-back",
+        "title": "Anticipe le marché 2026",
+        "shortLabel": "CTA",
+        "screenLabel": "SUITE EN DIRECT",
+        "spokenLine": "Abonne-toi et active la cloche pour garder une longueur d’avance sur le marché du travail.",
+        "brollKey": "studio",
+        "brollCaption": "Décryptage · @alex.decode",
+        "iconKind": "rocket",
+        "statValue": "@alex.decode",
+        "statLabel": "Emploi, IA & Carrière FR",
+        "from": 44.38,
+        "to": 50.25,
+        "layout": "split"
+      }
+    ],
+    "lookId": "papier",
+    "speed": 1.05,
+    "hookText": "L'IA ne vire pas les seniors. Elle vient de couper 28 % des jobs juniors en France.",
+    "youtubeTitle": "L'IA ne licencie pas les seniors : elle ferme la porte aux",
+    "caption": "L'IA ne vire pas les seniors. Elle vient de couper 28 % des jobs juniors en France.\n\nEnregistre ce Short et abonne-toi pour recevoir les prochains décryptages.",
+    "hashtags": [
+      "#ia",
+      "#actualite",
+      "#france",
+      "#shorts"
+    ]
+  },
+  "transcript": [
+    {
+      "id": "w-1",
+      "word": "L'IA",
+      "start": 0.08,
+      "end": 0.336,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-2",
+      "word": "ne",
+      "start": 0.358,
+      "end": 0.486,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-3",
+      "word": "vire",
+      "start": 0.497,
+      "end": 0.753,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-4",
+      "word": "pas",
+      "start": 0.775,
+      "end": 0.967,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-5",
+      "word": "les",
+      "start": 0.983,
+      "end": 1.175,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-6",
+      "word": "seniors.",
+      "start": 1.192,
+      "end": 1.703,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-7",
+      "word": "Elle",
+      "start": 1.748,
+      "end": 2.003,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-8",
+      "word": "vient",
+      "start": 2.025,
+      "end": 2.345,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-9",
+      "word": "de",
+      "start": 2.373,
+      "end": 2.501,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-10",
+      "word": "couper",
+      "start": 2.512,
+      "end": 2.895,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-11",
+      "word": "28",
+      "start": 2.929,
+      "end": 3.057,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-12",
+      "word": "%",
+      "start": 3.068,
+      "end": 3.196,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-13",
+      "word": "des",
+      "start": 3.207,
+      "end": 3.398,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-14",
+      "word": "jobs",
+      "start": 3.415,
+      "end": 3.671,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-15",
+      "word": "juniors",
+      "start": 3.693,
+      "end": 4.141,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-16",
+      "word": "en",
+      "start": 4.179,
+      "end": 4.307,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-17",
+      "word": "France.",
+      "start": 4.318,
+      "end": 4.766,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-18",
+      "word": "L’étude",
+      "start": 4.805,
+      "end": 5.252,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-19",
+      "word": "Stanford",
+      "start": 5.291,
+      "end": 5.803,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-20",
+      "word": "et",
+      "start": 5.847,
+      "end": 5.975,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-21",
+      "word": "Banque",
+      "start": 5.986,
+      "end": 6.369,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-22",
+      "word": "de",
+      "start": 6.403,
+      "end": 6.531,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-23",
+      "word": "France",
+      "start": 6.542,
+      "end": 6.925,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-24",
+      "word": "révèle",
+      "start": 6.959,
+      "end": 7.342,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-25",
+      "word": "moins",
+      "start": 7.376,
+      "end": 7.695,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-26",
+      "word": "vingt-huit",
+      "start": 7.723,
+      "end": 8.362,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-27",
+      "word": "pour",
+      "start": 8.418,
+      "end": 8.674,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-28",
+      "word": "cent",
+      "start": 8.696,
+      "end": 8.951,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-29",
+      "word": "d’offres",
+      "start": 8.974,
+      "end": 9.485,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-30",
+      "word": "juniors,",
+      "start": 9.53,
+      "end": 10.041,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-31",
+      "word": "sans",
+      "start": 10.085,
+      "end": 10.341,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-32",
+      "word": "baisse",
+      "start": 10.363,
+      "end": 10.747,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-33",
+      "word": "chez",
+      "start": 10.78,
+      "end": 11.036,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-34",
+      "word": "les",
+      "start": 11.058,
+      "end": 11.25,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-35",
+      "word": "seniors.",
+      "start": 11.267,
+      "end": 11.778,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-36",
+      "word": "La",
+      "start": 11.822,
+      "end": 11.95,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-37",
+      "word": "courbe",
+      "start": 11.961,
+      "end": 12.345,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-38",
+      "word": "s’effondre",
+      "start": 12.378,
+      "end": 13.018,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-39",
+      "word": "depuis",
+      "start": 13.073,
+      "end": 13.457,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-40",
+      "word": "2023",
+      "start": 13.49,
+      "end": 13.746,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-41",
+      "word": "sur",
+      "start": 13.768,
+      "end": 13.96,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-42",
+      "word": "les",
+      "start": 13.976,
+      "end": 14.168,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-43",
+      "word": "postes",
+      "start": 14.185,
+      "end": 14.568,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-44",
+      "word": "d’entrée",
+      "start": 14.602,
+      "end": 15.113,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-45",
+      "word": ":",
+      "start": 15.158,
+      "end": 15.285,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-46",
+      "word": "rédaction,",
+      "start": 15.297,
+      "end": 15.936,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-47",
+      "word": "support,",
+      "start": 15.991,
+      "end": 16.503,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-48",
+      "word": "code",
+      "start": 16.547,
+      "end": 16.803,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-49",
+      "word": "basique",
+      "start": 16.825,
+      "end": 17.273,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-50",
+      "word": "et",
+      "start": 17.311,
+      "end": 17.439,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-51",
+      "word": "analyse",
+      "start": 17.45,
+      "end": 17.898,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-52",
+      "word": "junior.",
+      "start": 17.937,
+      "end": 18.384,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-53",
+      "word": "Pour",
+      "start": 18.423,
+      "end": 18.679,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-54",
+      "word": "un",
+      "start": 18.701,
+      "end": 18.829,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-55",
+      "word": "coût",
+      "start": 18.84,
+      "end": 19.096,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-56",
+      "word": "identique,",
+      "start": 19.118,
+      "end": 19.757,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-57",
+      "word": "un",
+      "start": 19.813,
+      "end": 19.941,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-58",
+      "word": "senior",
+      "start": 19.952,
+      "end": 20.335,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-59",
+      "word": "équipé",
+      "start": 20.369,
+      "end": 20.752,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-60",
+      "word": "d’outils",
+      "start": 20.786,
+      "end": 21.297,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-61",
+      "word": "IA",
+      "start": 21.341,
+      "end": 21.469,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-62",
+      "word": "produit",
+      "start": 21.48,
+      "end": 21.928,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-63",
+      "word": "le",
+      "start": 21.967,
+      "end": 22.095,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-64",
+      "word": "travail",
+      "start": 22.106,
+      "end": 22.553,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-65",
+      "word": "de",
+      "start": 22.592,
+      "end": 22.72,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-66",
+      "word": "deux",
+      "start": 22.731,
+      "end": 22.987,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-67",
+      "word": "profils",
+      "start": 23.009,
+      "end": 23.456,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-68",
+      "word": "juniors.",
+      "start": 23.495,
+      "end": 24.007,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-69",
+      "word": "En",
+      "start": 24.051,
+      "end": 24.179,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-70",
+      "word": "2026,",
+      "start": 24.19,
+      "end": 24.51,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-71",
+      "word": "envoyer",
+      "start": 24.538,
+      "end": 24.985,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-72",
+      "word": "un",
+      "start": 25.024,
+      "end": 25.152,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-73",
+      "word": "simple",
+      "start": 25.163,
+      "end": 25.546,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-74",
+      "word": "CV",
+      "start": 25.58,
+      "end": 25.708,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-75",
+      "word": "académique",
+      "start": 25.719,
+      "end": 26.358,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-76",
+      "word": "suffit",
+      "start": 26.414,
+      "end": 26.797,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-77",
+      "word": "rarement",
+      "start": 26.83,
+      "end": 27.342,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-78",
+      "word": "face",
+      "start": 27.386,
+      "end": 27.642,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-79",
+      "word": "à",
+      "start": 27.664,
+      "end": 27.792,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-80",
+      "word": "des",
+      "start": 27.803,
+      "end": 27.995,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-81",
+      "word": "filtres",
+      "start": 28.012,
+      "end": 28.459,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-82",
+      "word": "automatisés",
+      "start": 28.498,
+      "end": 29.201,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-83",
+      "word": "ultra-exigeants.",
+      "start": 29.262,
+      "end": 30.285,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-84",
+      "word": "Pour",
+      "start": 30.374,
+      "end": 30.63,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-85",
+      "word": "passer",
+      "start": 30.652,
+      "end": 31.036,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-86",
+      "word": "devant,",
+      "start": 31.069,
+      "end": 31.516,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-87",
+      "word": "publie",
+      "start": 31.555,
+      "end": 31.939,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-88",
+      "word": "trois",
+      "start": 31.972,
+      "end": 32.292,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-89",
+      "word": "preuves",
+      "start": 32.32,
+      "end": 32.767,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-90",
+      "word": "concrètes",
+      "start": 32.806,
+      "end": 33.381,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-91",
+      "word": ":",
+      "start": 33.431,
+      "end": 33.559,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-92",
+      "word": "projets",
+      "start": 33.57,
+      "end": 34.018,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-93",
+      "word": "en",
+      "start": 34.057,
+      "end": 34.184,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-94",
+      "word": "ligne,",
+      "start": 34.196,
+      "end": 34.579,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-95",
+      "word": "audit",
+      "start": 34.612,
+      "end": 34.932,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-96",
+      "word": "IA",
+      "start": 34.96,
+      "end": 35.088,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-97",
+      "word": "rigoureux",
+      "start": 35.099,
+      "end": 35.674,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-98",
+      "word": "et",
+      "start": 35.724,
+      "end": 35.852,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-99",
+      "word": "chiffres",
+      "start": 35.863,
+      "end": 36.375,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-100",
+      "word": "réels.",
+      "start": 36.419,
+      "end": 36.803,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-101",
+      "word": "Les",
+      "start": 36.836,
+      "end": 37.028,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-102",
+      "word": "données",
+      "start": 37.044,
+      "end": 37.492,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-103",
+      "word": "de",
+      "start": 37.531,
+      "end": 37.659,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-104",
+      "word": "Stanford",
+      "start": 37.67,
+      "end": 38.181,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-105",
+      "word": "&",
+      "start": 38.226,
+      "end": 38.353,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-106",
+      "word": "Banque",
+      "start": 38.364,
+      "end": 38.748,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-107",
+      "word": "de",
+      "start": 38.781,
+      "end": 38.909,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-108",
+      "word": "France",
+      "start": 38.92,
+      "end": 39.304,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-109",
+      "word": "2026",
+      "start": 39.337,
+      "end": 39.593,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-110",
+      "word": "montrent",
+      "start": 39.615,
+      "end": 40.127,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-111",
+      "word": "que",
+      "start": 40.171,
+      "end": 40.363,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-112",
+      "word": "les",
+      "start": 40.379,
+      "end": 40.571,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-113",
+      "word": "profils",
+      "start": 40.588,
+      "end": 41.035,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-114",
+      "word": "capables",
+      "start": 41.074,
+      "end": 41.586,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-115",
+      "word": "de",
+      "start": 41.63,
+      "end": 41.758,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-116",
+      "word": "piloter",
+      "start": 41.769,
+      "end": 42.217,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-117",
+      "word": "ces",
+      "start": 42.255,
+      "end": 42.447,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-118",
+      "word": "outils",
+      "start": 42.464,
+      "end": 42.847,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-119",
+      "word": "restent",
+      "start": 42.881,
+      "end": 43.328,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-120",
+      "word": "très",
+      "start": 43.367,
+      "end": 43.623,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-121",
+      "word": "recherchés.",
+      "start": 43.645,
+      "end": 44.348,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-122",
+      "word": "Abonne-toi",
+      "start": 44.409,
+      "end": 45.049,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-123",
+      "word": "et",
+      "start": 45.104,
+      "end": 45.232,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-124",
+      "word": "active",
+      "start": 45.243,
+      "end": 45.627,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-125",
+      "word": "la",
+      "start": 45.66,
+      "end": 45.788,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-126",
+      "word": "cloche",
+      "start": 45.799,
+      "end": 46.183,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-127",
+      "word": "pour",
+      "start": 46.216,
+      "end": 46.472,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-128",
+      "word": "garder",
+      "start": 46.494,
+      "end": 46.877,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-129",
+      "word": "une",
+      "start": 46.911,
+      "end": 47.102,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-130",
+      "word": "longueur",
+      "start": 47.119,
+      "end": 47.631,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-131",
+      "word": "d’avance",
+      "start": 47.675,
+      "end": 48.186,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-132",
+      "word": "sur",
+      "start": 48.231,
+      "end": 48.423,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-133",
+      "word": "le",
+      "start": 48.439,
+      "end": 48.567,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-134",
+      "word": "marché",
+      "start": 48.578,
+      "end": 48.962,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-135",
+      "word": "du",
+      "start": 48.995,
+      "end": 49.123,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-136",
+      "word": "travail.",
+      "start": 49.134,
+      "end": 49.646,
+      "confidence": 0.95
+    }
+  ],
+  "motionTrack": [
+    {
+      "id": "mot-beat-1",
+      "componentId": "comp-beat-1",
+      "name": "L'IA ne licencie pas",
+      "start": 0,
+      "end": 4.79,
+      "type": "typography",
+      "color": "#258EFF"
+    },
+    {
+      "id": "mot-beat-2",
+      "componentId": "comp-beat-2",
+      "name": "Le piège des premiers CDI",
+      "start": 4.79,
+      "end": 11.8,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-3",
+      "componentId": "comp-beat-3",
+      "name": "Courbe des offres juniors",
+      "start": 11.8,
+      "end": 18.4,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-4",
+      "componentId": "comp-beat-4",
+      "name": "Seniors vs Débutants",
+      "start": 18.4,
+      "end": 24.03,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-5",
+      "componentId": "comp-beat-5",
+      "name": "Ce que montrent les études",
+      "start": 24.03,
+      "end": 30.33,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-6",
+      "componentId": "comp-beat-6",
+      "name": "3 preuves qui recrutent",
+      "start": 30.33,
+      "end": 36.82,
+      "type": "card",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-7",
+      "componentId": "comp-beat-7",
+      "name": "Verdict marché 2026",
+      "start": 36.82,
+      "end": 44.38,
+      "type": "chart",
+      "color": "#14161B"
+    },
+    {
+      "id": "mot-beat-8",
+      "componentId": "comp-beat-8",
+      "name": "Anticipe le marché 2026",
+      "start": 44.38,
+      "end": 50.25,
+      "type": "rocket",
+      "color": "#059669"
+    }
+  ],
+  "layoutTrack": [
+    {
+      "id": "layout-beat-1",
+      "layout": "split",
+      "start": 0,
+      "end": 4.79
+    },
+    {
+      "id": "layout-beat-2",
+      "layout": "split",
+      "start": 4.79,
+      "end": 11.8
+    },
+    {
+      "id": "layout-beat-3",
+      "layout": "fullscreen",
+      "start": 11.8,
+      "end": 18.4
+    },
+    {
+      "id": "layout-beat-4",
+      "layout": "fullscreen",
+      "start": 18.4,
+      "end": 24.03
+    },
+    {
+      "id": "layout-beat-5",
+      "layout": "split",
+      "start": 24.03,
+      "end": 30.33
+    },
+    {
+      "id": "layout-beat-6",
+      "layout": "split",
+      "start": 30.33,
+      "end": 36.82
+    },
+    {
+      "id": "layout-beat-7",
+      "layout": "fullscreen",
+      "start": 36.82,
+      "end": 44.38
+    },
+    {
+      "id": "layout-beat-8",
+      "layout": "split",
+      "start": 44.38,
+      "end": 50.25
+    }
+  ],
+  "sfxTrack": [
+    {
+      "id": "sfx-hook-shatter",
+      "sound": "zhhh",
+      "start": 2.3,
+      "volume": 0.46
+    },
+    {
+      "id": "sfx-hook-boom",
+      "sound": "thud",
+      "start": 2.3,
+      "volume": 0.38
+    },
+    {
+      "id": "sfx-2",
+      "sound": "pop",
+      "start": 4.91,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-3",
+      "sound": "zhhh",
+      "start": 11.92,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-4",
+      "sound": "riser",
+      "start": 18.52,
+      "volume": 0.26
+    },
+    {
+      "id": "sfx-5",
+      "sound": "pop",
+      "start": 24.15,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-6",
+      "sound": "tap",
+      "start": 30.45,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-7",
+      "sound": "zhhh",
+      "start": 36.94,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8",
+      "sound": "pop-back",
+      "start": 45.08,
+      "volume": 0.34
+    },
+    {
+      "id": "sfx-8-bell",
+      "sound": "bell",
+      "start": 45.2,
+      "volume": 0.3
+    }
+  ],
+  "musicTrack": {
+    "trackName": "Bright_Corporate_Groove_8c962467.mp3",
+    "volume": 0.24,
+    "ducking": true
+  },
+  "feedbacks": [],
+  "motionComponents": {},
+  "contactSheet": [],
+  "styleProfile": {
+    "name": "Papier signature",
+    "fontFamily": "\"Bricolage Grotesque\", sans-serif",
+    "accentColor": "#258EFF",
+    "textColor": "#14161B",
+    "cardBg": "#FCFBF8",
+    "captionsPosition": "bottom",
+    "visualBeatsTarget": 8
+  },
+  "hasMp4": false
+}

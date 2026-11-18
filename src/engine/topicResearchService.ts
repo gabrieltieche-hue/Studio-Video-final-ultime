@@ -182,19 +182,20 @@ export async function runDeepTopicResearchAndUpdateCsv(
     )
     .join('\n\n');
 
-  // Pass 2: Structured scoring & candidate generation across 5 categories
+  // Pass 2: Structured scoring & candidate generation across 5 categories (/outliers methodology)
   const synthesisResponse = await ai.models.generateContent({
     model: 'gemini-4-hydrogen',
     contents: [
-      `Tu es le stratège éditorial d'une chaîne française de Shorts viraux style @melvynxdev (ton direct, analytique, zéro blabla, faits chiffrés, 45-55s).`,
+      `Tu es le stratège éditorial d'une chaîne française de Shorts viraux style @melvynxdev (ton direct, analytique, zéro blabla, faits chiffrés, 42-52s).`,
       `Date du jour : ${dateIso}. ${focusClause}`,
       `Voici les thèmes DÉJÀ présents dans notre fichier CSV (INTERDIT de les répéter ou de proposer un doublon proche) :\n${existingThemesList || '(aucun)'}`,
       `Voici le dossier de recherche web temps réel collecté à l'instant :\n${researchContext}`,
-      `À partir de ces recherches réelles, propose exactement 5 candidats de Shorts à très fort potentiel viral en France, un par catégorie parmi : "Actualité", "IA", "Business", "Politique", "Conseils de vie".`,
+      `À partir de ces recherches réelles, applique la méthode /outliers pour identifier exactement 5 candidats de Shorts à fort effet multiplicateur (Save/Share + curiosité immédiate), un par catégorie parmi : "Actualité", "IA", "Business", "Politique", "Conseils de vie".`,
       `Règles strictes :`,
+      `- Critère Outlier : privilégie un mécanisme caché, une date légale chiffrée ou un paradoxe mesuré (avant vs réalité) qui donne envie d'envoyer le Short en DM ou de l'enregistrer.`,
       `- Zéro tiret cadratin (pas de —), zéro blabla type "dans cette vidéo".`,
-      `- Chaque hook_propose doit faire moins de 18 mots et créer un contraste immédiat ou une rupture chiffrée.`,
-      `- Chaque hook_ecran doit faire 2 à 5 mots en majuscules percutantes.`,
+      `- Chaque hook_propose doit faire moins de 16 mots et créer un open loop ou une rupture chiffrée immédiate dans les 2 premières secondes.`,
+      `- Chaque hook_ecran doit faire 2 à 4 mots en majuscules percutantes (ex: "-28 % JUNIORS", "DÉCRET 20 NOV").`,
       `- Note honnêtement score_viral_fr, score_actualite et score_save_share (entre 65 et 98) pour que le meilleur sujet objectif se démarque nettement.`,
       `- Cite uniquement des sources issues des recherches ci-dessus dans le champ sources.`,
     ].join('\n\n'),

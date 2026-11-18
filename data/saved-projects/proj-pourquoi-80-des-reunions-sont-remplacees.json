@@ -27,7 +27,7 @@
       "audioTrackUrl": "/storage/projects/proj-pourquoi-80-des-reunions-sont-remplacees/voice_v2.mp3",
       "outputMp4": "/renders/pourquoi-80-des-reunions-sont-remplacees_v2.mp4",
       "contactSheetUrl": "/renders/pourquoi-80-des-reunions-sont-remplacees_v2_contact.jpg",
-      "hasMp4": true
+      "hasMp4": false
     },
     {
       "version": "v1",
@@ -1035,7 +1035,7 @@
     "speed": 1.05,
     "hookText": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.",
     "youtubeTitle": "Pourquoi 80 % des réunions disparaissent en 2026",
-    "caption": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.\n\nTu utilises déjà un résumé IA en visio ? Dis-le en commentaire.",
+    "caption": "Quatre-vingts pour cent des réunions viennent d’être remplacées par des résumés IA.\n\nTu utilises déjà un résumé IA en visio ?",
     "hashtags": [
       "#ia",
       "#productivite",
@@ -1225,7 +1225,7 @@
         "shortLabel": "Verdict 2026",
         "screenLabel": "PREUVE TERRAIN",
         "spokenLine": "Les équipes équipées livrent trente-huit pour cent plus vite sans rallonger leurs journées.",
-        "visualType": "verdict_proof",
+        "visualType": "terminal_flow",
         "layoutHint": "split",
         "brollKey": "ai_lab",
         "brollCaption": "Audit productivité 2026",
@@ -1263,8 +1263,7 @@
         "sfxKind": "pop-back",
         "from": 35.5,
         "to": 41.04,
-        "layout": "split",
-        "commentTrigger": "Écris « IA » en commentaire"
+        "layout": "split"
       }
     ]
   },
@@ -1277,5 +1276,5 @@
     "captionsPosition": "bottom",
     "visualBeatsTarget": 8
   },
-  "hasMp4": true
+  "hasMp4": false
 }

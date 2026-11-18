@@ -53,10 +53,10 @@ import {
   saveProject,
 } from './storageManager';
 import { triggerAutoSyncInBackground } from './syncManager';
+import { synthesizeVoiceoverUnified } from './voiceEngineService';
 
 export const BATCH_JOBS_DIR = path.join(STORAGE_DIR, 'batch-jobs');
 
-const DEFAULT_FREE_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
 const activeCancelledBatchIds = new Set<string>();
 
 function ensureBatchDir() {
@@ -305,8 +305,8 @@ export async function generateScriptForBatchItem(
       .join('\n');
 
     const prompt = [
-      `Tu es le directeur créatif et scénariste d'une chaîne française YouTube Shorts / Reels / TikTok ultra-percutante (ton clair, concret, chiffré, rythmé).`,
-      `MISSION : Écris un Short 100 % sur mesure pour CE sujet précis, avec une chronologie limpide du début à la fin (aucun remplissage générique, aucun jargon technique si ce n'est pas un sujet code/dev).`,
+      `Tu es le directeur créatif et scénariste d'une chaîne française YouTube Shorts / Reels / TikTok style @melvynxdev (ton direct, analytique, preuves sourcées, zéro remplissage).`,
+      `MISSION : Écris un Short 100 % sur mesure pour CE sujet précis, avec un hook magnétique < 2,5s, un open loop maintenu jusqu'au pivot Beat 4, et aucune phrase générique.`,
       `Sujet : "${item.theme}"`,
       `Catégorie : ${item.category}`,
       item.angle ? `Angle vérifié : ${item.angle}` : '',
@@ -316,27 +316,30 @@ export async function generateScriptForBatchItem(
       `Répartition visuelle des 8 séquences :\n${sequenceSpec}`,
       ``,
       `RÈGLES DE CHRONOLOGIE ET DE QUALITÉ (IMPÉRATIF) :`,
-      `1. Longueur équilibrée : 105 à 130 mots parlés au total. CHAQUE spokenLine doit faire 11 à 17 mots maximum (3,5 à 5 secondes par séquence), pour un rythme régulier sans jamais bloquer 10 secondes sur la même carte.`,
-      `2. Progression narrative logique :`,
-      `   - Beat 1 (Hook) : ouvre fort avec une tension, une date ou un chiffre choc du sujet.`,
-      `   - Beat 2 (Fait chiffré / Règle) : pose le contexte concret sans sauter d'étape.`,
-      `   - Beat 3 (Mécanisme) : explique POURQUOI ou COMMENT cela se produit.`,
-      `   - Beat 4 (Pivot plein écran) : révèle l'élément contre-intuitif ou le point critique.`,
-      `   - Beat 5 (Comparaison / Impact) : montre l'avant vs maintenant avec des chiffres réalistes.`,
-      `   - Beat 6 (Action concrète) : donne 3 réflexes ou règles pratiques adaptées AU SUJET.`,
-      `   - Beat 7 (Preuve & verdict) : cite la source réelle et synthétise ce qu'il faut retenir.`,
-      `   - Beat 8 (CTA) : invite à s'abonner et activer la cloche pour ne rater aucun décryptage (@alex.decode), sans jamais demander de commentaire ni de mot-clé en commentaire.`,
-      `3. INTERDICTIONS : zéro tiret cadratin (—), zéro phrase creuse ("bonjour", "dans cette vidéo"), zéro blabla générique ("méthode 2022", "pipeline automatique", "45 min vs 2 min") si le sujet ne parle pas de ça.${!isDev ? ' N’utilise JAMAIS de jargon terminal/code/bash sur ce sujet !' : ''}`,
-      `4. Chaque "title" écran doit faire 2 à 5 mots percutants (< 35 caractères).`,
-      `5. Remplis ces champs courts adaptés au sujet (toujours en français, sans remplissage générique) :`,
-      `   - stampWord : mot tampon court (ex: "20 NOV", "PARADOXE", "PIÈGE", "MESURÉ").`,
-      `   - statValue : chiffre ou badge court (<= 10 chars, ex: "20 NOV", "-28 %", "90 %", "@alex.decode").`,
+      `1. Longueur équilibrée : 104 à 128 mots parlés au total. CHAQUE spokenLine doit être UNE phrase orale limpide (11 à 17 mots), écrite en français parlé naturel ("tu", zéro phrase administrative ou abstraite), compréhensible dès la première écoute.`,
+      `2. Progression narrative ultra-claire :`,
+      `   - Beat 1 (Hook < 2,5s) : fait ou chiffre choc immédiat + question ouverte en une phrase simple.`,
+      `   - Beat 2 (Preuve / Exemple réel) : l'exemple ou le texte exact qui prouve pourquoi c'est vrai.`,
+      `   - Beat 3 (Comment ça marche en pratique) : étape par étape très simple (jamais de blabla abstrait).`,
+      `   - Beat 4 (Courbe / Jauge plein écran) : chiffre visuel marquant qui relance l'attention à mi-vidéo.`,
+      `   - Beat 5 (Comparaison directe) : avant vs après en unités de la vie réelle (euros, minutes, postes).`,
+      `   - Beat 6 (Ce que tu dois faire) : 3 gestes simples que n'importe qui peut appliquer aujourd'hui.`,
+      `   - Beat 7 (Conclusion sourcée) : cite la source orale naturellement sans parenthèses ni URL et résume l'essentiel en une phrase.`,
+      `   - Beat 8 (CTA) : invite à s'abonner et activer la cloche (@alex.decode), sans JAMAIS demander de commentaire ni de mot-clé en commentaire.`,
+      `3. INTERDICTIONS : zéro tiret cadratin (—), zéro phrase creuse ou floue, zéro répétition entre beats.${!isDev ? ' N’utilise JAMAIS de jargon technique/code/bash sur ce sujet !' : ''}`,
+      `4. Chaque "title" écran doit faire 2 à 4 mots très simples (< 30 caractères).`,
+      `5. Champs visuels riches (en français, 100 % liés au sujet) :`,
+      `   - stampWord : mot tampon court (ex: "20 NOV", "FRACTURE", "PREUVE", "ENCADRÉ").`,
+      `   - statValue : chiffre ou badge court (<= 10 chars, ex: "-28 %", "180 €/an", "90 %").`,
       `   - statLabel : sous-titre factuel du chiffre (<= 40 chars).`,
-      `   - leftPair / rightPair : format "Label | Valeur | Détail" (ex: "Avant 2026 | Flou | Frais cachés" et "Nouveau cadre | Encadré | Plafond clair").`,
-      `   - itemsPipe : 3 points/actions (ou 4 étapes pour timeline_steps) séparés par " | ", courts et 100 % liés au sujet.`,
+      `   - leftPair / rightPair : format "Label | Valeur | Détail".`,
+      `   - itemsPipe : 3 points distincts (ou 4 étapes pour timeline_steps) séparés par " | ".`,
+      `   - quoteText / quoteHighlight : court extrait sourcé (14-20 mots) + fragment clé exact de 3-6 mots à surligner (pour source_quote).`,
+      `   - uiUrl / uiActionLabel : URL crédible (sans https://) + libellé bouton court <= 18 chars (pour ui_window).`,
+      `   - chartUnit / chartPointsPipe : unité (ex: "%", " €", " h") + 4 ou 5 points format "2022:100|2024:86|2026:72" (pour chart_curve).`,
       `   - gaugePct : entier 25..96 (pour jauge/impact).`,
       ``,
-      `Réponds en JSON strict avec exactement 8 beats adaptés à 100 % au sujet.`,
+      `Réponds en JSON strict avec exactement 8 beats sur mesure.`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -345,6 +348,7 @@ export async function generateScriptForBatchItem(
       leftPair?: string;
       rightPair?: string;
       itemsPipe?: string;
+      chartPointsPipe?: string;
     };
 
     let parsed: {
@@ -385,6 +389,12 @@ export async function generateScriptForBatchItem(
                   leftPair: { type: Type.STRING },
                   rightPair: { type: Type.STRING },
                   itemsPipe: { type: Type.STRING },
+                  quoteText: { type: Type.STRING },
+                  quoteHighlight: { type: Type.STRING },
+                  uiUrl: { type: Type.STRING },
+                  uiActionLabel: { type: Type.STRING },
+                  chartUnit: { type: Type.STRING },
+                  chartPointsPipe: { type: Type.STRING },
                   gaugePct: { type: Type.INTEGER },
                 },
                 required: [
@@ -444,6 +454,9 @@ export async function generateScriptForBatchItem(
       'hook_question',
       'counter_flip',
       'comparison_bars',
+      'chart_curve',
+      'source_quote',
+      'ui_window',
       'timeline_steps',
       'toggles_switch',
       'terminal_flow',
@@ -511,6 +524,9 @@ export async function generateScriptForBatchItem(
         counter_flip: 'thud',
         alert_rule: 'thud',
         myth_vs_fact: 'pop',
+        source_quote: 'pop',
+        chart_curve: 'zhhh',
+        ui_window: 'tap',
         timeline_steps: 'tap',
         gauge: 'zhhh',
         comparison_bars: 'riser',
@@ -540,7 +556,7 @@ export async function generateScriptForBatchItem(
             : fb.brollKey;
 
       const layoutHint =
-        vt === 'gauge' || vt === 'comparison_bars'
+        vt === 'gauge' || vt === 'comparison_bars' || vt === 'chart_curve'
           ? 'fullscreen'
           : blueprint.layouts[idx] || (b.layoutHint === 'fullscreen' ? 'fullscreen' : 'split');
 
@@ -685,6 +701,29 @@ export async function generateScriptForBatchItem(
         statLabel: b.statLabel ? sanitizeScriptText(b.statLabel).slice(0, 44) : fb.statLabel,
         dateBadge: b.dateBadge ? sanitizeScriptText(b.dateBadge).toUpperCase().slice(0, 22) : fb.dateBadge,
         sourceLabel: b.sourceLabel ? sanitizeScriptText(b.sourceLabel).slice(0, 46) : fb.sourceLabel,
+        quoteText: b.quoteText ? sanitizeScriptText(b.quoteText).slice(0, 140) : fb.quoteText,
+        quoteHighlight: b.quoteHighlight ? sanitizeScriptText(b.quoteHighlight).slice(0, 48) : fb.quoteHighlight,
+        uiUrl: b.uiUrl ? sanitizeScriptText(b.uiUrl).slice(0, 44) : fb.uiUrl,
+        uiActionLabel: b.uiActionLabel ? sanitizeScriptText(b.uiActionLabel).slice(0, 22) : fb.uiActionLabel,
+        chartUnit: typeof b.chartUnit === 'string' ? b.chartUnit.slice(0, 6) : fb.chartUnit,
+        chartPoints: (() => {
+          if (Array.isArray(b.chartPoints) && b.chartPoints.length >= 3) {
+            return b.chartPoints.slice(0, 5);
+          }
+          if (typeof b.chartPointsPipe === 'string' && b.chartPointsPipe.includes(':')) {
+            const parsedPts = b.chartPointsPipe
+              .split('|')
+              .map((segStr) => segStr.split(':').map((s) => s.trim()))
+              .filter((p) => p.length >= 2 && Number.isFinite(Number(p[1].replace(',', '.'))))
+              .map((p, pIdx, arr) => ({
+                label: p[0].slice(0, 8),
+                value: Number(p[1].replace(',', '.')),
+                highlight: pIdx === arr.length - 1,
+              }));
+            if (parsedPts.length >= 3) return parsedPts.slice(0, 5);
+          }
+          return fb.chartPoints;
+        })(),
         leftCard: parsedLeft,
         rightCard: parsedRight,
         subStats: resolvedSubStats,
@@ -751,90 +790,14 @@ export async function synthesizeVoiceoverForProject(params: {
   speed: number;
   voiceFilename?: string;
 }): Promise<{
+  providerUsed?: string;
+  voiceUsed?: string;
   voiceMp3Path?: string;
   audioTrackUrl?: string;
   words: WhisperWord[];
   durationSec: number;
 }> {
-  const apiKey = process.env.ELEVENLABS_API_KEY?.trim();
-  const cleanText = sanitizeScriptText(params.fullText).slice(0, 1500);
-  const wordCount = cleanText.split(/\s+/).filter(Boolean).length;
-  const estDuration = Math.max(16, Math.round((wordCount / (2.55 * (params.speed || 1.0))) * 10) / 10);
-
-  if (apiKey) {
-    const requestedVoice =
-      process.env.ELEVENLABS_VOICE_ID?.trim() &&
-      /^[A-Za-z0-9]{15,32}$/.test(process.env.ELEVENLABS_VOICE_ID.trim())
-        ? process.env.ELEVENLABS_VOICE_ID.trim()
-        : DEFAULT_FREE_VOICE_ID;
-
-    const callTts = (vId: string) =>
-      fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(vId)}/with-timestamps`, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          text: cleanText,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.44,
-            similarity_boost: 0.78,
-            style: 0.22,
-            use_speaker_boost: true,
-          },
-        }),
-      });
-
-    try {
-      let res = await callTts(requestedVoice);
-      if ((res.status === 402 || res.status === 404) && requestedVoice !== DEFAULT_FREE_VOICE_ID) {
-        res = await callTts(DEFAULT_FREE_VOICE_ID);
-      }
-
-      if (res.ok) {
-        const data = (await res.json()) as {
-          audio_base64?: string;
-          normalized_alignment?: ElevenLabsCharAlignment;
-          alignment?: ElevenLabsCharAlignment;
-        };
-        if (data.audio_base64) {
-          fs.mkdirSync(params.projectDir, { recursive: true });
-          const voiceFile = params.voiceFilename || 'voice.mp3';
-          const rawMp3Path = path.join(params.projectDir, `raw-${voiceFile}`);
-          const voiceMp3Path = path.join(params.projectDir, voiceFile);
-          fs.writeFileSync(rawMp3Path, Buffer.from(data.audio_base64, 'base64'));
-
-          const actualDuration = applyVoiceSpeedMp3(rawMp3Path, voiceMp3Path, params.speed);
-          fs.rmSync(rawMp3Path, { force: true });
-
-          const alignment = data.normalized_alignment || data.alignment;
-          const { words } = alignmentToWords(alignment, cleanText, params.speed, actualDuration);
-
-          const finalDuration = Number(Math.max(actualDuration + 0.5, words.length ? words[words.length - 1].end + 0.6 : actualDuration).toFixed(2));
-          return {
-            voiceMp3Path,
-            audioTrackUrl: `/storage/projects/${path.basename(params.projectDir)}/${voiceFile}`,
-            words,
-            durationSec: finalDuration,
-          };
-        }
-      } else {
-        const errText = await res.text().catch(() => '');
-        console.warn(`ElevenLabs TTS failed (${res.status}):`, errText.slice(0, 300));
-      }
-    } catch (err) {
-      console.warn('ElevenLabs TTS exception:', err);
-    }
-  }
-
-  const { words, durationSec } = alignmentToWords(null, cleanText, params.speed, estDuration);
-  return {
-    words,
-    durationSec,
-  };
+  return synthesizeVoiceoverUnified(params);
 }
 
 function buildUniqueProjectIdentifiers(baseTitle: string, existingProjects: ShortProject[]) {
@@ -956,6 +919,7 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
         fps: 25,
         resolution: { width: 1080, height: 1920 },
         audioTrackUrl: voice.audioTrackUrl,
+        voiceProvider: voice.providerUsed,
         currentVersion: 'v1',
         versions: [
           {

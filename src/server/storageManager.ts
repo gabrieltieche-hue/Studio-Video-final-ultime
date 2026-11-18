@@ -126,10 +126,28 @@ export function withProjectMediaStatus(project: ShortProject): ShortProject {
   const currentHasMp4 =
     Boolean(activeVer?.hasMp4) || hasProjectMp4OnDisk(project, project.currentVersion);
 
+  let currentHasVoice = Boolean(project.isFlagshipReactStage);
+  if (!currentHasVoice && project.audioTrackUrl) {
+    const baseName = path.basename(project.audioTrackUrl);
+    const candidates = [
+      path.join(PROJECTS_DIR, project.id, baseName),
+      path.join(REPO_SAVED_MEDIA_DIR, project.id, baseName),
+      path.join(ROOT_DIR, 'public', project.audioTrackUrl.replace(/^\/+/, '')),
+    ];
+    currentHasVoice = candidates.some((p) => {
+      try {
+        return fs.existsSync(p) && fs.statSync(p).size >= 1024;
+      } catch {
+        return false;
+      }
+    });
+  }
+
   return {
     ...project,
     versions,
     hasMp4: currentHasMp4,
+    hasVoice: currentHasVoice,
   };
 }
 

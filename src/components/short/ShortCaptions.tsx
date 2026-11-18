@@ -44,7 +44,7 @@ export const ShortCaptions: React.FC<ShortCaptionsProps> = ({ t, seam, look }) =
                 style={{
                   fontFamily: look.fontDisplay,
                   fontSize: '72px',
-                  color: isActive || word.emph ? look.accent : isPast ? '#FFFFFF' : 'rgba(255,255,255,0.72)',
+                  color: isActive ? look.accent : isPast ? '#FFFFFF' : 'rgba(255,255,255,0.72)',
                 }}
               >
                 {word.text}
@@ -79,7 +79,7 @@ export const ShortCaptions: React.FC<ShortCaptionsProps> = ({ t, seam, look }) =
                 style={{
                   fontFamily: look.fontDisplay,
                   fontSize: '68px',
-                  color: isActive || word.emph
+                  color: isActive
                     ? '#F0640A'
                     : overVideo
                       ? isPast
@@ -132,7 +132,7 @@ export const ShortCaptions: React.FC<ShortCaptionsProps> = ({ t, seam, look }) =
               style={{
                 fontFamily: look.fontDisplay,
                 fontSize: '70px',
-                color: isActive || word.emph ? highlightColor : baseColor,
+                color: isActive ? highlightColor : baseColor,
               }}
             >
               {word.text}

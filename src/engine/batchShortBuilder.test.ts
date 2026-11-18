@@ -10,8 +10,11 @@ import {
   resolveBeatLayout,
   sanitizeScriptText,
   selectChoreographyForTopic,
+  trimSpokenLineForPacing,
 } from './batchShortBuilder';
 import { getBrollSequenceForTopic } from './brollKeys';
+import { buildDynamicBeatsFromProject } from './transcriptUtils';
+import type { ShortProject } from '../types/studio';
 
 test('sanitizeScriptText removes em-dashes and normalizes whitespace', () => {
   assert.equal(
@@ -256,4 +259,74 @@ test('buildFallbackBatchScript enforces subscribe/bell CTA with zero commentaire
   assert.ok(!/commentaire/i.test(lastBeat.spokenLine));
   assert.ok(/abonne|cloche/i.test(lastBeat.spokenLine));
   assert.ok(!/commentaire/i.test(script.caption));
+});
+
+test('trimSpokenLineForPacing cuts at sentence/clause boundaries and strips dangling prepositions', () => {
+  const longText =
+    'Croisement Banque de France et Stanford sur les emplois exposés, les offres juniors reculent fortement dans les métiers.';
+  const trimmed = trimSpokenLineForPacing(longText, 16);
+  assert.ok(!/\b(dans|de|des|les|pour|avec|sur)\.$/i.test(trimmed), `Dangling ending in "${trimmed}"`);
+  assert.ok(trimmed.split(/\s+/).length <= 16);
+});
+
+test('buildFallbackBatchScript eliminates generic filler across domains and populates source_quote, chart_curve, ui_window metadata', () => {
+  const forbiddenSlop = [
+    'Concrètement, tout s’enchaîne en quatre étapes',
+    'Le vrai point de bascule ne vient pas des annonces',
+    'Quand on compare l’ancien fonctionnement',
+    'Pour t’adapter dès cette semaine, garde ces trois repères',
+    'ceux qui anticipent ce changement évitent',
+  ];
+
+  const topics = [
+    { theme: 'Découverts bancaires et crédit conso : 20 novembre 2026', category: 'Actualité' },
+    { theme: "L'IA ferme la porte aux juniors (-28 %)", category: 'IA' },
+    { theme: '90 % des entreprises ratent leurs économies IA', category: 'Business' },
+    { theme: 'Pourquoi les vidéos parfaites fatiguent le feed', category: 'Conseils de vie' },
+    { theme: 'Nouvelle réforme du diagnostic DPE en 2026', category: 'Société', angle: 'Les logements classés F baissent de 14 % sur le marché.' },
+  ];
+
+  for (const t of topics) {
+    const script = buildFallbackBatchScript(t);
+    const allSpoken = script.beats.map((b) => b.spokenLine).join(' ');
+    for (const slop of forbiddenSlop) {
+      assert.ok(!allSpoken.includes(slop), `Found generic filler "${slop}" in "${t.theme}"`);
+    }
+
+    const quoteBeat = script.beats.find((b) => b.visualType === 'source_quote');
+    assert.ok(quoteBeat, `Expected source_quote beat in "${t.theme}"`);
+    assert.ok(quoteBeat.quoteText && quoteBeat.quoteText.length > 10);
+    assert.ok(quoteBeat.quoteHighlight && quoteBeat.quoteHighlight.length > 3);
+
+    const curveBeat = script.beats.find((b) => b.visualType === 'chart_curve');
+    assert.ok(curveBeat, `Expected chart_curve beat in "${t.theme}"`);
+    assert.ok(curveBeat.chartPoints && curveBeat.chartPoints.length >= 4);
+
+    // Check round-trip extraction via buildDynamicBeatsFromProject
+    const dummyProj = {
+      id: 'proj-test',
+      slug: 'test',
+      title: t.theme,
+      mode: 'faceless_explainer',
+      platform: 'youtube_shorts',
+      status: 'ready',
+      duration: 38,
+      fps: 25,
+      resolution: { width: 1080, height: 1920 },
+      currentVersion: 'v1',
+      versions: [],
+      transcript: [],
+      motionTrack: [],
+      layoutTrack: [],
+      sfxTrack: [],
+      feedbacks: [],
+      editSpec: { beats: script.beats },
+    } as unknown as ShortProject;
+
+    const dynBeats = buildDynamicBeatsFromProject(dummyProj);
+    const dynQuote = dynBeats.find((b) => b.visualType === 'source_quote');
+    const dynCurve = dynBeats.find((b) => b.visualType === 'chart_curve');
+    assert.equal(dynQuote?.quoteText, quoteBeat.quoteText);
+    assert.equal(dynCurve?.chartPoints?.length, curveBeat.chartPoints?.length);
+  }
 });

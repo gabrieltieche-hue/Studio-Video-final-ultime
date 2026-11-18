@@ -8,7 +8,7 @@
   "mode": "faceless_explainer",
   "platform": "youtube_shorts",
   "status": "ready",
-  "duration": 43.36,
+  "duration": 43.5,
   "fps": 25,
   "resolution": {
     "width": 1080,
@@ -20,12 +20,12 @@
       "version": "v1",
       "createdAt": "2026-11-17T18:45:09.938Z",
       "status": "done",
-      "duration": 43.36,
+      "duration": 43.5,
       "fps": 25,
-      "notes": "Enquête Chiffre Choc (Structuré) · Look Papier signature",
+      "notes": "Paradoxe & Duel Brut (Melvyn V2 · fallback) · Look Papier signature",
       "outputMp4": "/renders/90-des-entreprises-ratent-leurs-economie_v1.mp4",
       "contactSheetUrl": "/renders/90-des-entreprises-ratent-leurs-economie_v1_contact.jpg",
-      "hasMp4": true
+      "hasMp4": false
     }
   ],
   "transcript": [
@@ -33,812 +33,931 @@
       "id": "w-1",
       "word": "Tout",
       "start": 0.08,
-      "end": 0.337,
+      "end": 0.319,
       "confidence": 0.95
     },
     {
       "id": "w-2",
       "word": "le",
-      "start": 0.359,
-      "end": 0.487,
+      "start": 0.34,
+      "end": 0.46,
       "confidence": 0.95
     },
     {
       "id": "w-3",
       "word": "monde",
-      "start": 0.498,
-      "end": 0.819,
+      "start": 0.47,
+      "end": 0.77,
       "confidence": 0.95
     },
     {
       "id": "w-4",
       "word": "installe",
-      "start": 0.847,
-      "end": 1.36,
+      "start": 0.796,
+      "end": 1.275,
       "confidence": 0.95
     },
     {
       "id": "w-5",
       "word": "des",
-      "start": 1.405,
-      "end": 1.598,
+      "start": 1.316,
+      "end": 1.496,
       "confidence": 0.95
     },
     {
       "id": "w-6",
       "word": "agents",
-      "start": 1.614,
-      "end": 1.999,
+      "start": 1.512,
+      "end": 1.871,
       "confidence": 0.95
     },
     {
       "id": "w-7",
       "word": "IA.",
-      "start": 2.033,
-      "end": 2.225,
+      "start": 1.902,
+      "end": 2.082,
       "confidence": 0.95
     },
     {
       "id": "w-8",
       "word": "Mais",
-      "start": 2.242,
-      "end": 2.499,
+      "start": 2.097,
+      "end": 2.337,
       "confidence": 0.95
     },
     {
       "id": "w-9",
       "word": "90",
-      "start": 2.521,
-      "end": 2.649,
+      "start": 2.357,
+      "end": 2.477,
       "confidence": 0.95
     },
     {
       "id": "w-10",
       "word": "%",
-      "start": 2.66,
-      "end": 2.789,
+      "start": 2.488,
+      "end": 2.608,
       "confidence": 0.95
     },
     {
       "id": "w-11",
       "word": "des",
-      "start": 2.8,
-      "end": 2.992,
+      "start": 2.618,
+      "end": 2.797,
       "confidence": 0.95
     },
     {
       "id": "w-12",
       "word": "boîtes",
-      "start": 3.009,
-      "end": 3.394,
+      "start": 2.813,
+      "end": 3.172,
       "confidence": 0.95
     },
     {
       "id": "w-13",
       "word": "ne",
-      "start": 3.427,
-      "end": 3.556,
+      "start": 3.203,
+      "end": 3.323,
       "confidence": 0.95
     },
     {
       "id": "w-14",
       "word": "gagnent",
-      "start": 3.567,
-      "end": 4.016,
+      "start": 3.333,
+      "end": 3.752,
       "confidence": 0.95
     },
     {
       "id": "w-15",
       "word": "pas",
-      "start": 4.055,
-      "end": 4.248,
+      "start": 3.789,
+      "end": 3.968,
       "confidence": 0.95
     },
     {
       "id": "w-16",
       "word": "un",
-      "start": 4.264,
-      "end": 4.393,
+      "start": 3.984,
+      "end": 4.104,
       "confidence": 0.95
     },
     {
       "id": "w-17",
       "word": "euro.",
-      "start": 4.404,
-      "end": 4.725,
+      "start": 4.114,
+      "end": 4.414,
       "confidence": 0.95
     },
     {
       "id": "w-18",
-      "word": "Pourquoi",
-      "start": 4.753,
-      "end": 5.266,
+      "word": "L’effet",
+      "start": 4.44,
+      "end": 4.859,
       "confidence": 0.95
     },
     {
       "id": "w-19",
-      "word": "l'IA",
-      "start": 5.31,
-      "end": 5.567,
+      "word": "vitesse",
+      "start": 4.895,
+      "end": 5.314,
       "confidence": 0.95
     },
     {
       "id": "w-20",
-      "word": "fait",
-      "start": 5.589,
-      "end": 5.846,
+      "word": "trompe",
+      "start": 5.351,
+      "end": 5.71,
       "confidence": 0.95
     },
     {
       "id": "w-21",
-      "word": "gagner",
-      "start": 5.868,
-      "end": 6.253,
+      "word": "les",
+      "start": 5.741,
+      "end": 5.921,
       "confidence": 0.95
     },
     {
       "id": "w-22",
-      "word": "du",
-      "start": 6.287,
-      "end": 6.415,
+      "word": "équipes",
+      "start": 5.936,
+      "end": 6.355,
       "confidence": 0.95
     },
     {
       "id": "w-23",
-      "word": "temps",
-      "start": 6.426,
-      "end": 6.747,
+      "word": ":",
+      "start": 6.392,
+      "end": 6.512,
       "confidence": 0.95
     },
     {
       "id": "w-24",
-      "word": "aux",
-      "start": 6.775,
-      "end": 6.967,
+      "word": "générer",
+      "start": 6.522,
+      "end": 6.941,
       "confidence": 0.95
     },
     {
       "id": "w-25",
-      "word": "salariés",
-      "start": 6.984,
-      "end": 7.497,
+      "word": "deux",
+      "start": 6.977,
+      "end": 7.217,
       "confidence": 0.95
     },
     {
       "id": "w-26",
-      "word": "mais",
-      "start": 7.542,
-      "end": 7.799,
+      "word": "fois",
+      "start": 7.238,
+      "end": 7.477,
       "confidence": 0.95
     },
     {
       "id": "w-27",
-      "word": "ne",
-      "start": 7.821,
-      "end": 7.949,
+      "word": "plus",
+      "start": 7.498,
+      "end": 7.737,
       "confidence": 0.95
     },
     {
       "id": "w-28",
-      "word": "réduit",
-      "start": 7.961,
-      "end": 8.345,
+      "word": "vite",
+      "start": 7.758,
+      "end": 7.998,
       "confidence": 0.95
     },
     {
       "id": "w-29",
-      "word": "pas",
-      "start": 8.379,
-      "end": 8.571,
+      "word": "double",
+      "start": 8.018,
+      "end": 8.378,
       "confidence": 0.95
     },
     {
       "id": "w-30",
-      "word": "encore",
-      "start": 8.588,
-      "end": 8.973,
+      "word": "souvent",
+      "start": 8.409,
+      "end": 8.828,
       "confidence": 0.95
     },
     {
       "id": "w-31",
-      "word": "les",
-      "start": 9.007,
-      "end": 9.199,
+      "word": "le",
+      "start": 8.864,
+      "end": 8.984,
       "confidence": 0.95
     },
     {
       "id": "w-32",
-      "word": "coûts,",
-      "start": 9.216,
-      "end": 9.601,
+      "word": "temps",
+      "start": 8.994,
+      "end": 9.294,
       "confidence": 0.95
     },
     {
       "id": "w-33",
-      "word": "et",
-      "start": 9.634,
-      "end": 9.763,
+      "word": "de",
+      "start": 9.32,
+      "end": 9.44,
       "confidence": 0.95
     },
     {
       "id": "w-34",
-      "word": "casse-tête",
-      "start": 9.774,
-      "end": 10.415,
+      "word": "relecture.",
+      "start": 9.45,
+      "end": 10.048,
       "confidence": 0.95
     },
     {
       "id": "w-35",
-      "word": "sécurité.",
-      "start": 10.471,
-      "end": 11.049,
+      "word": "Dans",
+      "start": 10.101,
+      "end": 10.34,
       "confidence": 0.95
     },
     {
       "id": "w-36",
-      "word": "Concrètement,",
-      "start": 11.099,
-      "end": 11.933,
+      "word": "le",
+      "start": 10.361,
+      "end": 10.481,
       "confidence": 0.95
     },
     {
       "id": "w-37",
-      "word": "tout",
-      "start": 12.005,
-      "end": 12.262,
+      "word": "tableau",
+      "start": 10.491,
+      "end": 10.91,
       "confidence": 0.95
     },
     {
       "id": "w-38",
-      "word": "s’enchaîne",
-      "start": 12.284,
-      "end": 12.926,
+      "word": "de",
+      "start": 10.946,
+      "end": 11.066,
       "confidence": 0.95
     },
     {
       "id": "w-39",
-      "word": "en",
-      "start": 12.982,
-      "end": 13.11,
+      "word": "pilotage",
+      "start": 11.077,
+      "end": 11.555,
       "confidence": 0.95
     },
     {
       "id": "w-40",
-      "word": "quatre",
-      "start": 13.121,
-      "end": 13.506,
+      "word": "réel,",
+      "start": 11.597,
+      "end": 11.896,
       "confidence": 0.95
     },
     {
       "id": "w-41",
-      "word": "étapes",
-      "start": 13.54,
-      "end": 13.925,
+      "word": "la",
+      "start": 11.922,
+      "end": 12.042,
       "confidence": 0.95
     },
     {
       "id": "w-42",
-      "word": "précises",
-      "start": 13.958,
-      "end": 14.471,
+      "word": "facture",
+      "start": 12.053,
+      "end": 12.472,
       "confidence": 0.95
     },
     {
       "id": "w-43",
-      "word": "qui",
-      "start": 14.516,
-      "end": 14.708,
+      "word": "d’API,",
+      "start": 12.508,
+      "end": 12.867,
       "confidence": 0.95
     },
     {
       "id": "w-44",
-      "word": "modifient",
-      "start": 14.725,
-      "end": 15.303,
+      "word": "d’erreurs",
+      "start": 12.898,
+      "end": 13.437,
       "confidence": 0.95
     },
     {
       "id": "w-45",
-      "word": "la",
-      "start": 15.353,
-      "end": 15.481,
+      "word": "et",
+      "start": 13.484,
+      "end": 13.604,
       "confidence": 0.95
     },
     {
       "id": "w-46",
-      "word": "suite.",
-      "start": 15.492,
-      "end": 15.877,
+      "word": "de",
+      "start": 13.614,
+      "end": 13.734,
       "confidence": 0.95
     },
     {
       "id": "w-47",
-      "word": "Le",
-      "start": 15.911,
-      "end": 16.039,
+      "word": "coordination",
+      "start": 13.744,
+      "end": 14.463,
       "confidence": 0.95
     },
     {
       "id": "w-48",
-      "word": "vrai",
-      "start": 16.05,
-      "end": 16.307,
+      "word": "grignote",
+      "start": 14.525,
+      "end": 15.004,
       "confidence": 0.95
     },
     {
       "id": "w-49",
-      "word": "point",
-      "start": 16.329,
-      "end": 16.65,
+      "word": "toute",
+      "start": 15.046,
+      "end": 15.345,
       "confidence": 0.95
     },
     {
       "id": "w-50",
-      "word": "de",
-      "start": 16.678,
-      "end": 16.806,
+      "word": "la",
+      "start": 15.371,
+      "end": 15.491,
       "confidence": 0.95
     },
     {
       "id": "w-51",
-      "word": "bascule",
-      "start": 16.817,
-      "end": 17.266,
+      "word": "marge.",
+      "start": 15.501,
+      "end": 15.86,
       "confidence": 0.95
     },
     {
       "id": "w-52",
-      "word": "ne",
-      "start": 17.306,
-      "end": 17.434,
+      "word": "La",
+      "start": 15.892,
+      "end": 16.012,
       "confidence": 0.95
     },
     {
       "id": "w-53",
-      "word": "vient",
-      "start": 17.445,
-      "end": 17.766,
+      "word": "courbe",
+      "start": 16.022,
+      "end": 16.381,
       "confidence": 0.95
     },
     {
       "id": "w-54",
-      "word": "pas",
-      "start": 17.794,
-      "end": 17.986,
+      "word": "des",
+      "start": 16.412,
+      "end": 16.592,
       "confidence": 0.95
     },
     {
       "id": "w-55",
-      "word": "des",
-      "start": 18.003,
-      "end": 18.195,
+      "word": "déploiements",
+      "start": 16.607,
+      "end": 17.326,
       "confidence": 0.95
     },
     {
       "id": "w-56",
-      "word": "annonces,",
-      "start": 18.212,
-      "end": 18.79,
+      "word": "gadgets",
+      "start": 17.388,
+      "end": 17.807,
       "confidence": 0.95
     },
     {
       "id": "w-57",
-      "word": "mais",
-      "start": 18.84,
-      "end": 19.096,
+      "word": "grimpe",
+      "start": 17.844,
+      "end": 18.203,
       "confidence": 0.95
     },
     {
       "id": "w-58",
-      "word": "de",
-      "start": 19.119,
-      "end": 19.247,
+      "word": "pendant",
+      "start": 18.234,
+      "end": 18.653,
       "confidence": 0.95
     },
     {
       "id": "w-59",
-      "word": "l’effet",
-      "start": 19.258,
-      "end": 19.707,
+      "word": "que",
+      "start": 18.69,
+      "end": 18.869,
       "confidence": 0.95
     },
     {
       "id": "w-60",
-      "word": "concret",
-      "start": 19.746,
-      "end": 20.196,
+      "word": "la",
+      "start": 18.885,
+      "end": 19.005,
       "confidence": 0.95
     },
     {
       "id": "w-61",
-      "word": "au",
-      "start": 20.235,
-      "end": 20.363,
+      "word": "rentabilité",
+      "start": 19.015,
+      "end": 19.673,
       "confidence": 0.95
     },
     {
       "id": "w-62",
-      "word": "quotidien.",
-      "start": 20.374,
-      "end": 21.016,
+      "word": "nette",
+      "start": 19.731,
+      "end": 20.03,
       "confidence": 0.95
     },
     {
       "id": "w-63",
-      "word": "Quand",
-      "start": 21.071,
-      "end": 21.392,
+      "word": "stagne",
+      "start": 20.056,
+      "end": 20.415,
       "confidence": 0.95
     },
     {
       "id": "w-64",
-      "word": "on",
-      "start": 21.42,
-      "end": 21.548,
+      "word": "sous",
+      "start": 20.446,
+      "end": 20.686,
       "confidence": 0.95
     },
     {
       "id": "w-65",
-      "word": "compare",
-      "start": 21.56,
-      "end": 22.009,
+      "word": "dix",
+      "start": 20.707,
+      "end": 20.886,
       "confidence": 0.95
     },
     {
       "id": "w-66",
-      "word": "l’ancien",
-      "start": 22.048,
-      "end": 22.561,
+      "word": "pour",
+      "start": 20.902,
+      "end": 21.141,
       "confidence": 0.95
     },
     {
       "id": "w-67",
-      "word": "fonctionnement",
-      "start": 22.606,
-      "end": 23.504,
+      "word": "cent.",
+      "start": 21.162,
+      "end": 21.461,
       "confidence": 0.95
     },
     {
       "id": "w-68",
-      "word": "avec",
-      "start": 23.582,
-      "end": 23.839,
+      "word": "Alors",
+      "start": 21.487,
+      "end": 21.787,
       "confidence": 0.95
     },
     {
       "id": "w-69",
-      "word": "la",
-      "start": 23.861,
-      "end": 23.989,
+      "word": "que",
+      "start": 21.813,
+      "end": 21.992,
       "confidence": 0.95
     },
     {
       "id": "w-70",
-      "word": "nouvelle",
-      "start": 24,
-      "end": 24.514,
+      "word": "les",
+      "start": 22.008,
+      "end": 22.188,
       "confidence": 0.95
     },
     {
       "id": "w-71",
-      "word": "situation,",
-      "start": 24.558,
-      "end": 25.2,
+      "word": "équipes",
+      "start": 22.203,
+      "end": 22.622,
       "confidence": 0.95
     },
     {
       "id": "w-72",
-      "word": "la",
-      "start": 25.256,
-      "end": 25.384,
+      "word": "qui",
+      "start": 22.659,
+      "end": 22.838,
       "confidence": 0.95
     },
     {
       "id": "w-73",
-      "word": "différence",
-      "start": 25.395,
-      "end": 26.037,
+      "word": "refont",
+      "start": 22.854,
+      "end": 23.213,
       "confidence": 0.95
     },
     {
       "id": "w-74",
-      "word": "saute",
-      "start": 26.093,
-      "end": 26.413,
+      "word": "un",
+      "start": 23.244,
+      "end": 23.364,
       "confidence": 0.95
     },
     {
       "id": "w-75",
-      "word": "aux",
-      "start": 26.441,
-      "end": 26.634,
+      "word": "seul",
+      "start": 23.374,
+      "end": 23.614,
       "confidence": 0.95
     },
     {
       "id": "w-76",
-      "word": "yeux.",
-      "start": 26.651,
-      "end": 26.971,
+      "word": "workflow",
+      "start": 23.635,
+      "end": 24.114,
       "confidence": 0.95
     },
     {
       "id": "w-77",
-      "word": "Pour",
-      "start": 26.999,
-      "end": 27.256,
+      "word": "de",
+      "start": 24.155,
+      "end": 24.275,
       "confidence": 0.95
     },
     {
       "id": "w-78",
-      "word": "t’adapter",
-      "start": 27.278,
-      "end": 27.856,
+      "word": "bout",
+      "start": 24.285,
+      "end": 24.525,
       "confidence": 0.95
     },
     {
       "id": "w-79",
-      "word": "dès",
-      "start": 27.906,
-      "end": 28.098,
+      "word": "en",
+      "start": 24.546,
+      "end": 24.666,
       "confidence": 0.95
     },
     {
       "id": "w-80",
-      "word": "cette",
-      "start": 28.115,
-      "end": 28.436,
+      "word": "bout",
+      "start": 24.676,
+      "end": 24.915,
       "confidence": 0.95
     },
     {
       "id": "w-81",
-      "word": "semaine,",
-      "start": 28.464,
-      "end": 28.977,
+      "word": "capturent",
+      "start": 24.936,
+      "end": 25.475,
       "confidence": 0.95
     },
     {
       "id": "w-82",
-      "word": "garde",
-      "start": 29.022,
-      "end": 29.342,
+      "word": "tout",
+      "start": 25.522,
+      "end": 25.761,
       "confidence": 0.95
     },
     {
       "id": "w-83",
-      "word": "ces",
-      "start": 29.37,
-      "end": 29.563,
+      "word": "le",
+      "start": 25.782,
+      "end": 25.902,
       "confidence": 0.95
     },
     {
       "id": "w-84",
-      "word": "trois",
-      "start": 29.58,
-      "end": 29.9,
+      "word": "gain.",
+      "start": 25.912,
+      "end": 26.211,
       "confidence": 0.95
     },
     {
       "id": "w-85",
-      "word": "repères",
-      "start": 29.928,
-      "end": 30.377,
+      "word": "Pour",
+      "start": 26.237,
+      "end": 26.477,
       "confidence": 0.95
     },
     {
       "id": "w-86",
-      "word": "simples",
-      "start": 30.416,
-      "end": 30.866,
+      "word": "inverser",
+      "start": 26.498,
+      "end": 26.977,
       "confidence": 0.95
     },
     {
       "id": "w-87",
-      "word": "sous",
-      "start": 30.905,
-      "end": 31.161,
+      "word": "la",
+      "start": 27.018,
+      "end": 27.138,
       "confidence": 0.95
     },
     {
       "id": "w-88",
-      "word": "les",
-      "start": 31.184,
-      "end": 31.376,
+      "word": "barre,",
+      "start": 27.148,
+      "end": 27.508,
       "confidence": 0.95
     },
     {
       "id": "w-89",
-      "word": "yeux.",
-      "start": 31.393,
-      "end": 31.714,
+      "word": "mesure",
+      "start": 27.539,
+      "end": 27.898,
       "confidence": 0.95
     },
     {
       "id": "w-90",
-      "word": "D’après",
-      "start": 31.742,
-      "end": 32.191,
+      "word": "trois",
+      "start": 27.929,
+      "end": 28.229,
       "confidence": 0.95
     },
     {
       "id": "w-91",
-      "word": "Solutions",
-      "start": 32.23,
-      "end": 32.807,
+      "word": "lignes",
+      "start": 28.255,
+      "end": 28.614,
       "confidence": 0.95
     },
     {
       "id": "w-92",
-      "word": "Numériques,",
-      "start": 32.857,
-      "end": 33.563,
+      "word": ":",
+      "start": 28.645,
+      "end": 28.765,
       "confidence": 0.95
     },
     {
       "id": "w-93",
-      "word": "ceux",
-      "start": 33.624,
-      "end": 33.881,
+      "word": "relecture",
+      "start": 28.775,
+      "end": 29.314,
       "confidence": 0.95
     },
     {
       "id": "w-94",
-      "word": "qui",
-      "start": 33.903,
-      "end": 34.096,
+      "word": "humaine,",
+      "start": 29.361,
+      "end": 29.84,
       "confidence": 0.95
     },
     {
       "id": "w-95",
-      "word": "anticipent",
-      "start": 34.113,
-      "end": 34.754,
+      "word": "coût",
+      "start": 29.881,
+      "end": 30.121,
       "confidence": 0.95
     },
     {
       "id": "w-96",
-      "word": "ce",
-      "start": 34.81,
-      "end": 34.938,
+      "word": "par",
+      "start": 30.142,
+      "end": 30.321,
       "confidence": 0.95
     },
     {
       "id": "w-97",
-      "word": "changement",
-      "start": 34.949,
-      "end": 35.591,
+      "word": "tâche",
+      "start": 30.337,
+      "end": 30.636,
       "confidence": 0.95
     },
     {
       "id": "w-98",
-      "word": "évitent",
-      "start": 35.647,
-      "end": 36.096,
+      "word": "et",
+      "start": 30.662,
+      "end": 30.782,
       "confidence": 0.95
     },
     {
       "id": "w-99",
-      "word": "l’essentiel",
-      "start": 36.135,
-      "end": 36.841,
+      "word": "suppression",
+      "start": 30.792,
+      "end": 31.451,
       "confidence": 0.95
     },
     {
       "id": "w-100",
-      "word": "du",
-      "start": 36.902,
-      "end": 37.031,
+      "word": "d’étapes.",
+      "start": 31.508,
+      "end": 32.047,
       "confidence": 0.95
     },
     {
       "id": "w-101",
-      "word": "choc.",
-      "start": 37.042,
-      "end": 37.362,
+      "word": "Les",
+      "start": 32.094,
+      "end": 32.273,
       "confidence": 0.95
     },
     {
       "id": "w-102",
-      "word": "Tu",
-      "start": 37.39,
-      "end": 37.519,
+      "word": "audits",
+      "start": 32.289,
+      "end": 32.648,
       "confidence": 0.95
     },
     {
       "id": "w-103",
-      "word": "étais",
-      "start": 37.53,
-      "end": 37.851,
+      "word": "de",
+      "start": 32.679,
+      "end": 32.799,
       "confidence": 0.95
     },
     {
       "id": "w-104",
-      "word": "déjà",
-      "start": 37.879,
-      "end": 38.135,
+      "word": "Baromètre",
+      "start": 32.809,
+      "end": 33.348,
       "confidence": 0.95
     },
     {
       "id": "w-105",
-      "word": "au",
-      "start": 38.157,
-      "end": 38.286,
+      "word": "IA",
+      "start": 33.395,
+      "end": 33.515,
       "confidence": 0.95
     },
     {
       "id": "w-106",
-      "word": "courant",
-      "start": 38.297,
-      "end": 38.746,
+      "word": "France",
+      "start": 33.525,
+      "end": 33.884,
       "confidence": 0.95
     },
     {
       "id": "w-107",
-      "word": "?",
-      "start": 38.785,
-      "end": 38.913,
+      "word": "2026",
+      "start": 33.916,
+      "end": 34.155,
       "confidence": 0.95
     },
     {
       "id": "w-108",
-      "word": "Dis-le",
-      "start": 38.925,
-      "end": 39.31,
+      "word": "confirment",
+      "start": 34.176,
+      "end": 34.774,
       "confidence": 0.95
     },
     {
       "id": "w-109",
-      "word": "en",
-      "start": 39.343,
-      "end": 39.471,
+      "word": "qu’un",
+      "start": 34.826,
+      "end": 35.126,
       "confidence": 0.95
     },
     {
       "id": "w-110",
-      "word": "commentaire",
-      "start": 39.483,
-      "end": 40.188,
+      "word": "flux",
+      "start": 35.152,
+      "end": 35.391,
       "confidence": 0.95
     },
     {
       "id": "w-111",
-      "word": "et",
-      "start": 40.25,
-      "end": 40.378,
+      "word": "sobre",
+      "start": 35.412,
+      "end": 35.711,
       "confidence": 0.95
     },
     {
       "id": "w-112",
-      "word": "abonne-toi",
-      "start": 40.389,
-      "end": 41.031,
+      "word": "bat",
+      "start": 35.737,
+      "end": 35.917,
       "confidence": 0.95
     },
     {
       "id": "w-113",
-      "word": "pour",
-      "start": 41.087,
-      "end": 41.343,
+      "word": "dix",
+      "start": 35.933,
+      "end": 36.112,
       "confidence": 0.95
     },
     {
       "id": "w-114",
-      "word": "le",
-      "start": 41.365,
-      "end": 41.494,
+      "word": "agents",
+      "start": 36.128,
+      "end": 36.487,
       "confidence": 0.95
     },
     {
       "id": "w-115",
-      "word": "prochain",
-      "start": 41.505,
-      "end": 42.018,
+      "word": "autonomes",
+      "start": 36.518,
+      "end": 37.057,
       "confidence": 0.95
     },
     {
       "id": "w-116",
-      "word": "décryptage.",
-      "start": 42.063,
-      "end": 42.769,
+      "word": "empilés",
+      "start": 37.104,
+      "end": 37.523,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-117",
+      "word": "sans",
+      "start": 37.559,
+      "end": 37.799,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-118",
+      "word": "règle.",
+      "start": 37.82,
+      "end": 38.179,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-119",
+      "word": "Abonne-toi",
+      "start": 38.21,
+      "end": 38.809,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-120",
+      "word": "et",
+      "start": 38.861,
+      "end": 38.981,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-121",
+      "word": "active",
+      "start": 38.991,
+      "end": 39.35,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-122",
+      "word": "la",
+      "start": 39.381,
+      "end": 39.501,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-123",
+      "word": "cloche",
+      "start": 39.511,
+      "end": 39.871,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-124",
+      "word": "pour",
+      "start": 39.902,
+      "end": 40.141,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-125",
+      "word": "éviter",
+      "start": 40.162,
+      "end": 40.521,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-126",
+      "word": "les",
+      "start": 40.552,
+      "end": 40.732,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-127",
+      "word": "pièges",
+      "start": 40.748,
+      "end": 41.107,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-128",
+      "word": "coûteux",
+      "start": 41.138,
+      "end": 41.557,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-129",
+      "word": "de",
+      "start": 41.594,
+      "end": 41.714,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-130",
+      "word": "la",
+      "start": 41.724,
+      "end": 41.844,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-131",
+      "word": "tech",
+      "start": 41.854,
+      "end": 42.093,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-132",
+      "word": "en",
+      "start": 42.114,
+      "end": 42.234,
+      "confidence": 0.95
+    },
+    {
+      "id": "w-133",
+      "word": "entreprise.",
+      "start": 42.244,
+      "end": 42.903,
       "confidence": 0.95
     }
   ],
@@ -848,34 +967,34 @@
       "componentId": "comp-beat-1",
       "name": "90 % des entreprises",
       "start": 0,
-      "end": 4.74,
-      "type": "counter",
+      "end": 4.43,
+      "type": "typography",
       "color": "#258EFF"
     },
     {
       "id": "mot-beat-2",
       "componentId": "comp-beat-2",
-      "name": "Gain rapide, zéro marge",
-      "start": 4.74,
-      "end": 11.07,
-      "type": "counter",
+      "name": "Le constat comptable",
+      "start": 4.43,
+      "end": 10.07,
+      "type": "card",
       "color": "#14161B"
     },
     {
       "id": "mot-beat-3",
       "componentId": "comp-beat-3",
-      "name": "Le piège des agents",
-      "start": 11.07,
-      "end": 15.89,
-      "type": "card",
+      "name": "Piège des coûts cachés",
+      "start": 10.07,
+      "end": 15.88,
+      "type": "chart",
       "color": "#14161B"
     },
     {
       "id": "mot-beat-4",
       "componentId": "comp-beat-4",
-      "name": "Part d’échec financier",
-      "start": 15.89,
-      "end": 21.04,
+      "name": "Courbe des coûts IA",
+      "start": 15.88,
+      "end": 21.47,
       "type": "chart",
       "color": "#14161B"
     },
@@ -883,8 +1002,8 @@
       "id": "mot-beat-5",
       "componentId": "comp-beat-5",
       "name": "Gadget vs Flux rentable",
-      "start": 21.04,
-      "end": 26.98,
+      "start": 21.47,
+      "end": 26.22,
       "type": "card",
       "color": "#14161B"
     },
@@ -892,8 +1011,8 @@
       "id": "mot-beat-6",
       "componentId": "comp-beat-6",
       "name": "3 réglages pour le ROI",
-      "start": 26.98,
-      "end": 31.73,
+      "start": 26.22,
+      "end": 32.07,
       "type": "card",
       "color": "#14161B"
     },
@@ -901,8 +1020,8 @@
       "id": "mot-beat-7",
       "componentId": "comp-beat-7",
       "name": "Ce qui rapporte vraiment",
-      "start": 31.73,
-      "end": 37.38,
+      "start": 32.07,
+      "end": 38.19,
       "type": "chart",
       "color": "#14161B"
     },
@@ -910,8 +1029,8 @@
       "id": "mot-beat-8",
       "componentId": "comp-beat-8",
       "name": "Évite les faux gains IA",
-      "start": 37.38,
-      "end": 43.37,
+      "start": 38.19,
+      "end": 43.5,
       "type": "rocket",
       "color": "#059669"
     }
@@ -921,110 +1040,110 @@
       "id": "layout-beat-1",
       "layout": "split",
       "start": 0,
-      "end": 4.74
+      "end": 4.43
     },
     {
       "id": "layout-beat-2",
       "layout": "split",
-      "start": 4.74,
-      "end": 11.07
+      "start": 4.43,
+      "end": 10.07
     },
     {
       "id": "layout-beat-3",
-      "layout": "split",
-      "start": 11.07,
-      "end": 15.89
+      "layout": "fullscreen",
+      "start": 10.07,
+      "end": 15.88
     },
     {
       "id": "layout-beat-4",
       "layout": "fullscreen",
-      "start": 15.89,
-      "end": 21.04
+      "start": 15.88,
+      "end": 21.47
     },
     {
       "id": "layout-beat-5",
       "layout": "split",
-      "start": 21.04,
-      "end": 26.98
+      "start": 21.47,
+      "end": 26.22
     },
     {
       "id": "layout-beat-6",
       "layout": "split",
-      "start": 26.98,
-      "end": 31.73
+      "start": 26.22,
+      "end": 32.07
     },
     {
       "id": "layout-beat-7",
       "layout": "fullscreen",
-      "start": 31.73,
-      "end": 37.38
+      "start": 32.07,
+      "end": 38.19
     },
     {
       "id": "layout-beat-8",
       "layout": "split",
-      "start": 37.38,
-      "end": 43.37
+      "start": 38.19,
+      "end": 43.5
     }
   ],
   "sfxTrack": [
     {
       "id": "sfx-hook-shatter",
-      "sound": "impact-boom",
-      "start": 2.28,
+      "sound": "zhhh",
+      "start": 2.13,
       "volume": 0.46
     },
     {
       "id": "sfx-hook-boom",
-      "sound": "pop",
-      "start": 2.28,
+      "sound": "thud",
+      "start": 2.13,
       "volume": 0.38
     },
     {
       "id": "sfx-2",
-      "sound": "thud",
-      "start": 4.86,
+      "sound": "pop",
+      "start": 4.55,
       "volume": 0.34
     },
     {
       "id": "sfx-3",
-      "sound": "tap",
-      "start": 11.19,
+      "sound": "zhhh",
+      "start": 10.19,
       "volume": 0.34
     },
     {
       "id": "sfx-4",
-      "sound": "zhhh",
-      "start": 16.01,
-      "volume": 0.34
+      "sound": "riser",
+      "start": 16,
+      "volume": 0.26
     },
     {
       "id": "sfx-5",
       "sound": "pop",
-      "start": 21.16,
+      "start": 21.59,
       "volume": 0.34
     },
     {
       "id": "sfx-6",
       "sound": "tap",
-      "start": 27.1,
+      "start": 26.34,
       "volume": 0.34
     },
     {
       "id": "sfx-7",
-      "sound": "riser",
-      "start": 31.85,
-      "volume": 0.26
+      "sound": "zhhh",
+      "start": 32.19,
+      "volume": 0.34
     },
     {
       "id": "sfx-8",
       "sound": "pop-back",
-      "start": 38.08,
+      "start": 38.89,
       "volume": 0.34
     },
     {
       "id": "sfx-8-bell",
       "sound": "bell",
-      "start": 38.2,
+      "start": 39.01,
       "volume": 0.3
     }
   ],
@@ -1042,7 +1161,7 @@
     "hookText": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.",
     "sources": "Notes sectorielles France · Solutions Numériques (Nov 2026)",
     "youtubeTitle": "90 % des entreprises ratent leurs économies IA : le parado",
-    "caption": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.\n\nTu en penses quoi ? Dis-le en commentaire.",
+    "caption": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.\n\nEnregistre ce Short et abonne-toi pour recevoir les prochains décryptages.",
     "hashtags": [
       "#business",
       "#actualite",
@@ -1052,19 +1171,19 @@
     "beats": [
       {
         "id": "beat-1",
-        "visualType": "hook_stat",
+        "visualType": "hook_versus",
         "layoutHint": "split",
-        "sfxKind": "impact-boom",
+        "sfxKind": "zhhh",
         "title": "90 % des entreprises",
         "shortLabel": "Hook",
-        "screenLabel": "BUSINESS · ALERTE",
+        "screenLabel": "AUDIT · AGENTS IA",
         "spokenLine": "Tout le monde installe des agents IA. Mais 90 % des boîtes ne gagnent pas un euro.",
         "brollKey": "startup_team",
-        "brollCaption": "90 % des",
+        "brollCaption": "90 %",
         "iconKind": "euro",
         "stampWord": "PARADOXE",
         "statValue": "90 %",
-        "statLabel": "Projets IA sans gain financier net",
+        "statLabel": "Projets IA sans gain comptable",
         "dateBadge": "DÈS 2026",
         "leftCard": {
           "label": "Promesse IA",
@@ -1079,33 +1198,36 @@
         "subStats": [
           {
             "value": "90 %",
-            "label": "Signal clé"
+            "label": "Promesse IA"
           },
           {
             "value": "9 sur 10",
-            "label": "Écart réel"
+            "label": "Écart net"
           }
         ],
         "from": 0,
-        "to": 4.74,
+        "to": 4.43,
         "layout": "split"
       },
       {
         "id": "beat-2",
-        "visualType": "counter_flip",
+        "visualType": "myth_vs_fact",
         "layoutHint": "split",
-        "sfxKind": "thud",
-        "title": "Gain rapide, zéro marge",
-        "shortLabel": "Constat",
-        "screenLabel": "FAIT VÉRIFIÉ",
-        "spokenLine": "Pourquoi l'IA fait gagner du temps aux salariés mais ne réduit pas encore les coûts, et casse-tête sécurité.",
+        "sfxKind": "pop",
+        "title": "Le constat comptable",
+        "shortLabel": "Preuve source",
+        "screenLabel": "SOURCE VÉRIFIÉE",
+        "spokenLine": "L’effet vitesse trompe les équipes : générer deux fois plus vite double souvent le temps de relecture.",
         "brollKey": "ai_lab",
-        "brollCaption": "Constat vérifié",
+        "brollCaption": "Document vérifié",
         "iconKind": "euro",
         "dateBadge": "DÈS 2026",
-        "sourceLabel": "Notes sectorielles France · Solutions Numériques",
+        "sourceLabel": "Baromètre IA France 2026",
+        "quoteText": "Neuf déploiements IA sur dix accélèrent la production brute sans réduire d’un euro les coûts finaux.",
+        "quoteHighlight": "sans réduire d’un euro les coûts finaux",
+        "stampWord": "PARADOXE",
         "statValue": "90 %",
-        "statLabel": "Projets IA sans gain financier net",
+        "statLabel": "Projets IA sans gain comptable",
         "leftCard": {
           "label": "Promesse IA",
           "value": "+40 %",
@@ -1127,34 +1249,67 @@
           "ratio": 0.22
         },
         "bullets": [
-          "Process inchangés",
-          "Sécurité des agents lourde",
-          "ROI long à prouver"
+          "Agents ajoutés sans tri",
+          "Relecture humaine doublée",
+          "Coûts API sous-estimés"
         ],
-        "from": 4.74,
-        "to": 11.07,
+        "from": 4.43,
+        "to": 10.07,
         "layout": "split"
       },
       {
         "id": "beat-3",
-        "visualType": "timeline_steps",
-        "layoutHint": "split",
-        "sfxKind": "tap",
-        "title": "Le piège des agents",
+        "visualType": "chart_curve",
+        "layoutHint": "fullscreen",
+        "sfxKind": "zhhh",
+        "title": "Piège des coûts cachés",
         "shortLabel": "Mécanisme",
-        "screenLabel": "EN 4 TEMPS",
-        "spokenLine": "Concrètement, tout s’enchaîne en quatre étapes précises qui modifient la suite.",
+        "screenLabel": "EN DIRECT",
+        "spokenLine": "Dans le tableau de pilotage réel, la facture d’API, d’erreurs et de coordination grignote toute la marge.",
         "brollKey": "data_analytics",
-        "brollCaption": "Mécanique réelle",
+        "brollCaption": "Mécanisme en action",
         "iconKind": "euro",
+        "sourceLabel": "Baromètre IA France 2026",
+        "uiUrl": "kpi.entreprise.fr/audit-agents",
+        "uiActionLabel": "Calculer le ROI",
+        "bullets": [
+          "Temps humain de relecture",
+          "Facture API & maintenance",
+          "Marge nette après 90 jours"
+        ],
         "steps": [
           "Outil ajouté",
           "Double saisie",
           "Coût API & audit",
           "Zéro marge"
         ],
+        "chartUnit": "%",
+        "chartPoints": [
+          {
+            "label": "T1",
+            "value": 18
+          },
+          {
+            "label": "T2",
+            "value": 42
+          },
+          {
+            "label": "T3",
+            "value": 68
+          },
+          {
+            "label": "T4",
+            "value": 84
+          },
+          {
+            "label": "2026",
+            "value": 90,
+            "highlight": true
+          }
+        ],
         "stampWord": "MESURÉ",
-        "statLabel": "Projets IA sans gain financier net",
+        "statValue": "90 %",
+        "statLabel": "Projets IA sans gain comptable",
         "leftCard": {
           "label": "Promesse IA",
           "value": "+40 %",
@@ -1175,24 +1330,48 @@
           "value": "10 %",
           "ratio": 0.22
         },
-        "from": 11.07,
-        "to": 15.89,
-        "layout": "split"
+        "from": 10.07,
+        "to": 15.88,
+        "layout": "fullscreen"
       },
       {
         "id": "beat-4",
-        "visualType": "gauge",
+        "visualType": "comparison_bars",
         "layoutHint": "fullscreen",
-        "sfxKind": "zhhh",
-        "title": "Part d’échec financier",
-        "shortLabel": "Pivot",
+        "sfxKind": "riser",
+        "title": "Courbe des coûts IA",
+        "shortLabel": "Courbe",
         "screenLabel": "PLEIN ÉCRAN",
-        "spokenLine": "Le vrai point de bascule ne vient pas des annonces, mais de l’effet concret au quotidien.",
+        "spokenLine": "La courbe des déploiements gadgets grimpe pendant que la rentabilité nette stagne sous dix pour cent.",
         "brollKey": "business",
         "iconKind": "euro",
+        "chartUnit": "%",
+        "chartPoints": [
+          {
+            "label": "T1",
+            "value": 18
+          },
+          {
+            "label": "T2",
+            "value": 42
+          },
+          {
+            "label": "T3",
+            "value": 68
+          },
+          {
+            "label": "T4",
+            "value": 84
+          },
+          {
+            "label": "2026",
+            "value": 90,
+            "highlight": true
+          }
+        ],
         "gaugePct": 90,
         "statValue": "90 %",
-        "statLabel": "Projets IA sans gain financier net",
+        "statLabel": "Projets IA sans gain comptable",
         "comparisonLeft": {
           "label": "Déploiement sans refonte",
           "value": "90 %",
@@ -1205,25 +1384,28 @@
         },
         "multiplierBadge": "9 sur 10",
         "bullets": [
-          "Process inchangés",
-          "Sécurité des agents lourde",
-          "ROI long à prouver"
+          "Agents ajoutés sans tri",
+          "Relecture humaine doublée",
+          "Coûts API sous-estimés"
         ],
-        "from": 15.89,
-        "to": 21.04,
+        "from": 15.88,
+        "to": 21.47,
         "layout": "fullscreen"
       },
       {
         "id": "beat-5",
-        "visualType": "myth_vs_fact",
+        "visualType": "source_quote",
         "layoutHint": "split",
         "sfxKind": "pop",
         "title": "Gadget vs Flux rentable",
         "shortLabel": "Écart chiffré",
         "screenLabel": "COMPARAISON",
-        "spokenLine": "Quand on compare l’ancien fonctionnement avec la nouvelle situation, la différence saute aux yeux.",
+        "spokenLine": "Alors que les équipes qui refont un seul workflow de bout en bout capturent tout le gain.",
         "brollKey": "economy",
         "iconKind": "euro",
+        "sourceLabel": "Baromètre IA France 2026",
+        "quoteText": "Neuf déploiements IA sur dix accélèrent la production brute sans réduire d’un euro les coûts finaux.",
+        "quoteHighlight": "sans réduire d’un euro les coûts finaux",
         "comparisonLeft": {
           "label": "Déploiement sans refonte",
           "value": "90 %",
@@ -1236,12 +1418,12 @@
         },
         "multiplierBadge": "9 sur 10",
         "statValue": "10 %",
-        "statLabel": "Projets IA sans gain financier net",
+        "statLabel": "Projets IA sans gain comptable",
         "dateBadge": "DÈS 2026",
         "bullets": [
-          "Process inchangés",
-          "Sécurité des agents lourde",
-          "ROI long à prouver"
+          "Agents ajoutés sans tri",
+          "Relecture humaine doublée",
+          "Coûts API sous-estimés"
         ],
         "steps": [
           "Outil ajouté",
@@ -1249,22 +1431,24 @@
           "Coût API & audit",
           "Zéro marge"
         ],
-        "from": 21.04,
-        "to": 26.98,
+        "from": 21.47,
+        "to": 26.22,
         "layout": "split"
       },
       {
         "id": "beat-6",
-        "visualType": "toggles_switch",
+        "visualType": "checklist_audit",
         "layoutHint": "split",
         "sfxKind": "tap",
         "title": "3 réglages pour le ROI",
         "shortLabel": "Actions",
         "screenLabel": "PLAN CONCRET",
-        "spokenLine": "Pour t’adapter dès cette semaine, garde ces trois repères simples sous les yeux.",
+        "spokenLine": "Pour inverser la barre, mesure trois lignes : relecture humaine, coût par tâche et suppression d’étapes.",
         "brollKey": "startup_team",
-        "brollCaption": "Plan immédiat",
+        "brollCaption": "Plan d’action immédiat",
         "iconKind": "euro",
+        "uiUrl": "kpi.entreprise.fr/audit-agents",
+        "uiActionLabel": "Calculer le ROI",
         "toggles": [
           {
             "label": "Empiler des gadgets IA",
@@ -1273,44 +1457,47 @@
             "activeAfter": false
           },
           {
-            "label": "Cibler un flux mesurable",
+            "label": "Audit coût réel par flux",
             "before": "OFF",
             "after": "PRIORITÉ",
             "activeAfter": true
           },
           {
-            "label": "Contrôle sécurité & droits",
+            "label": "Contrôle droits & erreurs",
             "before": "FLOU",
             "after": "VERROUILLÉ",
             "activeAfter": true
           }
         ],
         "bullets": [
-          "Process inchangés",
-          "Sécurité des agents lourde",
-          "ROI long à prouver"
+          "Supprimer la tâche avant d’automatiser",
+          "Mesurer le coût par dossier",
+          "Cibler un goulot unique"
         ],
-        "from": 26.98,
-        "to": 31.73,
+        "sourceLabel": "Baromètre IA France 2026",
+        "statValue": "3/3 ACTIFS",
+        "statLabel": "Réflexes immédiats",
+        "from": 26.22,
+        "to": 32.07,
         "layout": "split"
       },
       {
         "id": "beat-7",
-        "visualType": "comparison_bars",
+        "visualType": "gauge",
         "layoutHint": "fullscreen",
-        "sfxKind": "riser",
+        "sfxKind": "zhhh",
         "title": "Ce qui rapporte vraiment",
-        "shortLabel": "Preuve",
+        "shortLabel": "Verdict",
         "screenLabel": "BILAN SOURCÉ",
-        "spokenLine": "D’après Solutions Numériques, ceux qui anticipent ce changement évitent l’essentiel du choc.",
+        "spokenLine": "Les audits de Baromètre IA France 2026 confirment qu’un flux sobre bat dix agents autonomes empilés sans règle.",
         "brollKey": "ai_lab",
         "brollCaption": "Bilan sourcé",
         "iconKind": "euro",
-        "sourceLabel": "Notes sectorielles France · Solutions Numériques",
+        "sourceLabel": "Baromètre IA France 2026",
         "bullets": [
-          "Process inchangés",
-          "Sécurité des agents lourde",
-          "ROI long à prouver"
+          "Supprimer la tâche avant d’automatiser",
+          "Mesurer le coût par dossier",
+          "Cibler un goulot unique"
         ],
         "gaugePct": 90,
         "comparisonLeft": {
@@ -1325,9 +1512,9 @@
         },
         "multiplierBadge": "9 sur 10",
         "statValue": "90 %",
-        "statLabel": "Projets IA sans gain financier net",
-        "from": 31.73,
-        "to": 37.38,
+        "statLabel": "Projets IA sans gain comptable",
+        "from": 32.07,
+        "to": 38.19,
         "layout": "fullscreen"
       },
       {
@@ -1338,14 +1525,14 @@
         "title": "Évite les faux gains IA",
         "shortLabel": "CTA",
         "screenLabel": "SUITE EN DIRECT",
-        "spokenLine": "Tu étais déjà au courant ? Dis-le en commentaire et abonne-toi pour le prochain décryptage.",
+        "spokenLine": "Abonne-toi et active la cloche pour éviter les pièges coûteux de la tech en entreprise.",
         "brollKey": "studio",
         "brollCaption": "Décryptage · @alex.decode",
         "iconKind": "rocket",
         "statValue": "@alex.decode",
         "statLabel": "Business, IA & Stratégie FR",
-        "from": 37.38,
-        "to": 43.37,
+        "from": 38.19,
+        "to": 43.5,
         "layout": "split"
       }
     ]
@@ -1359,5 +1546,5 @@
     "captionsPosition": "bottom",
     "visualBeatsTarget": 8
   },
-  "hasMp4": true
+  "hasMp4": false
 }

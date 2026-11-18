@@ -129,6 +129,8 @@ export interface ShortProject {
   };
   speakerVideoUrl?: string;
   audioTrackUrl?: string;
+  hasVoice?: boolean;
+  voiceProvider?: string;
   hasMp4?: boolean;
   currentVersion: string;
   versions: RenderVersion[];

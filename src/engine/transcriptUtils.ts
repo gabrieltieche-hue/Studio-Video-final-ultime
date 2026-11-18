@@ -28,6 +28,12 @@ export interface DynamicBeat {
   statLabel?: string;
   dateBadge?: string;
   sourceLabel?: string;
+  quoteText?: string;
+  quoteHighlight?: string;
+  uiUrl?: string;
+  uiActionLabel?: string;
+  chartUnit?: string;
+  chartPoints?: Array<{ label: string; value: number; highlight?: boolean }>;
   leftCard?: { label: string; value: string; sub: string };
   rightCard?: { label: string; value: string; sub: string };
   subStats?: Array<{ value: string; label: string }>;
@@ -135,6 +141,14 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
         statLabel: typeof b.statLabel === 'string' ? b.statLabel : undefined,
         dateBadge: typeof b.dateBadge === 'string' ? b.dateBadge : undefined,
         sourceLabel: typeof b.sourceLabel === 'string' ? b.sourceLabel : undefined,
+        quoteText: typeof b.quoteText === 'string' ? b.quoteText : undefined,
+        quoteHighlight: typeof b.quoteHighlight === 'string' ? b.quoteHighlight : undefined,
+        uiUrl: typeof b.uiUrl === 'string' ? b.uiUrl : undefined,
+        uiActionLabel: typeof b.uiActionLabel === 'string' ? b.uiActionLabel : undefined,
+        chartUnit: typeof b.chartUnit === 'string' ? b.chartUnit : undefined,
+        chartPoints: Array.isArray(b.chartPoints)
+          ? (b.chartPoints as Array<{ label: string; value: number; highlight?: boolean }>)
+          : undefined,
         leftCard:
           b.leftCard && typeof b.leftCard === 'object'
             ? (b.leftCard as DynamicBeat['leftCard'])

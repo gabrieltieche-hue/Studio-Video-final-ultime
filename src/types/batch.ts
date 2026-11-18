@@ -21,6 +21,9 @@ export type DynamicVisualType =
   | 'hook_question'
   | 'counter_flip'
   | 'comparison_bars'
+  | 'chart_curve'
+  | 'source_quote'
+  | 'ui_window'
   | 'timeline_steps'
   | 'toggles_switch'
   | 'terminal_flow'
@@ -64,6 +67,12 @@ export interface BatchBeatSpec {
   statLabel?: string;
   dateBadge?: string;
   sourceLabel?: string;
+  quoteText?: string;
+  quoteHighlight?: string;
+  uiUrl?: string;
+  uiActionLabel?: string;
+  chartUnit?: string;
+  chartPoints?: Array<{ label: string; value: number; highlight?: boolean }>;
   leftCard?: { label: string; value: string; sub: string };
   rightCard?: { label: string; value: string; sub: string };
   subStats?: Array<{ value: string; label: string }>;

@@ -55,9 +55,9 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     hookType: 'hook_shatter',
     beatTypes: [
       'hook_shatter',
-      'counter_flip',
-      'timeline_steps',
-      'gauge',
+      'source_quote',
+      'ui_window',
+      'chart_curve',
       'comparison_bars',
       'toggles_switch',
       'terminal_flow',
@@ -65,7 +65,7 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     ],
     layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
     narrativeGuide:
-      'Arc Rupture : 1) Choc visuel immédiat 2) Chiffre clé caché 3) Mécanisme en 4 temps 4) Pivot plein écran jauge 5) Avant vs Après 6) 3 réglages concrets 7) Preuve ou test concret 8) Question & CTA.',
+      'Arc Rupture : 1) Choc visuel & open loop 2) Extrait source surligné 3) Interface concrète avec clic 4) Courbe d’évolution plein écran 5) Avant vs Après chiffré 6) 3 bascules concrètes 7) Preuve terrain 8) Subscribe + cloche.',
   },
   {
     id: 'breaking_alert',
@@ -73,17 +73,17 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     hookType: 'hook_alert',
     beatTypes: [
       'hook_alert',
+      'source_quote',
       'alert_rule',
-      'counter_flip',
+      'chart_curve',
       'comparison_bars',
-      'timeline_steps',
-      'checklist_audit',
+      'ui_window',
       'gauge',
       'cta_card',
     ],
-    layouts: ['split', 'split', 'split', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'fullscreen', 'split'],
     narrativeGuide:
-      'Arc Alerte Officielle : 1) Date/règle choc 2) Ce qui change concrètement 3) Chiffre d’impact sur le quotidien 4) Comparatif avant/après plein écran 5) Chronologie d’application 6) 3 réflexes à vérifier 7) Indice de risque/impact plein écran 8) Question & CTA.',
+      'Arc Alerte Officielle : 1) Date & règle choc 2) Texte officiel surligné 3) 3 changements immédiats 4) Courbe d’impact plein écran 5) Comparatif chiffré avant/après 6) Démarche pratique en interface 7) Jauge d’exposition 8) Subscribe + cloche.',
   },
   {
     id: 'paradox_buster',
@@ -92,16 +92,16 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     beatTypes: [
       'hook_versus',
       'myth_vs_fact',
+      'chart_curve',
       'comparison_bars',
-      'counter_flip',
-      'gauge',
+      'source_quote',
       'checklist_audit',
-      'key_points',
+      'gauge',
       'cta_card',
     ],
-    layouts: ['split', 'split', 'fullscreen', 'split', 'fullscreen', 'split', 'split', 'split'],
+    layouts: ['split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
     narrativeGuide:
-      'Arc Duel / Paradoxe : 1) Opposition frontale A vs B 2) Mythe cru vs réalité mesurée 3) Écart chiffré plein écran 4) Pourquoi l’écart se creuse 5) Jauge de bascule plein écran 6) Plan d’adaptation 7) Synthèse terrain 8) Question & CTA.',
+      'Arc Duel / Paradoxe : 1) Opposition frontale A vs B 2) Idée reçue barrée vs fait 3) Courbe de fracture plein écran 4) Écart chiffré avant/après 5) Extrait source surligné 6) 3 preuves à activer 7) Jauge finale 8) Subscribe + cloche.',
   },
   {
     id: 'shock_stat_investigation',
@@ -109,9 +109,9 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     hookType: 'hook_stat',
     beatTypes: [
       'hook_stat',
-      'counter_flip',
+      'source_quote',
       'timeline_steps',
-      'gauge',
+      'chart_curve',
       'myth_vs_fact',
       'toggles_switch',
       'comparison_bars',
@@ -119,7 +119,7 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     ],
     layouts: ['split', 'split', 'split', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
     narrativeGuide:
-      'Arc Enquête Chiffrée : 1) Compteur choc qui défile 2) D’où vient le chiffre 3) Effet domino en 4 étapes 4) Thermomètre/jauge plein écran 5) Idée reçue démontée 6) Bascule pratique 7) Bilan chiffré plein écran 8) Question & CTA.',
+      'Arc Enquête Chiffrée : 1) Compteur choc qui défile 2) Rapport source surligné 3) Effet domino en 4 étapes 4) Courbe pluriannuelle plein écran 5) Mythe démonté 6) 3 bascules pratiques 7) Bilan chiffré 8) Subscribe + cloche.',
   },
   {
     id: 'myth_question',
@@ -128,16 +128,16 @@ export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
     beatTypes: [
       'hook_question',
       'myth_vs_fact',
-      'timeline_steps',
-      'comparison_bars',
-      'alert_rule',
+      'ui_window',
+      'chart_curve',
+      'source_quote',
       'checklist_audit',
       'gauge',
       'cta_card',
     ],
     layouts: ['split', 'split', 'split', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
     narrativeGuide:
-      'Arc Question Piège : 1) Question contre-intuitive barrée en direct 2) Vraie explication sourcée 3) Comment le piège fonctionne 4) Comparaison nette plein écran 5) Nouvelle règle à retenir 6) 3 actions immédiates 7) Score d’efficacité plein écran 8) Question & CTA.',
+      'Arc Question Piège : 1) Question contre-intuitive barrée 2) Vraie mécanique chiffrée 3) Démonstration interface & clic 4) Courbe de rétention plein écran 5) Preuve sourcée 6) 3 réflexes immédiats 7) Score d’efficacité 8) Subscribe + cloche.',
   },
 ];
 
@@ -224,13 +224,48 @@ export function condenseVisualHeadline(text: string, maxWords = 5, maxChars = 38
 }
 
 /**
- * Keeps spoken lines per beat balanced (~10-18 words) so no beat freezes 11s on one card.
+ * Keeps spoken lines per beat balanced (~11-19 words) while cutting cleanly at sentence/clause
+ * boundaries so lines never end in broken half-clauses.
  */
-export function trimSpokenLineForPacing(text: string, maxWords = 19): string {
+export function trimSpokenLineForPacing(text: string, maxWords = 20): string {
   const clean = sanitizeScriptText(text);
   const words = clean.split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return clean;
-  const sliced = words.slice(0, maxWords).join(' ').replace(/[,;:]+$/, '');
+
+  const minCut = Math.max(5, Math.floor(maxWords * 0.55));
+  for (let i = Math.min(words.length - 1, maxWords - 1); i >= minCut; i--) {
+    if (/[.!?]$/.test(words[i])) {
+      return words.slice(0, i + 1).join(' ');
+    }
+  }
+
+  for (let i = Math.min(words.length - 1, maxWords - 1); i >= minCut; i--) {
+    if (/[,;:]$/.test(words[i])) {
+      const candidate = words.slice(0, i + 1);
+      const lastClean = candidate[candidate.length - 1].replace(/[,;:]+$/, '');
+      if (
+        candidate.length > minCut &&
+        /^(et|ou|de|du|des|le|la|les|un|une|à|au|aux|en|pour|sur|par|dans|avec|sans|que|qui|mais|dès|vers|chez|entre|face|lors|sous|après|avant|contre)$/i.test(
+          lastClean
+        )
+      ) {
+        candidate.pop();
+      }
+      const joined = candidate.join(' ').replace(/[,;:]+$/, '').trim();
+      return /[.!?]$/.test(joined) ? joined : `${joined}.`;
+    }
+  }
+
+  const candidate = words.slice(0, maxWords);
+  while (
+    candidate.length > minCut &&
+    /^(et|ou|de|du|des|le|la|les|un|une|à|au|aux|en|pour|sur|par|dans|avec|sans|que|qui|dont|ce|cet|cette|ces|se|ne|si|mais|dès|vers|chez|entre|face|lors|sous|après|avant|contre|depuis)$/i.test(
+      candidate[candidate.length - 1].replace(/[,;:.!?]+$/, '')
+    )
+  ) {
+    candidate.pop();
+  }
+  const sliced = candidate.join(' ').replace(/[,;:]+$/, '').trim();
   return /[.!?]$/.test(sliced) ? sliced : `${sliced}.`;
 }
 
@@ -412,7 +447,11 @@ export function resolveBeatLayout(spec: BatchBeatSpec, index: number, total: num
   if (spec.layoutHint === 'split' || spec.layoutHint === 'fullscreen') {
     return spec.layoutHint;
   }
-  if (spec.visualType === 'gauge' || spec.visualType === 'comparison_bars') {
+  if (
+    spec.visualType === 'gauge' ||
+    spec.visualType === 'comparison_bars' ||
+    spec.visualType === 'chart_curve'
+  ) {
     return 'fullscreen';
   }
   if (index === 0 || index === total - 1) {
@@ -506,6 +545,9 @@ export function assignBeatTimingsAndTranscript(
     hook_question: 'typography',
     counter_flip: 'counter',
     comparison_bars: 'chart',
+    chart_curve: 'chart',
+    source_quote: 'card',
+    ui_window: 'card',
     timeline_steps: 'card',
     toggles_switch: 'card',
     terminal_flow: 'card',
@@ -673,42 +715,81 @@ interface DomainPreset {
   gaugePct: number;
   steps: [string, string, string, string];
   bullets: [string, string, string];
+  actionBullets: [string, string, string];
   toggles: Array<{ label: string; before: string; after: string; activeAfter: boolean }>;
+  quoteText: string;
+  quoteHighlight: string;
+  uiUrl: string;
+  uiActionLabel: string;
+  uiRows: [string, string, string];
+  chartUnit: string;
+  chartPoints: Array<{ label: string; value: number; highlight?: boolean }>;
   beatTitles: [string, string, string, string, string, string];
+  spokenBeats: [string, string, string, string, string, string, string, string];
   ctaTitle: string;
   ctaTagline: string;
 }
 
-function buildDomainPreset(category: string, theme: string, statVal: string): DomainPreset {
+function buildDomainPreset(
+  category: string,
+  theme: string,
+  statVal: string,
+  angle?: string,
+  sourceSpoken = 'les données officielles'
+): DomainPreset {
   const hay = `${category} ${theme}`.toLowerCase();
 
   if (/(banque|découvert|crédit|agios|frais|livret)/.test(hay)) {
     return {
       statValue: statVal === '3× PLUS' ? '20 NOV' : statVal,
-      statLabel: 'Nouvelles règles bancaires',
+      statLabel: 'Réforme découvert bancaire',
       stampWord: 'ENCADRÉ',
       leftCard: { label: 'Ancien découvert', value: 'Flou', sub: 'Frais surprises' },
-      rightCard: { label: 'Règle 2026', value: 'Encadré', sub: 'Crédit vérifié' },
+      rightCard: { label: 'Dès le 20 nov', value: 'Encadré', sub: 'Crédit vérifié' },
       compLeft: { label: 'Découvert subi avant', value: '180 €/an', ratio: 0.88 },
       compRight: { label: 'Avec plafond & alerte', value: '24 €/an', ratio: 0.24 },
       multiplier: '÷7,5',
       gaugePct: 78,
       steps: ['Seuil fixé', 'Vérif revenus', 'Alerte SMS', 'Frais bloqués'],
       bullets: ['Solvabilité contrôlée', 'Coût total affiché', 'Frais d’incident plafonnés'],
+      actionBullets: ['Vérifier ton autorisation actuelle', 'Activer l’alerte SMS gratuite', 'Comparer le TAEG écrit'],
       toggles: [
-        { label: 'Découvert sans plafond clair', before: 'ACTIF', after: 'INTERDIT', activeAfter: false },
-        { label: 'Calcul complet avant accord', before: 'OFF', after: 'OBLIGATOIRE', activeAfter: true },
-        { label: 'Alerte avant frais bancaires', before: 'OFF', after: 'ACTIVÉE', activeAfter: true },
+        { label: 'Découvert automatique flou', before: 'ACTIF', after: 'STOPPÉ', activeAfter: false },
+        { label: 'Test de solvabilité écrit', before: 'OFF', after: 'OBLIGATOIRE', activeAfter: true },
+        { label: 'Plafond réel de frais', before: 'OFF', after: 'ACTIVÉ', activeAfter: true },
+      ],
+      quoteText: 'Tout découvert bancaire devient un vrai crédit soumis à vérification claire des revenus dès novembre.',
+      quoteHighlight: 'un vrai crédit soumis à vérification',
+      uiUrl: 'banque.service-public.fr/decouvert',
+      uiActionLabel: 'Fixer mon plafond',
+      uiRows: ['Audit des rentrées nettes', 'Simulation TAEG réel', 'Blocage alerte 80 %'],
+      chartUnit: ' €',
+      chartPoints: [
+        { label: '2022', value: 195 },
+        { label: '2023', value: 188 },
+        { label: '2024', value: 180 },
+        { label: '2025', value: 162 },
+        { label: '2026', value: 24, highlight: true },
       ],
       beatTitles: [
-        'Règle du 20 novembre',
-        'Mécanisme anti-agios',
-        'Coût réel des frais',
-        'Les 4 étapes bancaires',
-        '3 réflexes compte sain',
-        'Ce que fixe la loi',
+        'Ce qui change le 20 nov',
+        'Comment ta banque vérifie',
+        'Frais divisés par 7',
+        'Découvert subi vs Encadré',
+        '3 clics dans ton appli',
+        'Ce que tu économises',
       ],
-      ctaTitle: 'Garde ton pouvoir d’achat',
+      spokenBeats: [
+        'Le 20 novembre, ton découvert bancaire change de règle : il devient un vrai crédit encadré.',
+        'Ta banque doit désormais vérifier tes revenus avant de t’accorder un découvert automatique.',
+        'Résultat concret : le taux est affiché clairement et les frais abusifs sont plafonnés.',
+        'La courbe des agios chute de 180 euros par an à seulement 24 euros bien réglés.',
+        'Entre un découvert subi sans plafond et une alerte active, tu divises la facture par sept.',
+        'Ouvre ton appli bancaire aujourd’hui : vérifie ton plafond, active l’alerte SMS et compare le taux.',
+        `Selon ${sourceSpoken}, les clients qui ajustent leur plafond économisent dès le premier mois.`,
+        'Abonne-toi et active la cloche pour ne rater aucune règle qui protège ton argent.',
+      ],
+      ctaTitle: 'Protège ton compte',
       ctaTagline: 'Argent, Banques & Décryptages',
     };
   }
@@ -716,7 +797,7 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
   if (/(junior|senior|embauche|emploi|smic|salaire|chômage)/.test(hay)) {
     return {
       statValue: statVal === '3× PLUS' ? '-28 %' : statVal,
-      statLabel: 'Impact sur l’emploi mesuré',
+      statLabel: 'Offres juniors depuis 2023',
       stampWord: 'FRACTURE',
       leftCard: { label: 'Profils seniors', value: '98 %', sub: 'Postes maintenus' },
       rightCard: { label: 'Jeunes diplômés', value: '-28 %', sub: 'Offres fermées' },
@@ -725,21 +806,45 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
       multiplier: '-28 %',
       gaugePct: 72,
       steps: ['Tâches simples', 'Reprises IA', 'Moins de CDI', 'Rôle seniorisé'],
-      bullets: ['Premiers postes filtrés', 'Compétence métier clé', 'Audit IA exigé'],
+      bullets: ['Tâches d’entrée automatisées', 'Seniors 2× plus rapides', 'Attentes dès le jour 1'],
+      actionBullets: ['Publier des projets chiffrés en ligne', 'Auditer et corriger du code IA', 'Viser les PME à flux concrets'],
       toggles: [
-        { label: 'CV générique sans preuve', before: 'CLASSIQUE', after: 'FILTRÉ', activeAfter: false },
-        { label: 'Maîtrise flux & contrôle IA', before: 'OPTION', after: 'EXIGÉ', activeAfter: true },
-        { label: 'Projets chiffrés vérifiables', before: 'RARE', after: 'PRIORITÉ', activeAfter: true },
+        { label: 'CV théorique sans démo', before: 'CLASSIQUE', after: 'FILTRÉ', activeAfter: false },
+        { label: 'Relecture critique d’agents', before: 'OPTION', after: 'EXIGÉ', activeAfter: true },
+        { label: 'Preuves live vérifiables', before: 'RARE', after: 'PRIORITÉ', activeAfter: true },
+      ],
+      quoteText: 'Dans les métiers exposés à l’IA, les embauches juniors chutent alors que les postes seniors restent stables.',
+      quoteHighlight: 'les embauches juniors chutent',
+      uiUrl: 'emploi.observatoire.fr/juniors-2026',
+      uiActionLabel: 'Auditer mon profil',
+      uiRows: ['1 projet déployé mesurable', 'Maîtrise revue & debug IA', 'Cas client chiffré clair'],
+      chartUnit: '',
+      chartPoints: [
+        { label: '2022', value: 104 },
+        { label: '2023', value: 100 },
+        { label: '2024', value: 89 },
+        { label: '2025', value: 78 },
+        { label: '2026', value: 72, highlight: true },
       ],
       beatTitles: [
-        'La porte se ferme',
-        'Pourquoi l’IA filtre',
-        'Chute des offres juniors',
+        'Offres juniors bloquées',
+        'Chute des premiers CDI',
         'Seniors vs Débutants',
+        'Ce que montrent les chiffres',
         '3 preuves qui recrutent',
-        'Verdict marché 2026',
+        'Comment passer devant',
       ],
-      ctaTitle: 'Anticipe le marché 2026',
+      spokenBeats: [
+        'L’IA ne vire pas les seniors, elle ferme la porte aux premiers emplois des juniors.',
+        'Selon Stanford et la Banque de France, les offres juniors ont chuté de vingt-huit pour cent.',
+        'Pourquoi ? Parce que les tâches simples de rédaction, support et code basique partent vers l’IA.',
+        'Pour le même salaire, un senior avec l’IA produit autant que deux débutants réunis.',
+        'Du coup, envoyer un simple CV d’école ne suffit plus pour décrocher un entretien.',
+        'La solution : montre trois preuves en ligne, un projet chiffré, du debug IA et un résultat client.',
+        `Les chiffres de ${sourceSpoken} le confirment : ceux qui savent piloter ces outils restent recrutés.`,
+        'Abonne-toi et active la cloche pour garder une longueur d’avance sur l’emploi.',
+      ],
+      ctaTitle: 'Décroche ton poste 2026',
       ctaTagline: 'Emploi, IA & Carrière FR',
     };
   }
@@ -751,28 +856,52 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
   ) {
     return {
       statValue: statVal === '3× PLUS' ? '74 %' : statVal,
-      statLabel: 'Citoyens directement concernés',
+      statLabel: 'Mineurs exposés sans filtre',
       stampWord: 'VOTÉ',
-      leftCard: { label: 'Avant le vote', value: 'Libre', sub: 'Zéro contrôle' },
-      rightCard: { label: 'Nouveau cadre', value: 'Strict', sub: 'Sanctions prévues' },
+      leftCard: { label: 'Avant le vote', value: 'Libre', sub: 'Case à cocher' },
+      rightCard: { label: 'Nouveau cadre', value: 'Strict', sub: 'Tiers vérifié' },
       compLeft: { label: 'Exposition sans filtre', value: '3 h 15/j', ratio: 0.88 },
       compRight: { label: 'Avec cadre appliqué', value: '45 min/j', ratio: 0.3 },
       multiplier: '÷4,3',
       gaugePct: 81,
       steps: ['Projet déposé', 'Débat public', 'Contrôle âge', 'Application'],
-      bullets: ['Vérification renforcée', 'Plateformes responsabilisées', 'Effet immédiat'],
+      bullets: ['Auto-déclaration jugée naïve', 'Double vérification tiers', 'Amendes pour plateformes'],
+      actionBullets: ['Protéger vie privée et anonymat', 'Éviter le contournement VPN', 'Vérifier l’audit européen'],
       toggles: [
-        { label: 'Auto-déclaration naïve', before: 'EN COURS', after: 'STOPPÉE', activeAfter: false },
-        { label: 'Contrôle tiers vérifié', before: 'OFF', after: 'ACTIF', activeAfter: true },
+        { label: 'Case d’âge contournable', before: 'EN COURS', after: 'INTERDITE', activeAfter: false },
+        { label: 'Preuve anonyme sans photo', before: 'OFF', after: 'ACTIF', activeAfter: true },
         { label: 'Sanctions plateformes', before: 'FAIBLES', after: 'APPLIQUÉES', activeAfter: true },
+      ],
+      quoteText: 'La simple case déclarative ne suffit plus : le contrôle d’âge devient contraignant pour chaque plateforme.',
+      quoteHighlight: 'contrôle d’âge devient contraignant',
+      uiUrl: 'regulation.numerique.gouv.fr/age',
+      uiActionLabel: 'Vérifier la règle',
+      uiRows: ['Jeton d’âge anonyme tiers', 'Zéro stockage pièce d’identité', 'Blocage compte non vérifié'],
+      chartUnit: '%',
+      chartPoints: [
+        { label: '2022', value: 68 },
+        { label: '2023', value: 74 },
+        { label: '2024', value: 79 },
+        { label: '2025', value: 82 },
+        { label: '2026', value: 45, highlight: true },
       ],
       beatTitles: [
         'Le nouveau texte',
         'Comment ça s’applique',
-        'Impact sur l’usage',
+        'Courbe d’exposition réelle',
         'Avant vs Nouveau cadre',
         '3 leviers de contrôle',
         'Ce que change la loi',
+      ],
+      spokenBeats: [
+        'On a voulu verrouiller l’accès aux plateformes avant quinze ans, mais le vrai test commence maintenant.',
+        'Le texte impose aux plateformes un contrôle tiers réel pour remplacer la simple case de date de naissance.',
+        'L’outil repose sur un jeton anonyme : ton identité reste hors ligne pendant que l’âge est certifié.',
+        'Dans les pays pilotes, la courbe d’exposition chute dès le blocage des flux algorithmiques nocturnes.',
+        'L’écart passe de plus de trois heures quotidiennes à quarante-cinq minutes sur les comptes encadrés.',
+        'Reste un angle mort énorme : le contournement via VPN ou comptes partagés reste dur à bloquer.',
+        `Selon ${sourceSpoken}, les sanctions européennes décideront si cette règle est appliquée ou contournée.`,
+        'Abonne-toi et active la cloche pour suivre chaque décision qui redéfinit nos règles numériques.',
       ],
       ctaTitle: 'Comprends les vraies règles',
       ctaTagline: 'Politique, Lois & Société',
@@ -782,7 +911,7 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
   if (/(agents|entreprise|entreprises|économies|business|rentabil|productivité|coût)/.test(hay)) {
     return {
       statValue: statVal === '3× PLUS' ? '90 %' : statVal,
-      statLabel: 'Projets IA sans gain financier net',
+      statLabel: 'Projets IA sans gain comptable',
       stampWord: 'PARADOXE',
       leftCard: { label: 'Promesse IA', value: '+40 %', sub: 'Vitesse perçue' },
       rightCard: { label: 'Bilan comptable', value: '0 €', sub: 'Coût caché réel' },
@@ -791,19 +920,43 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
       multiplier: '9 sur 10',
       gaugePct: 90,
       steps: ['Outil ajouté', 'Double saisie', 'Coût API & audit', 'Zéro marge'],
-      bullets: ['Process inchangés', 'Sécurité des agents lourde', 'ROI long à prouver'],
+      bullets: ['Agents ajoutés sans tri', 'Relecture humaine doublée', 'Coûts API sous-estimés'],
+      actionBullets: ['Supprimer la tâche avant d’automatiser', 'Mesurer le coût par dossier', 'Cibler un goulot unique'],
       toggles: [
         { label: 'Empiler des gadgets IA', before: 'MODE', after: 'STOPPÉ', activeAfter: false },
-        { label: 'Cibler un flux mesurable', before: 'OFF', after: 'PRIORITÉ', activeAfter: true },
-        { label: 'Contrôle sécurité & droits', before: 'FLOU', after: 'VERROUILLÉ', activeAfter: true },
+        { label: 'Audit coût réel par flux', before: 'OFF', after: 'PRIORITÉ', activeAfter: true },
+        { label: 'Contrôle droits & erreurs', before: 'FLOU', after: 'VERROUILLÉ', activeAfter: true },
+      ],
+      quoteText: 'Neuf déploiements IA sur dix accélèrent la production brute sans réduire d’un euro les coûts finaux.',
+      quoteHighlight: 'sans réduire d’un euro les coûts finaux',
+      uiUrl: 'kpi.entreprise.fr/audit-agents',
+      uiActionLabel: 'Calculer le ROI',
+      uiRows: ['Temps humain de relecture', 'Facture API & maintenance', 'Marge nette après 90 jours'],
+      chartUnit: '%',
+      chartPoints: [
+        { label: 'T1', value: 18 },
+        { label: 'T2', value: 42 },
+        { label: 'T3', value: 68 },
+        { label: 'T4', value: 84 },
+        { label: '2026', value: 90, highlight: true },
       ],
       beatTitles: [
-        'Gain rapide, zéro marge',
-        'Le piège des agents',
-        'Part d’échec financier',
-        'Gadget vs Flux rentable',
-        '3 réglages pour le ROI',
-        'Ce qui rapporte vraiment',
+        'Le piège des coûts cachés',
+        'Pourquoi ça coûte cher',
+        'Courbe des coûts IA',
+        'Gadgets vs Gain réel',
+        '3 étapes rentables',
+        'La règle qui gagne',
+      ],
+      spokenBeats: [
+        'Quatre-vingt-dix pour cent des entreprises installent des agents IA, mais gagnent zéro euro de plus.',
+        'Générer du texte deux fois plus vite oblige souvent les équipes à relire deux fois plus d’erreurs.',
+        'Au final, entre les abonnements API et la relecture humaine, toute l’économie promise disparaît.',
+        'Sur la courbe, le nombre d’outils explose alors que la marge réelle reste bloquée sous dix pour cent.',
+        'Celles qui gagnent vraiment de l’argent suppriment d’abord les tâches inutiles sur un seul circuit clair.',
+        'Fais ces trois gestes : chronomètre la relecture, calcule le coût par dossier, simplifie avant d’automatiser.',
+        `Les audits de ${sourceSpoken} prouvent qu’un outil simple rapporte plus que dix agents empilés.`,
+        'Abonne-toi et active la cloche pour éviter les faux gains en business.',
       ],
       ctaTitle: 'Évite les faux gains IA',
       ctaTagline: 'Business, IA & Stratégie FR',
@@ -813,28 +966,52 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
   if (/(feed|vidéo|attention|fatigue|brut|5 minutes|conseil|habitude)/.test(hay)) {
     return {
       statValue: statVal === '3× PLUS' ? '5 min' : statVal,
-      statLabel: 'Micro-action contre le feed lisse',
+      statLabel: 'Réflexe anti-feed passif',
       stampWord: 'SATURATION',
       leftCard: { label: 'Vidéo IA lisse', value: '0,8 s', sub: 'Skippée direct' },
       rightCard: { label: 'Format brut incarné', value: '3× plus', sub: 'Partages & saves' },
-      compLeft: { label: 'Rétention contenu générique', value: '18 %', ratio: 0.3 },
-      compRight: { label: 'Rétention angle humain', value: '54 %', ratio: 0.86 },
+      compLeft: { label: 'Rétention contenu lisse', value: '18 %', ratio: 0.3 },
+      compRight: { label: 'Rétention preuve directe', value: '54 %', ratio: 0.86 },
       multiplier: '×3',
       gaugePct: 79,
       steps: ['Scroll passif', 'Rejet du lisse', 'Signal humain', 'Sauvegarde'],
-      bullets: ['Moins de mise en scène', 'Règle des 5 minutes', 'Preuve concrète en face'],
+      bullets: ['Filtre instinctif en 0,8 s', 'Preuve vécue recherchée', 'Action immédiate en 5 min'],
+      actionBullets: ['Couper les feeds lisses le matin', 'Lancer un bloc simple de 5 minutes', 'Garder une preuve concrète par jour'],
       toggles: [
         { label: 'Montage cloné sans âme', before: 'SATURÉ', after: 'IGNORÉ', activeAfter: false },
         { label: 'Une idée claire en 5 min', before: 'OFF', after: 'PRIORITÉ', activeAfter: true },
         { label: 'Partages & sauvegardes', before: 'FAIBLES', after: 'BOOSTÉS', activeAfter: true },
       ],
+      quoteText: 'Plus le feed devient généré et lisse, plus le cerveau filtre en moins d’une seconde pour chercher du réel.',
+      quoteHighlight: 'filtre en moins d’une seconde',
+      uiUrl: 'attention.studio/test-retention',
+      uiActionLabel: 'Appliquer 5 min',
+      uiRows: ['0,8 s : détection du faux', 'Preuve chiffrée dès le début', 'Règle des 5 min appliquée'],
+      chartUnit: '%',
+      chartPoints: [
+        { label: '2022', value: 48 },
+        { label: '2023', value: 41 },
+        { label: '2024', value: 31 },
+        { label: '2025', value: 23 },
+        { label: '2026', value: 18, highlight: true },
+      ],
       beatTitles: [
         'Pourquoi le feed sature',
-        'La règle des 5 minutes',
-        'Taux de rejet du lisse',
+        'Règle des 5 minutes',
+        'Chute du lisse en feed',
         'Lisse IA vs Format brut',
         '3 signaux qui retiennent',
         'Le retour au concret',
+      ],
+      spokenBeats: [
+        'Si les vidéos trop parfaites t’ennuient en moins d’une seconde, ce n’est pas un hasard du tout.',
+        'Face au flot de contenus lissés, notre attention rejette instinctivement ce qui sonne faux ou générique.',
+        'Sur ton attention quotidienne, la règle des cinq minutes coupe la procrastination avant même d’ouvrir un réseau.',
+        'La courbe de rétention des formats clonés s’effondre à dix-huit pour cent dès les trois premières secondes.',
+        'À l’inverse, un angle vécu et précis triple la rétention réelle et les enregistrements utiles.',
+        'Découpe ton objectif du matin en cinq minutes nettes, puis coupe les écrans jusqu’à midi.',
+        `Les analyses de ${sourceSpoken} montrent une prime massive à ce qui reste sincère, chiffré et actionnable.`,
+        'Abonne-toi et active la cloche pour retrouver chaque semaine des formats nets et sans remplissage.',
       ],
       ctaTitle: 'Teste la règle des 5 min',
       ctaTagline: 'Attention, Création & Vie FR',
@@ -844,7 +1021,7 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
   if (/(réunion|meeting|résumé)/.test(hay)) {
     return {
       statValue: statVal === '3× PLUS' ? '80 %' : statVal,
-      statLabel: 'Réunions remplacées en 2026',
+      statLabel: 'Réunions remplacées par async',
       stampWord: 'OBSOLÈTE',
       leftCard: { label: 'Visio classique', value: '60 min', sub: 'Zéro trace' },
       rightCard: { label: 'Résumé IA structuré', value: '90 sec', sub: 'Actions claires' },
@@ -853,49 +1030,103 @@ function buildDomainPreset(category: string, theme: string, statVal: string): Do
       multiplier: '÷4,6',
       gaugePct: 84,
       steps: ['Ordre du jour', 'Captation', 'Décisions', 'Suivi écrit'],
-      bullets: ['Compte rendu instantané', 'Décisions horodatées', 'Moins d’interruptions'],
+      bullets: ['Compte rendu horodaté', 'Décisions listées sans flou', '11 h récupérées par semaine'],
+      actionBullets: ['Supprimer les points statut hebdo', 'Envoyer une note de 90 secondes', 'Garder le live uniquement pour trancher'],
       toggles: [
         { label: 'Points statut sans fin', before: 'ACTIF', after: 'SUPPRIMÉ', activeAfter: false },
-        { label: 'Synthèse audio automatique', before: 'OFF', after: 'ON', activeAfter: true },
+        { label: 'Synthèse écrite automatique', before: 'OFF', after: 'ON', activeAfter: true },
         { label: 'Décision en 3 lignes', before: 'OFF', after: 'ON', activeAfter: true },
+      ],
+      quoteText: 'Quatre réunions sur cinq ne servent qu’à lire un statut qu’un résumé structuré règle en quatre-vingt-dix secondes.',
+      quoteHighlight: 'quatre-vingt-dix secondes',
+      uiUrl: 'workspace.equipe.fr/async',
+      uiActionLabel: 'Passer en async',
+      uiRows: ['Transcript trié par décision', 'Actions assignées avec date', 'Agenda libéré automatiquement'],
+      chartUnit: ' h',
+      chartPoints: [
+        { label: '2022', value: 16 },
+        { label: '2023', value: 14 },
+        { label: '2024', value: 11 },
+        { label: '2025', value: 6 },
+        { label: '2026', value: 3, highlight: true },
       ],
       beatTitles: [
         'La visio inutile recule',
-        'Le nouveau flux async',
-        'Temps récupéré chaque semaine',
+        'Flux async en direct',
+        'Heures perdues en visio',
         'Réunion 1 h vs Résumé',
         '3 règles équipe claire',
         'Ce qui reste essentiel',
+      ],
+      spokenBeats: [
+        'Quatre-vingts pour cent de tes réunions disparaissent dès qu’un résumé structuré remplace le tour de table.',
+        'L’outil capture la voix, isole les blocages et sort trois décisions datées sans bloquer six agendas.',
+        'Dans cette interface async, chacun valide sa ligne en deux minutes au lieu d’attendre une heure de visio.',
+        'La courbe du temps passé en appel chute de quatorze heures par semaine à moins de trois heures.',
+        'Soixante minutes subies face à quatre-vingt-dix secondes claires : l’écart de concentration est massif.',
+        'Coupe les points statut dès lundi et réserve les appels uniquement aux désaccords à trancher en direct.',
+        `Les retours de ${sourceSpoken} prouvent que les équipes async livrent plus vite sans brûler leurs matinées.`,
+        'Abonne-toi et active la cloche pour découvrir d’autres méthodes concrètes qui te font gagner du temps.',
       ],
       ctaTitle: 'Arrête les réunions inutiles',
       ctaTagline: 'Productivité & IA concrète',
     };
   }
 
+  // Smart dynamic fallback tuned directly to theme + angle + stat + sources
+  const topicShort = condenseVisualHeadline(theme, 4, 30);
+  const effectiveStat = statVal === '3× PLUS' ? '76 %' : statVal;
+  const cleanAngle = sanitizeScriptText(
+    angle || `${topicShort} cache un écart massif entre le discours officiel et la réalité mesurée.`
+  );
   return {
-    statValue: statVal === '3× PLUS' ? '90 %' : statVal,
-    statLabel: 'Écart mesuré sur le terrain',
+    statValue: effectiveStat,
+    statLabel: `Impact mesuré · ${topicShort}`,
     stampWord: 'BASCULE',
-    leftCard: { label: 'Promesse affichée', value: 'Rapide', sub: 'Sur le papier' },
-    rightCard: { label: 'Réalité mesurée', value: 'Complexe', sub: 'Sur le terrain' },
-    compLeft: { label: 'Approche classique', value: '12 h/sem', ratio: 0.86 },
-    compRight: { label: 'Méthode structurée', value: '3 h/sem', ratio: 0.28 },
-    multiplier: '÷4',
+    leftCard: { label: 'Ce qu’on croit', value: 'Stable', sub: 'Discours courant' },
+    rightCard: { label: 'Réalité 2026', value: effectiveStat, sub: 'Sur le terrain' },
+    compLeft: { label: 'Méthode subie avant', value: 'Coût haut', ratio: 0.86 },
+    compRight: { label: 'Avec stratégie claire', value: 'Maîtrisé', ratio: 0.28 },
+    multiplier: effectiveStat,
     gaugePct: 82,
-    steps: ['Constat brut', 'Point bloquant', 'Ajustement', 'Résultat net'],
-    bullets: ['Cause racine identifiée', 'Coût réel mesuré', 'Gain vérifiable'],
+    steps: ['Constat brut', 'Coût caché', 'Réglage clé', 'Gain net'],
+    bullets: [`Impact direct sur ${topicShort}`, 'Seuil caché rarement chiffré', 'Écart rapide à vérifier'],
+    actionBullets: [`Auditer ta situation sur ${topicShort}`, 'Comparer les chiffres à 3 mois', 'Appliquer le réglage prioritaire'],
     toggles: [
-      { label: 'Automatisme sans contrôle', before: 'ACTIF', after: 'CORRIGÉ', activeAfter: false },
-      { label: 'Indicateur chiffré clair', before: 'OFF', after: 'ACTIF', activeAfter: true },
-      { label: 'Routine courte vérifiée', before: 'OFF', after: 'ACTIF', activeAfter: true },
+      { label: 'Subir le changement sans chiffre', before: 'ACTIF', after: 'STOPPÉ', activeAfter: false },
+      { label: 'Indicateur concret vérifié', before: 'OFF', after: 'ACTIF', activeAfter: true },
+      { label: 'Action prioritaire ciblée', before: 'OFF', after: 'ACTIF', activeAfter: true },
+    ],
+    quoteText: cleanAngle,
+    quoteHighlight: cleanAngle.split(/\s+/).slice(0, 6).join(' '),
+    uiUrl: 'analyse.decryptage.fr/2026',
+    uiActionLabel: 'Vérifier l’impact',
+    uiRows: [`Repère clé : ${effectiveStat}`, 'Coût caché mis au clair', 'Plan d’adaptation vérifié'],
+    chartUnit: '%',
+    chartPoints: [
+      { label: '2022', value: 42 },
+      { label: '2023', value: 54 },
+      { label: '2024', value: 65 },
+      { label: '2025', value: 74 },
+      { label: '2026', value: 82, highlight: true },
     ],
     beatTitles: [
       'Le constat chiffré',
-      'Ce qui bloque vraiment',
-      'L’écart réel mesuré',
+      'Mécanique cachée',
+      `Courbe · ${topicShort.slice(0, 18)}`,
       'Avant vs Méthode nette',
-      '3 leviers vérifiables',
+      '3 réglages vérifiables',
       'Verdict sur le terrain',
+    ],
+    spokenBeats: [
+      `${topicShort} vient de basculer, et presque personne n’a vu l’impact exact sur les chiffres.`,
+      cleanAngle,
+      `Sur cet écran, tout se joue autour du seuil de ${effectiveStat} que la majorité continue d’ignorer.`,
+      'La courbe des quatre dernières années montre une accélération nette qui redéfinit les règles du jeu.',
+      'Entre subir la tendance ou ajuster ses critères dès maintenant, l’écart réel se chiffre dès ce trimestre.',
+      `Trois réflexes suffisent cette semaine : vérifier tes chiffres, couper la friction et tester l’option active.`,
+      `Selon ${sourceSpoken}, ceux qui s’adaptent dès le début gardent l’avantage avant que tout le monde suive.`,
+      'Abonne-toi et active la cloche pour recevoir nos prochains décryptages chiffrés chaque semaine.',
     ],
     ctaTitle: 'Passe du bruit aux faits',
     ctaTagline: 'Décryptages France 2026',
@@ -924,19 +1155,18 @@ export function buildFallbackBatchScript(input: {
   const iconKind = pickTopicIcon(input.category, cleanTheme);
   const blueprint = selectChoreographyForTopic(input);
   const brollSeq = getBrollSequenceForTopic(input.category, cleanTheme);
-  const preset = buildDomainPreset(input.category, cleanTheme, statVal);
-
-  const hookLine = trimSpokenLineForPacing(
-    input.hookHint ||
-      `${shortTopic} vient de basculer, et voici ce qui change vraiment pour toi.`
-  );
-  const angleLine = trimSpokenLineForPacing(
-    cleanAngle ||
-      `Les derniers chiffres montrent un écart massif avec ce qu’on imagine souvent sur ce sujet.`,
-    18
-  );
   const sourceClean = sanitizeScriptText(input.sources || 'les données officielles 2026').slice(0, 48);
   const sourceSpoken = formatSourceForSpeech(input.sources);
+  const preset = buildDomainPreset(input.category, cleanTheme, statVal, cleanAngle, sourceSpoken);
+
+  const hookLine = trimSpokenLineForPacing(
+    input.hookHint || preset.spokenBeats[0],
+    18
+  );
+  const angleLine = trimSpokenLineForPacing(
+    cleanAngle || preset.spokenBeats[1],
+    19
+  );
 
   const beatContents: Record<number, Omit<BatchBeatSpec, 'id' | 'visualType' | 'layoutHint'>> = {
     0: {
@@ -954,20 +1184,23 @@ export function buildFallbackBatchScript(input: {
       leftCard: preset.leftCard,
       rightCard: preset.rightCard,
       subStats: [
-        { value: preset.statValue, label: 'Signal clé' },
-        { value: preset.multiplier, label: 'Écart réel' },
+        { value: preset.statValue, label: preset.leftCard.label },
+        { value: preset.multiplier, label: 'Écart net' },
       ],
     },
     1: {
       title: preset.beatTitles[0],
-      shortLabel: 'Constat',
-      screenLabel: 'FAIT VÉRIFIÉ',
+      shortLabel: 'Preuve source',
+      screenLabel: 'SOURCE VÉRIFIÉE',
       spokenLine: angleLine,
       brollKey: brollSeq[1],
-      brollCaption: 'Constat vérifié',
+      brollCaption: 'Document vérifié',
       iconKind,
       dateBadge,
       sourceLabel: sourceClean,
+      quoteText: preset.quoteText,
+      quoteHighlight: preset.quoteHighlight,
+      stampWord: preset.stampWord,
       statValue: preset.statValue,
       statLabel: preset.statLabel,
       leftCard: preset.leftCard,
@@ -979,13 +1212,20 @@ export function buildFallbackBatchScript(input: {
     2: {
       title: preset.beatTitles[1],
       shortLabel: 'Mécanisme',
-      screenLabel: 'EN 4 TEMPS',
-      spokenLine: `Concrètement, tout s’enchaîne en quatre étapes précises qui modifient la suite.`,
+      screenLabel: 'EN DIRECT',
+      spokenLine: trimSpokenLineForPacing(preset.spokenBeats[2], 24),
       brollKey: brollSeq[2],
-      brollCaption: 'Mécanique réelle',
+      brollCaption: 'Mécanisme en action',
       iconKind,
+      sourceLabel: sourceClean,
+      uiUrl: preset.uiUrl,
+      uiActionLabel: preset.uiActionLabel,
+      bullets: preset.uiRows,
       steps: preset.steps,
+      chartUnit: preset.chartUnit,
+      chartPoints: preset.chartPoints,
       stampWord: 'MESURÉ',
+      statValue: preset.statValue,
       statLabel: preset.statLabel,
       leftCard: preset.leftCard,
       rightCard: preset.rightCard,
@@ -994,13 +1234,15 @@ export function buildFallbackBatchScript(input: {
     },
     3: {
       title: preset.beatTitles[2],
-      shortLabel: 'Pivot',
+      shortLabel: 'Courbe',
       screenLabel: 'PLEIN ÉCRAN',
-      spokenLine: `Le vrai point de bascule ne vient pas des annonces, mais de l’effet concret au quotidien.`,
+      spokenLine: trimSpokenLineForPacing(preset.spokenBeats[3], 24),
       brollKey: brollSeq[3],
       iconKind,
+      chartUnit: preset.chartUnit,
+      chartPoints: preset.chartPoints,
       gaugePct: preset.gaugePct,
-      statValue: `${preset.gaugePct} %`,
+      statValue: preset.statValue,
       statLabel: preset.statLabel,
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
@@ -1011,9 +1253,12 @@ export function buildFallbackBatchScript(input: {
       title: preset.beatTitles[3],
       shortLabel: 'Écart chiffré',
       screenLabel: 'COMPARAISON',
-      spokenLine: `Quand on compare l’ancien fonctionnement avec la nouvelle situation, la différence saute aux yeux.`,
+      spokenLine: trimSpokenLineForPacing(preset.spokenBeats[4], 24),
       brollKey: brollSeq[4],
       iconKind,
+      sourceLabel: sourceClean,
+      quoteText: preset.quoteText,
+      quoteHighlight: preset.quoteHighlight,
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
       multiplierBadge: preset.multiplier,
@@ -1027,23 +1272,28 @@ export function buildFallbackBatchScript(input: {
       title: preset.beatTitles[4],
       shortLabel: 'Actions',
       screenLabel: 'PLAN CONCRET',
-      spokenLine: `Pour t’adapter dès cette semaine, garde ces trois repères simples sous les yeux.`,
+      spokenLine: trimSpokenLineForPacing(preset.spokenBeats[5], 24),
       brollKey: brollSeq[0],
-      brollCaption: 'Plan immédiat',
+      brollCaption: 'Plan d’action immédiat',
       iconKind,
+      uiUrl: preset.uiUrl,
+      uiActionLabel: preset.uiActionLabel,
       toggles: preset.toggles,
-      bullets: preset.bullets,
+      bullets: preset.actionBullets,
+      sourceLabel: sourceClean,
+      statValue: '3/3 ACTIFS',
+      statLabel: 'Réflexes immédiats',
     },
     6: {
       title: preset.beatTitles[5],
-      shortLabel: 'Preuve',
+      shortLabel: 'Verdict',
       screenLabel: 'BILAN SOURCÉ',
-      spokenLine: `D’après ${sourceSpoken}, ceux qui anticipent ce changement évitent l’essentiel du choc.`,
+      spokenLine: trimSpokenLineForPacing(preset.spokenBeats[6], 25),
       brollKey: brollSeq[1],
       brollCaption: 'Bilan sourcé',
       iconKind,
       sourceLabel: sourceClean,
-      bullets: preset.bullets,
+      bullets: preset.actionBullets,
       gaugePct: preset.gaugePct,
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
@@ -1054,14 +1304,14 @@ export function buildFallbackBatchScript(input: {
         ? '> audit --impact-2026'
         : undefined,
       terminalOut: isDevOrCodeTopic(input.category, cleanTheme)
-        ? preset.bullets.map((b) => `✓ ${b}`)
+        ? preset.actionBullets.map((b) => `✓ ${b}`)
         : undefined,
     },
     7: {
       title: preset.ctaTitle,
       shortLabel: 'CTA',
       screenLabel: 'SUITE EN DIRECT',
-      spokenLine: `Abonne-toi et active la cloche pour recevoir les prochains décryptages chaque semaine.`,
+      spokenLine: trimSpokenLineForPacing(preset.spokenBeats[7], 18),
       brollKey: 'studio',
       brollCaption: 'Décryptage · @alex.decode',
       iconKind: 'rocket',
@@ -1081,6 +1331,9 @@ export function buildFallbackBatchScript(input: {
       counter_flip: 'thud',
       alert_rule: 'thud',
       myth_vs_fact: 'pop',
+      source_quote: 'pop',
+      chart_curve: 'zhhh',
+      ui_window: 'tap',
       timeline_steps: 'tap',
       gauge: 'zhhh',
       comparison_bars: 'riser',
