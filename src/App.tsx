@@ -12,6 +12,7 @@ import {
   Film,
   Layers,
   Loader2,
+  Mic,
   Music,
   Pause,
   Play,
@@ -23,6 +24,7 @@ import {
   Video,
   Volume2,
   VolumeX,
+  X,
   Zap,
 } from 'lucide-react';
 import { ShortStage } from './components/short/ShortStage';
@@ -39,7 +41,7 @@ import {
   LookId,
   SHORT_DURATION,
 } from './data/shortSpec';
-import { audioEngine } from './engine/audioEngine';
+import { audioEngine, normalizeMusicBedId } from './engine/audioEngine';
 import { clamp, formatClock } from './engine/math';
 import { buildDynamicBeatsFromProject } from './engine/transcriptUtils';
 import type { TopicCsvRow } from './engine/topicCsv';
@@ -134,6 +136,48 @@ export default function App() {
   const [githubRepoInput, setGithubRepoInput] = useState('');
   const [githubTokenInput, setGithubTokenInput] = useState('');
 
+  // Voice Engine (debpalash/voicestudio + Rémy Neural FR) state
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [voiceStatusLoading, setVoiceStatusLoading] = useState(false);
+  const [voiceSaving, setVoiceSaving] = useState(false);
+  const [voicePreviewing, setVoicePreviewing] = useState(false);
+  const [synthesizingProjectId, setSynthesizingProjectId] = useState<string | null>(null);
+  const [voiceConfig, setVoiceConfig] = useState<{
+    engine: 'auto' | 'voicestudio' | 'edge_neural' | 'elevenlabs';
+    voicestudioUrl: string;
+    voicestudioModel: string;
+    voicestudioVoice: string;
+    voicestudioLanguage: string;
+    voicestudioInstruct: string;
+    edgeVoice: string;
+  }>({
+    engine: 'auto',
+    voicestudioUrl: 'http://127.0.0.1:8787',
+    voicestudioModel: 'omnivoice',
+    voicestudioVoice: 'default',
+    voicestudioLanguage: 'fr',
+    voicestudioInstruct: 'Ton direct, clair, posé et rythmé en français',
+    edgeVoice: 'fr-FR-RemyMultilingualNeural',
+  });
+  const [voiceProbe, setVoiceProbe] = useState<{
+    reachable: boolean;
+    url: string;
+    models: string[];
+    voices: Array<{ id: string; name: string }>;
+    profiles: Array<{ id: string; name: string }>;
+    error?: string;
+  } | null>(null);
+  const [edgeVoices, setEdgeVoices] = useState<
+    Array<{ id: string; label: string; gender: string; description: string }>
+  >([]);
+  const [voiceSampleText, setVoiceSampleText] = useState(
+    'Voici un aperçu net de ta nouvelle voix studio en français, prête pour tes Shorts.'
+  );
+  const [voicePreviewAudioUrl, setVoicePreviewAudioUrl] = useState<string | null>(null);
+  const [voicePreviewMeta, setVoicePreviewMeta] = useState<string | null>(null);
+  const [voiceMsg, setVoiceMsg] = useState<string | null>(null);
+  const [voiceErr, setVoiceErr] = useState<string | null>(null);
+
   const tRef = useRef(0);
   const lastRafRef = useRef<number | null>(null);
   const playerVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -171,13 +215,18 @@ export default function App() {
     );
   }, [activeProject, activeVersionObj]);
 
+  const hasVerifiedVersionMp4 = Boolean(
+    activeVersionObj?.outputMp4 && activeVersionObj?.hasMp4 !== false
+  );
+
   const playerMediaSrc = useMemo(() => {
     if (!activeProject || isFlagshipReactPlayer) return undefined;
-    return activeVersionObj?.outputMp4 || activeProject.speakerVideoUrl || undefined;
-  }, [activeProject, activeVersionObj, isFlagshipReactPlayer]);
+    if (hasVerifiedVersionMp4) return activeVersionObj?.outputMp4;
+    return activeProject.speakerVideoUrl || undefined;
+  }, [activeProject, activeVersionObj, hasVerifiedVersionMp4, isFlagshipReactPlayer]);
 
   const hasDynamicWebAudio = useMemo(
-    () => !isFlagshipReactPlayer && !playerMediaSrc && Boolean(activeProject?.audioTrackUrl),
+    () => !isFlagshipReactPlayer && !playerMediaSrc && Boolean(activeProject),
     [isFlagshipReactPlayer, playerMediaSrc, activeProject]
   );
 
@@ -473,20 +522,24 @@ export default function App() {
     if (isRenderMode || !activeProject) return;
     if (isFlagshipReactPlayer) {
       void audioEngine.setProjectAudio({});
-    } else if (activeProject.audioTrackUrl) {
-      const bed = (activeProject.musicTrack?.trackName || 'upbeat') as
-        | 'upbeat'
-        | 'groove'
-        | 'analytical'
-        | 'clockwork'
-        | 'chill';
+    } else {
+      const bed = normalizeMusicBedId(activeProject.musicTrack?.trackName);
       const sfxEvents = (activeProject.sfxTrack || []).map((s) => ({
         at: s.start,
-        kind: s.sound as 'impact-boom' | 'zhhh' | 'riser' | 'pop-back',
+        kind: s.sound as
+          | 'glass-shatter'
+          | 'impact-boom'
+          | 'zhhh'
+          | 'riser'
+          | 'pop-back'
+          | 'bell'
+          | 'pop'
+          | 'tap'
+          | 'thud',
         gain: s.volume,
       }));
       void audioEngine.setProjectAudio({
-        voiceUrl: activeProject.audioTrackUrl,
+        voiceUrl: activeProject.audioTrackUrl || null,
         musicBed: bed,
         sfxEvents,
       });
@@ -564,8 +617,147 @@ export default function App() {
   }, [isPlaying, effectiveAudioSpeed, isRenderMode, viewMode, playerMediaSrc, useWebAudioLoop, playerDuration]);
 
   const handleTogglePlay = useCallback(() => {
+    if (!playerMediaSrc) {
+      audioEngine.unlockFromGesture();
+    }
     setIsPlaying((p) => !p);
+  }, [playerMediaSrc]);
+
+  const fetchVoiceStatus = useCallback(async () => {
+    setVoiceStatusLoading(true);
+    setVoiceErr(null);
+    try {
+      const res = await fetch('/api/studio/voice/status', { credentials: 'same-origin' });
+      const data = (await res.json()) as {
+        config?: typeof voiceConfig;
+        voicestudio?: typeof voiceProbe;
+        edgeVoices?: typeof edgeVoices;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error || 'Statut vocal inaccessible.');
+      if (data.config) setVoiceConfig(data.config);
+      if (data.voicestudio) setVoiceProbe(data.voicestudio);
+      if (data.edgeVoices) setEdgeVoices(data.edgeVoices);
+    } catch (err) {
+      setVoiceErr(err instanceof Error ? err.message : 'Erreur statut vocal');
+    } finally {
+      setVoiceStatusLoading(false);
+    }
   }, []);
+
+  const handleSaveVoiceConfig = useCallback(
+    async (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
+      if (voiceSaving) return;
+      setVoiceSaving(true);
+      setVoiceErr(null);
+      setVoiceMsg(null);
+      try {
+        const res = await fetch('/api/studio/voice/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(voiceConfig),
+        });
+        const data = (await res.json()) as {
+          config?: typeof voiceConfig;
+          voicestudio?: typeof voiceProbe;
+          edgeVoices?: typeof edgeVoices;
+          error?: string;
+        };
+        if (!res.ok) throw new Error(data.error || 'Impossible d’enregistrer la configuration.');
+        if (data.config) setVoiceConfig(data.config);
+        if (data.voicestudio) setVoiceProbe(data.voicestudio);
+        if (data.edgeVoices) setEdgeVoices(data.edgeVoices);
+        setVoiceMsg(
+          data.voicestudio?.reachable
+            ? `Configuration enregistrée · VoiceStudio connecté (${data.voicestudio.url}).`
+            : 'Configuration enregistrée · Voix neuronale FR prête.'
+        );
+      } catch (err) {
+        setVoiceErr(err instanceof Error ? err.message : 'Erreur enregistrement config vocale');
+      } finally {
+        setVoiceSaving(false);
+      }
+    },
+    [voiceSaving, voiceConfig]
+  );
+
+  const handlePreviewVoice = useCallback(async () => {
+    if (voicePreviewing) return;
+    setVoicePreviewing(true);
+    setVoiceErr(null);
+    setVoiceMsg(null);
+    try {
+      const res = await fetch('/api/studio/voice/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          text: voiceSampleText,
+          engine: voiceConfig.engine,
+          edgeVoice: voiceConfig.edgeVoice,
+          voicestudioUrl: voiceConfig.voicestudioUrl,
+          voicestudioVoice: voiceConfig.voicestudioVoice,
+          voicestudioModel: voiceConfig.voicestudioModel,
+        }),
+      });
+      const data = (await res.json()) as {
+        providerUsed?: string;
+        voiceUsed?: string;
+        audioDataUrl?: string;
+        durationSec?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.audioDataUrl) {
+        throw new Error(data.error || 'Impossible de générer l’extrait vocal.');
+      }
+      setVoicePreviewAudioUrl(data.audioDataUrl);
+      setVoicePreviewMeta(
+        `${data.providerUsed === 'voicestudio' ? 'VoiceStudio' : 'Neural FR'} · ${data.voiceUsed} · ${(data.durationSec || 0).toFixed(1)} s`
+      );
+    } catch (err) {
+      setVoiceErr(err instanceof Error ? err.message : 'Erreur aperçu vocal');
+    } finally {
+      setVoicePreviewing(false);
+    }
+  }, [voicePreviewing, voiceSampleText, voiceConfig]);
+
+  const handleSynthesizeProjectVoice = useCallback(
+    async (projectId: string) => {
+      if (synthesizingProjectId) return;
+      setSynthesizingProjectId(projectId);
+      setVoiceErr(null);
+      setVoiceMsg(null);
+      try {
+        const res = await fetch(
+          `/api/studio/projects/${encodeURIComponent(projectId)}/synthesize-voice`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+          }
+        );
+        const data = (await res.json()) as {
+          providerUsed?: string;
+          voiceUsed?: string;
+          project?: ShortProject;
+          error?: string;
+        };
+        if (!res.ok) throw new Error(data.error || 'Synthèse voix impossible.');
+        await fetchWorkspace(projectId);
+        setVoiceMsg(
+          `Voix régénérée (${data.providerUsed === 'voicestudio' ? 'VoiceStudio' : 'Neural FR'} · ${data.voiceUsed || 'OK'}).`
+        );
+      } catch (err) {
+        setVoiceErr(err instanceof Error ? err.message : 'Erreur synthèse voix projet');
+      } finally {
+        setSynthesizingProjectId(null);
+      }
+    },
+    [synthesizingProjectId, fetchWorkspace]
+  );
 
   const handleSeek = useCallback(
     (nextT: number) => {
@@ -1075,6 +1267,19 @@ export default function App() {
               <span className="hidden sm:inline">Publication</span>
             </button>
           </nav>
+
+          <button
+            type="button"
+            data-testid="open-voice-modal-btn"
+            onClick={() => {
+              setShowVoiceModal(true);
+              void fetchVoiceStatus();
+            }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-[#E3DED3] bg-white hover:border-[#258EFF] text-[11px] sm:text-xs font-bold text-[#14161B] cursor-pointer shrink-0 whitespace-nowrap transition-colors"
+          >
+            <Mic className="w-3.5 h-3.5 text-[#258EFF]" aria-hidden="true" />
+            <span>Voix FR</span>
+          </button>
         </div>
       </header>
 
@@ -1276,10 +1481,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Audio Switches (Flagship WebAudio) or Look Switcher (Dynamic Preview) + MP4 Export */}
+              {/* Audio Switches (Flagship & Dynamic WebAudio) + Look Switcher + Studio Action */}
               <div className="w-full flex flex-col gap-2.5">
-                {isFlagshipReactPlayer ? (
-                  <div className="w-full flex items-center justify-between gap-2">
+                {useWebAudioLoop && (
+                  <div className="w-full flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
@@ -1306,7 +1511,7 @@ export default function App() {
                         }`}
                       >
                         <Music className="w-3.5 h-3.5" />
-                        Bright Groove
+                        Musique
                       </button>
 
                       <button
@@ -1323,8 +1528,24 @@ export default function App() {
                         SFX
                       </button>
                     </div>
+
+                    {!isFlagshipReactPlayer && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowVoiceModal(true);
+                          void fetchVoiceStatus();
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] text-[11px] font-bold text-[#14161B] cursor-pointer"
+                      >
+                        <Mic className="w-3 h-3 text-[#258EFF]" />
+                        Moteur voix
+                      </button>
+                    )}
                   </div>
-                ) : (
+                )}
+
+                {!isFlagshipReactPlayer && (
                   <div className="w-full flex items-center justify-between gap-2">
                     {playerMediaSrc ? (
                       <button
@@ -1517,6 +1738,17 @@ export default function App() {
                                 >
                                   {mp4Ready ? 'MP4 prêt' : 'MP4 à générer'}
                                 </span>
+                                {!proj.isFlagshipReactStage && (
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      proj.audioTrackUrl
+                                        ? 'bg-[#258EFF]/12 text-[#1D4ED8]'
+                                        : 'bg-[#EAE7DF] text-[#5C5F68]'
+                                    }`}
+                                  >
+                                    {proj.audioTrackUrl ? 'Voix FR' : 'Sans voix'}
+                                  </span>
+                                )}
                                 <span className="text-[11px] font-mono text-[#5C5F68] tabular-nums">
                                   {proj.currentVersion} · {proj.duration.toFixed(1)} s
                                 </span>
@@ -1543,6 +1775,23 @@ export default function App() {
                               <Play className="w-3 h-3" aria-hidden="true" />
                               Lire
                             </button>
+
+                            {!proj.isFlagshipReactStage && (
+                              <button
+                                type="button"
+                                disabled={Boolean(synthesizingProjectId)}
+                                onClick={() => void handleSynthesizeProjectVoice(proj.id)}
+                                title="Générer ou régénérer la voix FR (VoiceStudio / Rémy Neural)"
+                                className="h-8 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] hover:border-[#258EFF] disabled:opacity-60 text-[11px] font-semibold text-[#14161B] inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                              >
+                                {synthesizingProjectId === proj.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Mic className="w-3 h-3 text-[#258EFF]" aria-hidden="true" />
+                                )}
+                                {proj.audioTrackUrl ? 'Voix' : 'Générer voix'}
+                              </button>
+                            )}
 
                             {mp4Ready ? (
                               <button
@@ -1787,6 +2036,288 @@ export default function App() {
                 )}
               </section>
             </aside>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Engine Modal (debpalash/voicestudio + Rémy Neural FR) */}
+      {showVoiceModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="voice-modal-title"
+          data-testid="voice-engine-modal"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+        >
+          <div className="w-full max-w-[640px] max-h-[90vh] overflow-y-auto bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl shadow-xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#258EFF]">
+                  MOTEUR VOCAL STUDIO · ZÉRO QUOTA
+                </div>
+                <h2
+                  id="voice-modal-title"
+                  className="text-lg sm:text-xl font-extrabold text-[#14161B]"
+                  style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+                >
+                  VoiceStudio &amp; Voix Neuronale FR
+                </h2>
+              </div>
+              <button
+                type="button"
+                aria-label="Fermer la fenêtre Voix FR"
+                onClick={() => setShowVoiceModal(false)}
+                className="w-8 h-8 rounded-lg border border-[#E3DED3] bg-white hover:border-[#14161B] flex items-center justify-center text-[#5C5F68] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-[#E3DED3] bg-[#F6F5F1] text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`px-2 py-0.5 rounded-md font-bold whitespace-nowrap shrink-0 ${
+                    voiceProbe?.reachable
+                      ? 'bg-[#059669]/15 text-[#047857]'
+                      : 'bg-[#258EFF]/12 text-[#1D4ED8]'
+                  }`}
+                >
+                  {voiceStatusLoading
+                    ? 'Vérification…'
+                    : voiceProbe?.reachable
+                      ? 'VoiceStudio connecté'
+                      : 'Repli Rémy Neural FR actif'}
+                </span>
+                <span className="text-[#5C5F68] truncate font-mono text-[11px]">
+                  {voiceProbe?.reachable
+                    ? voiceProbe.url
+                    : 'Serveur VoiceStudio local non détecté · voix Edge FR active'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void fetchVoiceStatus()}
+                disabled={voiceStatusLoading}
+                className="px-2.5 py-1 rounded-lg border border-[#E3DED3] bg-white hover:border-[#258EFF] text-[11px] font-semibold text-[#14161B] cursor-pointer"
+              >
+                Actualiser
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVoiceConfig} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#14161B]">
+                  Mode de synthèse vocale
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      { id: 'auto', label: 'Auto (VoiceStudio → Neural FR)' },
+                      { id: 'voicestudio', label: 'VoiceStudio uniquement' },
+                      { id: 'edge_neural', label: 'Neural FR intégré' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setVoiceConfig((c) => ({ ...c, engine: opt.id }))}
+                      className={`p-2 rounded-xl border text-left text-[11px] font-bold cursor-pointer ${
+                        voiceConfig.engine === opt.id
+                          ? 'border-[#258EFF] bg-[#258EFF]/8 text-[#14161B]'
+                          : 'border-[#E3DED3] bg-white text-[#5C5F68]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-[#E3DED3] bg-white space-y-2.5">
+                <div className="text-xs font-bold text-[#14161B]">
+                  Serveur VoiceStudio (debpalash/voicestudio · OpenAI-compatible)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label htmlFor="vs-url" className="block text-[11px] font-semibold text-[#5C5F68]">
+                      URL VoiceStudio
+                    </label>
+                    <input
+                      id="vs-url"
+                      type="url"
+                      value={voiceConfig.voicestudioUrl}
+                      onChange={(e) =>
+                        setVoiceConfig((c) => ({ ...c, voicestudioUrl: e.target.value }))
+                      }
+                      placeholder="http://127.0.0.1:8787"
+                      className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] font-mono text-xs text-[#14161B]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="vs-model" className="block text-[11px] font-semibold text-[#5C5F68]">
+                      Modèle (omnivoice, voxcpm2, cosyvoice…)
+                    </label>
+                    <input
+                      id="vs-model"
+                      type="text"
+                      value={voiceConfig.voicestudioModel}
+                      onChange={(e) =>
+                        setVoiceConfig((c) => ({ ...c, voicestudioModel: e.target.value }))
+                      }
+                      placeholder="omnivoice"
+                      className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] font-mono text-xs text-[#14161B]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="vs-voice" className="block text-[11px] font-semibold text-[#5C5F68]">
+                      Profil / Voix clonée
+                    </label>
+                    <input
+                      id="vs-voice"
+                      type="text"
+                      value={voiceConfig.voicestudioVoice}
+                      onChange={(e) =>
+                        setVoiceConfig((c) => ({ ...c, voicestudioVoice: e.target.value }))
+                      }
+                      placeholder="default"
+                      className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] font-mono text-xs text-[#14161B]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="vs-instruct" className="block text-[11px] font-semibold text-[#5C5F68]">
+                      Direction de ton (instruct)
+                    </label>
+                    <input
+                      id="vs-instruct"
+                      type="text"
+                      value={voiceConfig.voicestudioInstruct}
+                      onChange={(e) =>
+                        setVoiceConfig((c) => ({ ...c, voicestudioInstruct: e.target.value }))
+                      }
+                      className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-[#FCFBF8] text-xs text-[#14161B]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="edge-voice-select" className="block text-xs font-bold text-[#14161B]">
+                  Voix Neuronale FR intégrée (sans clé API)
+                </label>
+                <select
+                  id="edge-voice-select"
+                  value={voiceConfig.edgeVoice}
+                  onChange={(e) =>
+                    setVoiceConfig((c) => ({ ...c, edgeVoice: e.target.value }))
+                  }
+                  className="w-full h-10 px-3 rounded-xl border border-[#E3DED3] bg-white text-xs font-semibold text-[#14161B]"
+                >
+                  {(edgeVoices.length > 0
+                    ? edgeVoices
+                    : [
+                        {
+                          id: 'fr-FR-RemyMultilingualNeural',
+                          label: 'Rémy Neural FR',
+                          description: 'Voix masculine claire et naturelle',
+                        },
+                        {
+                          id: 'fr-FR-HenriNeural',
+                          label: 'Henri Neural FR',
+                          description: 'Voix masculine posée et grave',
+                        },
+                        {
+                          id: 'fr-FR-VivienneMultilingualNeural',
+                          label: 'Vivienne Neural FR',
+                          description: 'Voix féminine fluide',
+                        },
+                      ]
+                  ).map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label} — {v.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-[#E3DED3] bg-[#F6F5F1] space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-[#14161B]">Test audio instantané</span>
+                  {voicePreviewMeta && (
+                    <span className="text-[11px] font-mono text-[#047857] font-semibold">
+                      {voicePreviewMeta}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  rows={2}
+                  value={voiceSampleText}
+                  onChange={(e) => setVoiceSampleText(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-[#E3DED3] bg-white text-xs text-[#14161B]"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    data-testid="voice-preview-btn"
+                    disabled={voicePreviewing}
+                    onClick={() => void handlePreviewVoice()}
+                    className="h-9 px-3.5 rounded-xl bg-[#258EFF] hover:bg-[#14161B] disabled:opacity-60 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {voicePreviewing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Volume2 className="w-3.5 h-3.5" />
+                    )}
+                    Écouter un extrait
+                  </button>
+                  {voicePreviewAudioUrl && (
+                    <audio controls autoPlay src={voicePreviewAudioUrl} className="h-9 flex-1 min-w-[200px]" />
+                  )}
+                </div>
+              </div>
+
+              {(voiceMsg || voiceErr) && (
+                <div
+                  role="status"
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold ${
+                    voiceErr ? 'bg-[#DC2626]/10 text-[#DC2626]' : 'bg-[#059669]/10 text-[#047857]'
+                  }`}
+                >
+                  {voiceErr || voiceMsg}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E3DED3]">
+                {activeProject && !isFlagshipReactPlayer ? (
+                  <button
+                    type="button"
+                    disabled={Boolean(synthesizingProjectId)}
+                    onClick={() => void handleSynthesizeProjectVoice(activeProject.id)}
+                    className="h-9 px-3.5 rounded-xl border border-[#E3DED3] bg-white hover:border-[#258EFF] disabled:opacity-60 text-xs font-bold text-[#14161B] inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {synthesizingProjectId === activeProject.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3.5 h-3.5 text-[#258EFF]" />
+                    )}
+                    Régénérer la voix du Short actif
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-[#5C5F68]">
+                    Appliqué automatiquement aux prochains Shorts.
+                  </span>
+                )}
+
+                <button
+                  type="submit"
+                  data-testid="save-voice-config-btn"
+                  disabled={voiceSaving}
+                  className="h-9 px-4 rounded-xl bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-60 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  {voiceSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Enregistrer
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

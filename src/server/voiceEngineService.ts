@@ -341,53 +341,67 @@ export async function synthesizeWithEdgeNeural(params: {
   const tts = new MsEdgeTTS();
 
   try {
+    const safeSsmlText = params.fullText
+      .replace(/&/g, ' et ')
+      .replace(/[<>]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, {
       wordBoundaryEnabled: true,
     });
 
-    const { audioStream, metadataStream } = tts.toStream(params.fullText);
+    const { audioStream, metadataStream } = tts.toStream(safeSsmlText);
 
     const audioChunks: Buffer[] = [];
     const metaChunks: Buffer[] = [];
 
     await new Promise<void>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        reject(new Error('Edge Neural TTS stream timeout (90s)'));
-      }, 90_000);
+        reject(new Error('Edge Neural TTS stream timeout (25s)'));
+      }, 25_000);
 
       let audioEnded = false;
-      let metaEnded = !metadataStream;
+      let metaClosed = !metadataStream;
+      let drainFallbackId: ReturnType<typeof setTimeout> | null = null;
 
       const finishIfDone = () => {
-        if (audioEnded && metaEnded) {
+        if (audioEnded && metaClosed) {
           clearTimeout(timeoutId);
+          if (drainFallbackId) clearTimeout(drainFallbackId);
           resolve();
         }
       };
 
       audioStream.on('data', (chunk: Buffer) => audioChunks.push(Buffer.from(chunk)));
-      audioStream.on('end', () => {
+      audioStream.once('end', () => {
         audioEnded = true;
-        // The word-boundary stream is not always closed by the service: do not
-        // block a finished voiceover on it, resolve right after the grace window.
-        setTimeout(() => {
-          metaEnded = true;
-          finishIfDone();
-        }, 800);
+        if (metadataStream && !metaClosed) {
+          drainFallbackId = setTimeout(() => {
+            metaClosed = true;
+            finishIfDone();
+          }, 150);
+        }
+        finishIfDone();
       });
-      audioStream.on('error', (err: Error) => {
+      audioStream.once('error', (err: Error) => {
         clearTimeout(timeoutId);
+        if (drainFallbackId) clearTimeout(drainFallbackId);
         reject(err);
       });
 
       if (metadataStream) {
         metadataStream.on('data', (chunk: Buffer) => metaChunks.push(Buffer.from(chunk)));
-        metadataStream.on('end', () => {
-          metaEnded = true;
+        metadataStream.once('close', () => {
+          metaClosed = true;
           finishIfDone();
         });
-        metadataStream.on('error', () => {
-          metaEnded = true;
+        metadataStream.once('end', () => {
+          metaClosed = true;
+          finishIfDone();
+        });
+        metadataStream.once('error', () => {
+          metaClosed = true;
           finishIfDone();
         });
       }

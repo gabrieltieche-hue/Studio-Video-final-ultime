@@ -29,6 +29,13 @@ import {
 } from '../engine/batchShortBuilder';
 import { renderDynamicProjectToMp4 } from './batchRenderer';
 import { generateScriptForBatchItem, synthesizeVoiceoverForProject } from './batchService';
+import {
+  EDGE_FR_VOICES,
+  previewVoiceSample,
+  probeVoiceStudio,
+  readVoiceConfig,
+  saveVoiceConfig,
+} from './voiceEngineService';
 import { triggerAutoSyncInBackground } from './syncManager';
 import type { LookId } from '../data/shortSpec';
 import type { BatchBeatSpec } from '../types/batch';
@@ -1153,18 +1160,74 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         mode,
       });
 
+      const projectId = `proj-${slug}`;
+      const projectDir = path.join(PROJECTS_DIR, projectId);
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      const spokenText = (generated.beats || [])
+        .map((b) => sanitizeScriptText(b.spokenLine || ''))
+        .filter(Boolean)
+        .join(' ');
+
+      let finalDuration = generated.duration;
+      let finalTranscript = generated.transcript;
+      let finalMotionTrack = generated.motionTrack;
+      let finalSfxTrack = generated.sfxTrack;
+      let finalLayoutTrack = generated.layoutTrack;
+      let finalBeats = generated.beats;
+      let audioTrackUrl: string | undefined;
+      let voiceProvider: string | undefined;
+
+      if (spokenText) {
+        try {
+          const voice = await synthesizeVoiceoverForProject({
+            projectDir,
+            fullText: spokenText,
+            speed: 1.04,
+            voiceFilename: 'voice_v1.mp3',
+          });
+          voiceProvider = voice.providerUsed;
+          if (voice.audioTrackUrl) {
+            audioTrackUrl = voice.audioTrackUrl;
+            const timed = assignBeatTimingsAndTranscript(
+              generated.beats,
+              voice.words,
+              voice.durationSec
+            );
+            finalDuration = timed.durationSec;
+            finalTranscript = voice.words;
+            finalMotionTrack = timed.motionTrack;
+            finalSfxTrack = timed.sfxTrack;
+            finalLayoutTrack = timed.beats.map((b, bIdx) => ({
+              id: `layout-${b.id}`,
+              layout: resolveBeatLayout(b, bIdx, timed.beats.length),
+              start: b.from,
+              end: b.to,
+            }));
+            finalBeats = timed.beats.map((b, idx) => ({
+              ...b,
+              layout: finalLayoutTrack[idx]?.layout || b.layout,
+            }));
+          }
+        } catch (err) {
+          console.warn('Voiceover auto-synthesis skipped:', err instanceof Error ? err.message : err);
+        }
+      }
+
       const now = new Date().toISOString();
       const newProj: ShortProject = {
-        id: `proj-${slug}`,
+        id: projectId,
         slug,
         title: rawTitle.slice(0, 160),
         ...(topicRow?.id || topicId ? { topicId: topicRow?.id || topicId } : {}),
         ...(category ? { topicCategory: category } : {}),
         ...(hookText || generated.hookText ? { hookText: hookText || generated.hookText } : {}),
+        ...(audioTrackUrl ? { audioTrackUrl } : {}),
+        ...(voiceProvider ? { voiceProvider } : {}),
         mode,
         platform: (args.platform as ShortProject['platform']) || 'youtube_shorts',
         status: 'draft',
-        duration: generated.duration,
+        duration: finalDuration,
         fps: 25,
         resolution: { width: 1080, height: 1920 },
         currentVersion: 'v1',
@@ -1173,7 +1236,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
             version: 'v1',
             createdAt: now,
             status: 'draft',
-            duration: generated.duration,
+            duration: finalDuration,
             fps: 25,
             notes: topicRow
               ? `Créé depuis la veille CSV (${topicRow.id} · ${topicRow.categorie}).`
@@ -1183,15 +1246,16 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         editSpec: {
           sourceTopicId: topicRow?.id || topicId || null,
           sources: topicRow?.sources || args.sources || null,
-          beats: generated.beats,
+          speed: 1.04,
+          beats: finalBeats,
         },
-        transcript: generated.transcript,
-        motionTrack: generated.motionTrack,
-        layoutTrack: generated.layoutTrack,
-        sfxTrack: generated.sfxTrack,
+        transcript: finalTranscript,
+        motionTrack: finalMotionTrack,
+        layoutTrack: finalLayoutTrack,
+        sfxTrack: finalSfxTrack,
         musicTrack: {
           trackName: 'Bright_Corporate_Groove_8c962467.mp3',
-          volume: 0.24,
+          volume: 0.2,
           ducking: true,
         },
         feedbacks: [],
@@ -1204,7 +1268,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
           textColor: '#14161B',
           cardBg: '#FCFBF8',
           captionsPosition: 'bottom',
-          visualBeatsTarget: generated.beats.length,
+          visualBeatsTarget: finalBeats.length,
         },
       };
       saveProject(newProj);
@@ -1780,7 +1844,7 @@ export function createStudioRouter(): express.Router {
       let voiceMp3Path: string | undefined;
       if (proj.audioTrackUrl) {
         const candidateVoice = path.join(projectDir, path.basename(proj.audioTrackUrl));
-        if (fs.existsSync(candidateVoice)) {
+        if (fs.existsSync(candidateVoice) && fs.statSync(candidateVoice).size >= 1024) {
           voiceMp3Path = candidateVoice;
         }
       }
@@ -1794,7 +1858,7 @@ export function createStudioRouter(): express.Router {
           .filter(Boolean)
           .join(' ');
         if (spokenText) {
-          const speed = Math.min(1.06, Math.max(0.95, Number(proj.editSpec?.speed) || 1.05));
+          const speed = Math.min(1.06, Math.max(0.95, Number(proj.editSpec?.speed) || 1.04));
           const voice = await synthesizeVoiceoverForProject({
             projectDir,
             fullText: spokenText,
@@ -1802,6 +1866,7 @@ export function createStudioRouter(): express.Router {
             voiceFilename: `voice_${targetVersion}.mp3`,
           });
           voiceMp3Path = voice.voiceMp3Path;
+          proj.voiceProvider = voice.providerUsed;
           if (voice.audioTrackUrl) {
             proj.audioTrackUrl = voice.audioTrackUrl;
           }
@@ -1816,7 +1881,13 @@ export function createStudioRouter(): express.Router {
             start: b.from,
             end: b.to,
           }));
-          proj.editSpec = { ...(proj.editSpec || {}), beats: timed.beats };
+          proj.editSpec = {
+            ...(proj.editSpec || {}),
+            beats: timed.beats.map((b, idx) => ({
+              ...b,
+              layout: proj.layoutTrack[idx]?.layout || b.layout,
+            })),
+          };
           saveProject(proj, { skipMirror: true });
         }
       }
@@ -1856,6 +1927,150 @@ export function createStudioRouter(): express.Router {
     } catch (err) {
       res.status(500).json({
         error: err instanceof Error ? err.message : 'Erreur lors du rendu MP4 du Short.',
+      });
+    }
+  });
+
+  // Voice Engine status, configuration, preview & per-project voiceover synthesis
+  router.get('/api/studio/voice/status', async (_req: Request, res: Response) => {
+    const config = readVoiceConfig();
+    const voicestudio = await probeVoiceStudio(config.voicestudioUrl);
+    res.json({
+      success: true,
+      config,
+      voicestudio,
+      edgeVoices: EDGE_FR_VOICES,
+      elevenlabsConfigured: Boolean(process.env.ELEVENLABS_API_KEY?.trim()),
+    });
+  });
+
+  router.post('/api/studio/voice/config', async (req: Request, res: Response) => {
+    try {
+      const next = saveVoiceConfig((req.body || {}) as Record<string, unknown>);
+      const voicestudio = await probeVoiceStudio(next.voicestudioUrl);
+      res.json({
+        success: true,
+        config: next,
+        voicestudio,
+        edgeVoices: EDGE_FR_VOICES,
+      });
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Impossible d’enregistrer la configuration vocale.',
+      });
+    }
+  });
+
+  router.post('/api/studio/voice/preview', async (req: Request, res: Response) => {
+    try {
+      const body = (req.body || {}) as {
+        text?: string;
+        engine?: 'auto' | 'voicestudio' | 'edge_neural' | 'elevenlabs';
+        edgeVoice?: string;
+        voicestudioUrl?: string;
+        voicestudioVoice?: string;
+        voicestudioModel?: string;
+      };
+      if (
+        body.engine !== undefined ||
+        body.edgeVoice !== undefined ||
+        body.voicestudioUrl !== undefined ||
+        body.voicestudioVoice !== undefined ||
+        body.voicestudioModel !== undefined
+      ) {
+        saveVoiceConfig({
+          ...(body.engine ? { engine: body.engine } : {}),
+          ...(body.edgeVoice ? { edgeVoice: body.edgeVoice } : {}),
+          ...(body.voicestudioUrl ? { voicestudioUrl: body.voicestudioUrl } : {}),
+          ...(body.voicestudioVoice ? { voicestudioVoice: body.voicestudioVoice } : {}),
+          ...(body.voicestudioModel ? { voicestudioModel: body.voicestudioModel } : {}),
+        });
+      }
+      const sample = await previewVoiceSample(body.text);
+      res.json({ success: true, ...sample });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur lors de la génération de l’aperçu vocal.',
+      });
+    }
+  });
+
+  router.post('/api/studio/projects/:id/synthesize-voice', async (req: Request, res: Response) => {
+    const proj = getProject(req.params.id);
+    if (!proj) {
+      res.status(404).json({ error: 'Projet introuvable' });
+      return;
+    }
+    try {
+      const targetVersion = String((req.body as { version?: string })?.version || proj.currentVersion || 'v1');
+      const projectDir = path.join(PROJECTS_DIR, proj.id);
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      const rawBeats = Array.isArray(proj.editSpec?.beats)
+        ? (proj.editSpec.beats as BatchBeatSpec[])
+        : [];
+      const spokenText =
+        rawBeats
+          .map((b) => sanitizeScriptText(b.spokenLine || ''))
+          .filter(Boolean)
+          .join(' ') ||
+        (proj.transcript || [])
+          .filter((w) => !w.isCut)
+          .map((w) => w.word)
+          .join(' ');
+
+      if (!spokenText.trim()) {
+        throw new Error('Aucun texte parlé disponible pour générer la voix off.');
+      }
+
+      const speed = Math.min(1.06, Math.max(0.95, Number(proj.editSpec?.speed) || 1.04));
+      const voice = await synthesizeVoiceoverForProject({
+        projectDir,
+        fullText: spokenText,
+        speed,
+        voiceFilename: `voice_${targetVersion}.mp3`,
+      });
+
+      if (!voice.audioTrackUrl) {
+        throw new Error('La synthèse vocale n’a pas produit de fichier audio.');
+      }
+
+      proj.audioTrackUrl = voice.audioTrackUrl;
+      proj.voiceProvider = voice.providerUsed;
+
+      if (rawBeats.length > 0) {
+        const timed = assignBeatTimingsAndTranscript(rawBeats, voice.words, voice.durationSec);
+        proj.duration = timed.durationSec;
+        proj.transcript = voice.words;
+        proj.motionTrack = timed.motionTrack;
+        proj.sfxTrack = timed.sfxTrack;
+        proj.layoutTrack = timed.beats.map((b, bIdx) => ({
+          id: `layout-${b.id}`,
+          layout: resolveBeatLayout(b, bIdx, timed.beats.length),
+          start: b.from,
+          end: b.to,
+        }));
+        proj.editSpec = {
+          ...(proj.editSpec || {}),
+          beats: timed.beats.map((b, idx) => ({
+            ...b,
+            layout: proj.layoutTrack[idx]?.layout || b.layout,
+          })),
+        };
+      }
+
+      saveProject(proj);
+      triggerAutoSyncInBackground(proj.id);
+
+      res.json({
+        success: true,
+        providerUsed: voice.providerUsed,
+        voiceUsed: voice.voiceUsed,
+        project: withProjectMediaStatus(proj),
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur synthèse voix du projet.',
       });
     }
   });

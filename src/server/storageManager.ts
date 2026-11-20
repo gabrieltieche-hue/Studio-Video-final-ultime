@@ -107,7 +107,7 @@ export function withProjectMediaStatus(project: ShortProject): ShortProject {
   const versions = (project.versions || []).map((v) => {
     const mp4Path = resolveProjectMp4Path(project, v.version);
     const hasMp4 = Boolean(mp4Path);
-    let outputMp4 = v.outputMp4;
+    let outputMp4: string | undefined = hasMp4 ? v.outputMp4 : undefined;
     if (mp4Path && !outputMp4) {
       if (mp4Path.startsWith(path.join(ROOT_DIR, 'public', 'video'))) {
         outputMp4 = `/video/${path.relative(path.join(ROOT_DIR, 'public', 'video'), mp4Path).replace(/\\/g, '/')}`;

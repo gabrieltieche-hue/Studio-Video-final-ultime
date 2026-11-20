@@ -419,30 +419,43 @@ export async function renderDynamicProjectToMp4(params: {
 
     params.onProgress?.(90);
 
-    // Audio Mix: Voiceover MP3 (if available) + Music bed + SFX + loudnorm
+    // Audio Mix: Compressed Voiceover + real Sidechain-ducked Music bed + SFX + Broadcast Loudnorm
     const audioInputs: string[] = [];
     const filterParts: string[] = [];
     const mixLabels: string[] = [];
     let inputIdx = 0;
 
-    const hasVoice = Boolean(params.voiceMp3Path && fs.existsSync(params.voiceMp3Path));
+    const hasVoice = Boolean(
+      params.voiceMp3Path &&
+        fs.existsSync(params.voiceMp3Path) &&
+        fs.statSync(params.voiceMp3Path).size >= 1024
+    );
     if (hasVoice && params.voiceMp3Path) {
       audioInputs.push('-i', params.voiceMp3Path);
       filterParts.push(
-        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,acompressor=threshold=-18dB:ratio=2.4:attack=12:release=140,volume=1.18,apad=whole_dur=${durationSec.toFixed(3)}[voice]`
+        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,acompressor=threshold=-18dB:ratio=2.4:attack=12:release=140,volume=1.18,apad=whole_dur=${durationSec.toFixed(3)},asplit=2[vmain][vsc]`
       );
-      mixLabels.push('[voice]');
+      mixLabels.push('[vmain]');
       inputIdx += 1;
     }
 
     const musicPath = resolveMusicAssetPath(params.project.musicTrack?.trackName);
     if (musicPath) {
       audioInputs.push('-stream_loop', '-1', '-i', musicPath);
-      const musicVol = hasVoice ? 0.16 : 0.36;
+      const musicVol = hasVoice ? 0.2 : 0.36;
       const fadeOutStart = Math.max(0.5, durationSec - 1.2).toFixed(2);
-      filterParts.push(
-        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[music]`
-      );
+      if (hasVoice) {
+        filterParts.push(
+          `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[musicraw]`
+        );
+        filterParts.push(
+          `[musicraw][vsc]sidechaincompress=threshold=0.03:ratio=5:attack=25:release=220[music]`
+        );
+      } else {
+        filterParts.push(
+          `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[music]`
+        );
+      }
       mixLabels.push('[music]');
       inputIdx += 1;
     }

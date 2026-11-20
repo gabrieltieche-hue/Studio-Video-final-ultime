@@ -26,6 +26,7 @@ interface StudioPlayer916Props {
   onSelectTargetElement: (el: string) => void;
   onSaveSnapshot: (dataUrl: string | null) => void;
   onSyncTimeFromVideo?: (t: number) => void;
+  onEnded?: () => void;
 }
 
 interface StrokePath {
@@ -52,6 +53,7 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
   onSelectTargetElement,
   onSaveSnapshot,
   onSyncTimeFromVideo,
+  onEnded,
 }) => {
   const [tool, setTool] = useState<'normal' | 'inspect' | 'draw'>('normal');
   const [penColor, setPenColor] = useState('#258EFF');
@@ -77,16 +79,21 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
     onSaveSnapshotRef.current = onSaveSnapshot;
   }, [onSaveSnapshot]);
 
-  // Pick MP4 corresponding to active version first, fallback to latest version with MP4 or speakerVideoUrl
+  // Pick MP4 corresponding to active version ONLY if verified present on disk (prevents 404 dead players)
   const activeVersionObj = (project.versions || []).find(
     (v) => v.version === project.currentVersion
   );
+  const hasVerifiedVersionMp4 = Boolean(
+    activeVersionObj?.outputMp4 && activeVersionObj?.hasMp4 !== false
+  );
   const mediaSrc = !project.isFlagshipReactStage
-    ? activeVersionObj?.outputMp4 || project.speakerVideoUrl || undefined
-    : activeVersionObj?.outputMp4 &&
-        activeVersionObj.version !== 'v1' &&
-        activeVersionObj.outputMp4 !== '/video/short-interdiction-15-ans.mp4'
-      ? activeVersionObj.outputMp4
+    ? (hasVerifiedVersionMp4 ? activeVersionObj?.outputMp4 : undefined) ||
+      project.speakerVideoUrl ||
+      undefined
+    : hasVerifiedVersionMp4 &&
+        activeVersionObj?.version !== 'v1' &&
+        activeVersionObj?.outputMp4 !== '/video/short-interdiction-15-ans.mp4'
+      ? activeVersionObj?.outputMp4
       : undefined;
 
   // Measure available viewport box and compute exact 9:16 dimensions so stage NEVER clips or overflows
@@ -427,10 +434,12 @@ export const StudioPlayer916: React.FC<StudioPlayer916Props> = ({
         >
           {mediaSrc ? (
             <video
+              key={mediaSrc}
               ref={videoRef}
               src={mediaSrc}
               playsInline
               onTimeUpdate={(e) => onSyncTimeFromVideo?.(e.currentTarget.currentTime)}
+              onEnded={() => onEnded?.()}
               className="w-full h-full object-cover"
             />
           ) : project.isFlagshipReactStage ? (

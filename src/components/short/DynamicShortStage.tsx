@@ -204,11 +204,15 @@ function CursorPointer({
   y,
   pressing = false,
   visible = true,
+  label,
+  badgeColor = '#258EFF',
 }: {
   x: number;
   y: number;
   pressing?: boolean;
   visible?: boolean;
+  label?: string;
+  badgeColor?: string;
 }) {
   if (!visible) return null;
   return (
@@ -230,6 +234,14 @@ function CursorPointer({
           strokeLinejoin="round"
         />
       </svg>
+      {label && (
+        <span
+          className="absolute left-[26px] top-[34px] px-[12px] py-[4px] rounded-full text-[20px] font-extrabold text-white whitespace-nowrap shadow-md"
+          style={{ backgroundColor: badgeColor }}
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 }
@@ -373,6 +385,149 @@ function MacWindowChrome({
   );
 }
 
+function IllustratedSubjectSvg({
+  kind = 'ai',
+  accent = '#258EFF',
+  ink = '#14161B',
+  size = 112,
+  localT = 0,
+}: {
+  kind?: DynamicIconKind;
+  accent?: string;
+  ink?: string;
+  size?: number;
+  localT?: number;
+}) {
+  const bob = Math.sin(localT * 3.2) * 3;
+  const pulse = 0.88 + 0.12 * Math.sin(localT * 4.5);
+
+  if (kind === 'euro' || kind === 'bank') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <rect x="14" y="28" width="92" height="62" rx="14" fill={ink} />
+        <rect x="20" y="34" width="80" height="50" rx="10" fill="#1F2430" stroke="rgba(255,255,255,0.12)" />
+        <rect x="28" y="44" width="22" height="16" rx="4" fill="#FBBF24" />
+        <circle cx="84" cy="48" r="14" fill={accent} opacity={pulse.toFixed(2)} />
+        <text x="84" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="18" fontWeight="900" fontFamily="monospace">€</text>
+        <rect x="28" y="68" width="44" height="6" rx="3" fill="rgba(255,255,255,0.35)" />
+        <g transform={`translate(0, ${bob.toFixed(1)})`}>
+          <circle cx="94" cy="84" r="18" fill="#059669" stroke="#FFFFFF" strokeWidth="3" />
+          <path d="M87 84l5 5 10-10" stroke="#FFFFFF" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (kind === 'law' || kind === 'scale') {
+    const tilt = Math.sin(localT * 2.4) * 5;
+    return (
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="48" fill={`${accent}14`} />
+        <rect x="56" y="22" width="8" height="72" rx="4" fill={ink} />
+        <rect x="34" y="92" width="52" height="9" rx="4.5" fill={ink} />
+        <g transform={`rotate(${tilt.toFixed(1)} 60 32)`}>
+          <rect x="20" y="29" width="80" height="6" rx="3" fill={accent} />
+          <path d="M24 35L14 64H34L24 35Z" fill={`${accent}30`} stroke={accent} strokeWidth="2.5" />
+          <path d="M96 35L86 64H106L96 35Z" fill="#DC262630" stroke="#DC2626" strokeWidth="2.5" />
+        </g>
+        <circle cx="60" cy="32" r="7" fill="#FFFFFF" stroke={ink} strokeWidth="3" />
+      </svg>
+    );
+  }
+
+  if (kind === 'clock' || kind === 'calendar') {
+    const handDeg = (localT * 90) % 360;
+    return (
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="46" fill={ink} />
+        <circle cx="60" cy="60" r="38" fill="#FFFFFF" />
+        <circle cx="60" cy="60" r="34" stroke={accent} strokeWidth="4" strokeDasharray="160 60" />
+        <line x1="60" y1="60" x2="60" y2="38" stroke={ink} strokeWidth="4.5" strokeLinecap="round" />
+        <line
+          x1="60"
+          y1="60"
+          x2={60 + Math.cos((handDeg - 90) * (Math.PI / 180)) * 22}
+          y2={60 + Math.sin((handDeg - 90) * (Math.PI / 180)) * 22}
+          stroke="#DC2626"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+        <circle cx="60" cy="60" r="5" fill={accent} />
+      </svg>
+    );
+  }
+
+  if (kind === 'chart' || kind === 'rocket') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <rect x="14" y="18" width="92" height="84" rx="18" fill={ink} />
+        <rect x="26" y="66" width="14" height="22" rx="4" fill="rgba(255,255,255,0.22)" />
+        <rect x="46" y="52" width="14" height="36" rx="4" fill={accent} />
+        <rect x="66" y="42" width="14" height="46" rx="4" fill="#34D399" />
+        <path d="M24 58L48 44L68 48L94 26" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="94" cy="26" r={6 + 2 * pulse} fill="#34D399" />
+      </svg>
+    );
+  }
+
+  if (kind === 'shield' || kind === 'lock' || kind === 'alert') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <path
+          d="M60 14L96 28V58C96 81 80 99 60 106C40 99 24 81 24 58V28L60 14Z"
+          fill={ink}
+          stroke={accent}
+          strokeWidth="4"
+        />
+        <path
+          d="M44 58L55 69L78 45"
+          stroke="#34D399"
+          strokeWidth="6.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  // Default AI / Tech / Users / Terminal neural node illustration
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+      <rect x="22" y="22" width="76" height="76" rx="22" fill={ink} />
+      <circle cx="60" cy="60" r="22" fill={`${accent}28`} stroke={accent} strokeWidth="3.5" />
+      <circle cx="60" cy="60" r="9" fill="#FFFFFF" />
+      <line x1="60" y1="12" x2="60" y2="26" stroke={accent} strokeWidth="4" strokeLinecap="round" />
+      <line x1="60" y1="94" x2="60" y2="108" stroke={accent} strokeWidth="4" strokeLinecap="round" />
+      <line x1="12" y1="60" x2="26" y2="60" stroke={accent} strokeWidth="4" strokeLinecap="round" />
+      <line x1="94" y1="60" x2="108" y2="60" stroke={accent} strokeWidth="4" strokeLinecap="round" />
+      <circle cx={60 + Math.cos(localT * 2.5) * 28} cy={60 + Math.sin(localT * 2.5) * 28} r="5.5" fill="#34D399" />
+    </svg>
+  );
+}
+
+function MacDesktopBar({
+  appName = 'Studio App',
+  statusText = '⌘K · Live',
+}: {
+  appName?: string;
+  statusText?: string;
+}) {
+  return (
+    <div className="w-full rounded-[16px] px-[20px] py-[10px] mb-[12px] bg-[#14161B]/92 text-white flex items-center justify-between border border-white/10">
+      <div className="flex items-center gap-[14px] text-[20px] font-semibold">
+        <span className="font-black text-[#60A5FA]"></span>
+        <span className="font-extrabold">{appName}</span>
+        <span className="text-white/55">Fichier</span>
+        <span className="text-white/55">Édition</span>
+      </div>
+      <div className="flex items-center gap-[12px] text-[19px] font-mono text-[#34D399]">
+        <span>●</span>
+        <span>{statusText}</span>
+      </div>
+    </div>
+  );
+}
+
 function renderDynamicBeatScene(
   beat: DynamicBeat,
   localT: number,
@@ -411,11 +566,14 @@ function renderDynamicBeatScene(
           }}
         >
           <div className="flex items-center gap-[18px] min-w-0">
-            <div
-              className="w-[68px] h-[68px] rounded-[20px] flex items-center justify-center shrink-0"
-              style={{ backgroundColor: flipped ? '#DC2626' : look.accent }}
-            >
-              <BeatVectorIcon kind={iconKind === 'ai' ? 'alert' : iconKind} size={36} color="#FFFFFF" />
+            <div className="shrink-0">
+              <IllustratedSubjectSvg
+                kind={iconKind === 'ai' ? 'alert' : iconKind}
+                accent={flipped ? '#DC2626' : look.accent}
+                ink="#1E222B"
+                size={84}
+                localT={localT}
+              />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-[10px]">
@@ -1331,11 +1489,14 @@ function renderDynamicBeatScene(
                 {beat.title}
               </div>
             </div>
-            <div
-              className="w-[96px] h-[96px] rounded-[26px] flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${look.accent}18` }}
-            >
-              <BeatVectorIcon kind={iconKind} size={52} color={look.accent} />
+            <div className="shrink-0">
+              <IllustratedSubjectSvg
+                kind={iconKind}
+                accent={look.accent}
+                ink={look.ink}
+                size={104}
+                localT={localT}
+              />
             </div>
           </div>
 
@@ -1942,8 +2103,13 @@ function renderDynamicBeatScene(
           transform: `translateY(${(24 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
         }}
       >
-        <div className="w-full flex items-center justify-between mb-[16px]">
-          <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+        <MacDesktopBar
+          appName={beat.screenLabel || 'Analyse Direct'}
+          statusText={clicked ? 'Validé ✓' : 'Interactif'}
+        />
+
+        <div className="w-full flex items-center justify-between mb-[14px]">
+          <span className="text-[42px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
             {beat.title}
           </span>
           <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#60A5FA] shrink-0">
@@ -2011,7 +2177,7 @@ function renderDynamicBeatScene(
             </div>
 
             <ClickRipple x={780} y={344} progress={rippleP} color="#059669" />
-            <CursorPointer x={cursorX} y={cursorY} pressing={pressing} />
+            <CursorPointer x={cursorX} y={cursorY} pressing={pressing} label="toi" badgeColor={look.accent} />
           </div>
         </MacWindowChrome>
 
@@ -2781,7 +2947,7 @@ function renderDynamicBeatScene(
           const pressing =
             (localT >= clickAt - 0.08 && localT <= clickAt + 0.1) ||
             (localT >= clickAt + 0.44 && localT <= clickAt + 0.58);
-          return <CursorPointer x={cx} y={cy} pressing={pressing} />;
+          return <CursorPointer x={cx} y={cy} pressing={pressing} label="toi" badgeColor={look.accent} />;
         })()}
       </div>
 
@@ -2995,76 +3161,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
           </div>
         )}
 
-        {/* Fullscreen Bottom Melvynx Cinema B-Roll + Live 20-Bar Audio Waveform Dock (eliminates all blank space below y=1445) */}
-        {seam >= 1650 && (
-          <div
-            className="absolute left-[56px] right-[168px] top-[1460px] h-[256px] rounded-[30px] border p-[18px] flex items-center gap-[22px] z-20 pointer-events-none"
-            style={{
-              backgroundColor: '#14161B',
-              borderColor: 'rgba(255,255,255,0.14)',
-              boxShadow: '0 26px 52px -14px rgba(20,22,27,0.32)',
-            }}
-          >
-            <div className="relative w-[290px] h-full rounded-[20px] overflow-hidden shrink-0 border border-white/15">
-              <img
-                src={brollAsset.src}
-                alt={activeBeat.brollCaption || brollAsset.defaultCaption}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
-                style={{
-                  transform: `translateX(${(brollPanX * 0.4).toFixed(1)}px) scale(${brollZoom.toFixed(4)})`,
-                  transformOrigin: 'center center',
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
-              <div className="absolute top-[12px] left-[12px] px-[10px] py-[4px] rounded-[8px] text-[18px] font-mono font-extrabold bg-black/75 text-[#60A5FA]">
-                0{activeBeat.index} / 0{beats.length}
-              </div>
-            </div>
-
-            <div className="flex-1 min-w-0 h-full flex flex-col justify-between py-[6px]">
-              <div className="flex items-center justify-between gap-[12px]">
-                <span className="text-[22px] font-mono font-bold uppercase text-[#60A5FA] truncate">
-                  {activeBeat.shortLabel || activeBeat.screenLabel}
-                </span>
-                <span className="text-[22px] font-mono font-bold text-white/75 tabular-nums shrink-0">
-                  {t.toFixed(1)} s
-                </span>
-              </div>
-
-              <div className="text-[30px] font-extrabold text-white truncate" style={{ fontFamily: look.fontDisplay }}>
-                {activeBeat.brollCaption || brollAsset.defaultCaption}
-              </div>
-
-              {/* 20-bar animated live voice spectrum */}
-              <div className="flex items-end gap-[6px] h-[54px] w-full">
-                {Array.from({ length: 20 }).map((_, i) => {
-                  const barPct = 0.24 + 0.76 * Math.abs(Math.sin(t * 7.8 + i * 0.62));
-                  const barActive = i / 20 <= beatProgress;
-                  return (
-                    <div
-                      key={i}
-                      className="flex-1 rounded-full"
-                      style={{
-                        height: `${Math.round(barPct * 100)}%`,
-                        backgroundColor: barActive ? look.accent : 'rgba(255,255,255,0.22)',
-                      }}
-                    />
-                  );
-                })}
-              </div>
-
-              <div className="h-[6px] w-full rounded-full bg-white/12 overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${Math.round(beatProgress * 100)}%`, backgroundColor: look.accent }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Lower Split-Screen B-Roll / Illustrated Motion Panel (bleeds cleanly below seam) */}
+        {/* Lower Split-Screen Clean B-Roll Panel (zero HUD progress bars or corner reticles) */}
         {seam < 1918 && (
           <div
             className="absolute inset-x-0 bottom-0 overflow-hidden z-10"
@@ -3085,41 +3182,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                 transformOrigin: 'center center',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/22 to-black/38" />
-
-            {/* Corner Reticles + Live HUD indicator on B-Roll */}
-            {seam > 300 && (
-              <>
-                <div className="absolute top-[42px] left-[48px] w-[26px] h-[26px] border-t-[3px] border-l-[3px] border-white/55 rounded-tl-[6px]" />
-                <div className="absolute top-[42px] right-[168px] w-[26px] h-[26px] border-t-[3px] border-r-[3px] border-white/55 rounded-tr-[6px]" />
-
-                <div className="absolute bottom-[68px] left-[56px] right-[176px] flex flex-col gap-[12px] text-white/95">
-                  <div className="flex items-center justify-between gap-[16px]">
-                    <div className="flex items-center gap-[14px] min-w-0">
-                      <span
-                        className="w-[14px] h-[14px] rounded-full shrink-0"
-                        style={{
-                          backgroundColor: look.accent,
-                          transform: `scale(${(0.85 + 0.3 * Math.abs(Math.sin(t * 4.5))).toFixed(2)})`,
-                        }}
-                      />
-                      <div className="text-[30px] font-bold tracking-[-0.01em] drop-shadow truncate">
-                        {activeBeat.brollCaption || brollAsset.defaultCaption}
-                      </div>
-                    </div>
-                    <span className="text-[24px] font-mono font-bold text-white/85 tabular-nums shrink-0">
-                      0{activeBeat.index}/0{beats.length} · {t.toFixed(1)} s
-                    </span>
-                  </div>
-                  <div className="h-[5px] w-full rounded-full bg-white/20 overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${Math.round(beatProgress * 100)}%`, backgroundColor: look.accent }}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/18 to-black/32" />
           </div>
         )}
 
@@ -3141,7 +3204,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
             style={{ top: `${captionTopY.toFixed(1)}px`, transform: 'translateY(-50%)' }}
           >
             <div
-              className="inline-flex flex-wrap items-baseline justify-center gap-x-[15px] px-[38px] py-[18px] rounded-[24px] border max-w-[920px]"
+              className="inline-flex flex-wrap items-baseline justify-center gap-x-[22px] px-[38px] py-[18px] rounded-[24px] border max-w-[920px]"
               style={{
                 backgroundColor: overVideo ? 'rgba(20, 22, 27, 0.88)' : 'rgba(252, 251, 248, 0.96)',
                 borderColor: overVideo ? 'rgba(255, 255, 255, 0.14)' : look.line,
@@ -3168,7 +3231,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                       fontFamily: look.fontDisplay,
                       fontSize: '66px',
                       color: isActive ? highlightColor : baseColor,
-                      transform: isActive ? 'scale(1.07) translateY(-2px)' : 'scale(1)',
+                      transform: isActive ? 'scale(1.04) translateY(-2px)' : 'scale(1)',
                     }}
                   >
                     {w.text}

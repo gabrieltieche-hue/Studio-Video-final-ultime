@@ -8,7 +8,7 @@
   "mode": "faceless_explainer",
   "platform": "youtube_shorts",
   "status": "ready",
-  "duration": 47.88,
+  "duration": 43.46,
   "fps": 25,
   "resolution": {
     "width": 1080,
@@ -32,898 +32,891 @@
     {
       "id": "w-1",
       "word": "À",
-      "start": 0.08,
-      "end": 0.207,
-      "confidence": 0.95
+      "start": 0.083,
+      "end": 0.167,
+      "confidence": 0.99
     },
     {
       "id": "w-2",
       "word": "partir",
-      "start": 0.218,
-      "end": 0.599,
-      "confidence": 0.95
+      "start": 0.167,
+      "end": 0.524,
+      "confidence": 0.99
     },
     {
       "id": "w-3",
       "word": "du",
-      "start": 0.632,
-      "end": 0.759,
-      "confidence": 0.95
+      "start": 0.524,
+      "end": 0.631,
+      "confidence": 0.99
     },
     {
       "id": "w-4",
       "word": "20",
-      "start": 0.77,
-      "end": 0.897,
-      "confidence": 0.95
+      "start": 0.631,
+      "end": 0.774,
+      "confidence": 0.99
     },
     {
       "id": "w-5",
-      "word": "novembre,",
-      "start": 0.908,
-      "end": 1.479,
-      "confidence": 0.95
+      "word": "novembre",
+      "start": 0.774,
+      "end": 1.345,
+      "confidence": 0.99
     },
     {
       "id": "w-6",
       "word": "ta",
-      "start": 1.529,
-      "end": 1.655,
-      "confidence": 0.95
+      "start": 1.714,
+      "end": 1.821,
+      "confidence": 0.99
     },
     {
       "id": "w-7",
       "word": "banque",
-      "start": 1.666,
-      "end": 2.047,
-      "confidence": 0.95
+      "start": 1.821,
+      "end": 2.119,
+      "confidence": 0.99
     },
     {
       "id": "w-8",
       "word": "n'a",
-      "start": 2.08,
-      "end": 2.271,
-      "confidence": 0.95
+      "start": 2.119,
+      "end": 2.238,
+      "confidence": 0.99
     },
     {
       "id": "w-9",
       "word": "plus",
-      "start": 2.287,
-      "end": 2.541,
-      "confidence": 0.95
+      "start": 2.238,
+      "end": 2.393,
+      "confidence": 0.99
     },
     {
       "id": "w-10",
       "word": "le",
-      "start": 2.563,
-      "end": 2.69,
-      "confidence": 0.95
+      "start": 2.393,
+      "end": 2.476,
+      "confidence": 0.99
     },
     {
       "id": "w-11",
       "word": "droit",
-      "start": 2.701,
-      "end": 3.018,
-      "confidence": 0.95
+      "start": 2.476,
+      "end": 2.667,
+      "confidence": 0.99
     },
     {
       "id": "w-12",
       "word": "de",
-      "start": 3.046,
-      "end": 3.173,
-      "confidence": 0.95
+      "start": 2.667,
+      "end": 2.762,
+      "confidence": 0.99
     },
     {
       "id": "w-13",
       "word": "gérer",
-      "start": 3.184,
-      "end": 3.501,
-      "confidence": 0.95
+      "start": 2.762,
+      "end": 3.036,
+      "confidence": 0.99
     },
     {
       "id": "w-14",
       "word": "ton",
-      "start": 3.529,
-      "end": 3.719,
-      "confidence": 0.95
+      "start": 3.036,
+      "end": 3.167,
+      "confidence": 0.99
     },
     {
       "id": "w-15",
       "word": "découvert",
-      "start": 3.736,
-      "end": 4.307,
-      "confidence": 0.95
+      "start": 3.167,
+      "end": 3.607,
+      "confidence": 0.99
     },
     {
       "id": "w-16",
       "word": "comme",
-      "start": 4.357,
-      "end": 4.674,
-      "confidence": 0.95
+      "start": 3.607,
+      "end": 3.762,
+      "confidence": 0.99
     },
     {
       "id": "w-17",
-      "word": "avant.",
-      "start": 4.702,
-      "end": 5.082,
-      "confidence": 0.95
+      "word": "avant",
+      "start": 3.762,
+      "end": 4.119,
+      "confidence": 0.99
     },
     {
       "id": "w-18",
       "word": "La",
-      "start": 5.115,
-      "end": 5.242,
-      "confidence": 0.95
+      "start": 4.488,
+      "end": 4.619,
+      "confidence": 0.99
     },
     {
       "id": "w-19",
       "word": "directive",
-      "start": 5.253,
-      "end": 5.824,
-      "confidence": 0.95
+      "start": 4.619,
+      "end": 5.095,
+      "confidence": 0.99
     },
     {
       "id": "w-20",
       "word": "européenne",
-      "start": 5.874,
-      "end": 6.509,
-      "confidence": 0.95
+      "start": 5.095,
+      "end": 5.726,
+      "confidence": 0.99
     },
     {
       "id": "w-21",
       "word": "impose",
-      "start": 6.564,
-      "end": 6.945,
-      "confidence": 0.95
+      "start": 5.845,
+      "end": 6.179,
+      "confidence": 0.99
     },
     {
       "id": "w-22",
       "word": "une",
-      "start": 6.978,
-      "end": 7.168,
-      "confidence": 0.95
+      "start": 6.179,
+      "end": 6.286,
+      "confidence": 0.99
     },
     {
       "id": "w-23",
       "word": "vérification",
-      "start": 7.185,
-      "end": 7.946,
-      "confidence": 0.95
+      "start": 6.286,
+      "end": 6.917,
+      "confidence": 0.99
     },
     {
       "id": "w-24",
       "word": "claire",
-      "start": 8.012,
-      "end": 8.393,
-      "confidence": 0.95
+      "start": 6.917,
+      "end": 7.179,
+      "confidence": 0.99
     },
     {
       "id": "w-25",
       "word": "du",
-      "start": 8.426,
-      "end": 8.553,
-      "confidence": 0.95
+      "start": 7.179,
+      "end": 7.274,
+      "confidence": 0.99
     },
     {
       "id": "w-26",
       "word": "budget",
-      "start": 8.564,
-      "end": 8.945,
-      "confidence": 0.95
+      "start": 7.274,
+      "end": 7.726,
+      "confidence": 0.99
     },
     {
       "id": "w-27",
       "word": "avant",
-      "start": 8.978,
-      "end": 9.295,
-      "confidence": 0.95
+      "start": 7.81,
+      "end": 8.06,
+      "confidence": 0.99
     },
     {
       "id": "w-28",
       "word": "toute",
-      "start": 9.323,
-      "end": 9.64,
-      "confidence": 0.95
+      "start": 8.06,
+      "end": 8.262,
+      "confidence": 0.99
     },
     {
       "id": "w-29",
       "word": "autorisation",
-      "start": 9.668,
-      "end": 10.429,
-      "confidence": 0.95
+      "start": 8.262,
+      "end": 8.821,
+      "confidence": 0.99
     },
     {
       "id": "w-30",
-      "word": "automatique.",
-      "start": 10.496,
-      "end": 11.257,
-      "confidence": 0.95
+      "word": "automatique",
+      "start": 8.821,
+      "end": 9.619,
+      "confidence": 0.99
     },
     {
       "id": "w-31",
       "word": "Trois",
-      "start": 11.323,
-      "end": 11.641,
-      "confidence": 0.95
+      "start": 9.94,
+      "end": 10.167,
+      "confidence": 0.99
     },
     {
       "id": "w-32",
       "word": "garde-fous",
-      "start": 11.668,
-      "end": 12.303,
-      "confidence": 0.95
+      "start": 10.167,
+      "end": 10.655,
+      "confidence": 0.99
     },
     {
       "id": "w-33",
       "word": "arrivent",
-      "start": 12.358,
-      "end": 12.866,
-      "confidence": 0.95
+      "start": 10.655,
+      "end": 11.179,
+      "confidence": 0.99
     },
     {
       "id": "w-34",
-      "word": ":",
-      "start": 12.91,
-      "end": 13.037,
-      "confidence": 0.95
+      "word": "contrôle",
+      "start": 11.464,
+      "end": 11.833,
+      "confidence": 0.99
     },
     {
       "id": "w-35",
-      "word": "contrôle",
-      "start": 13.048,
-      "end": 13.556,
-      "confidence": 0.95
+      "word": "des",
+      "start": 11.833,
+      "end": 11.917,
+      "confidence": 0.99
     },
     {
       "id": "w-36",
-      "word": "des",
-      "start": 13.6,
-      "end": 13.79,
-      "confidence": 0.95
+      "word": "revenus",
+      "start": 11.917,
+      "end": 12.393,
+      "confidence": 0.99
     },
     {
       "id": "w-37",
-      "word": "revenus,",
-      "start": 13.807,
-      "end": 14.314,
-      "confidence": 0.95
+      "word": "TAEG",
+      "start": 12.643,
+      "end": 12.917,
+      "confidence": 0.99
     },
     {
       "id": "w-38",
-      "word": "TAEG",
-      "start": 14.358,
-      "end": 14.612,
-      "confidence": 0.95
+      "word": "lisible",
+      "start": 12.917,
+      "end": 13.393,
+      "confidence": 0.99
     },
     {
       "id": "w-39",
-      "word": "lisible,",
-      "start": 14.634,
-      "end": 15.142,
-      "confidence": 0.95
+      "word": "et",
+      "start": 13.726,
+      "end": 13.786,
+      "confidence": 0.99
     },
     {
       "id": "w-40",
-      "word": "et",
-      "start": 15.186,
-      "end": 15.313,
-      "confidence": 0.95
+      "word": "plafonnement",
+      "start": 13.762,
+      "end": 14.238,
+      "confidence": 0.99
     },
     {
       "id": "w-41",
-      "word": "plafonnement",
-      "start": 15.324,
-      "end": 16.086,
-      "confidence": 0.95
+      "word": "des",
+      "start": 14.238,
+      "end": 14.333,
+      "confidence": 0.99
     },
     {
       "id": "w-42",
-      "word": "des",
-      "start": 16.152,
-      "end": 16.342,
-      "confidence": 0.95
+      "word": "commissions",
+      "start": 14.333,
+      "end": 14.726,
+      "confidence": 0.99
     },
     {
       "id": "w-43",
-      "word": "commissions",
-      "start": 16.359,
-      "end": 17.057,
-      "confidence": 0.95
+      "word": "d’intervention",
+      "start": 14.726,
+      "end": 15.488,
+      "confidence": 0.99
     },
     {
       "id": "w-44",
-      "word": "d’intervention.",
-      "start": 17.118,
-      "end": 18.069,
-      "confidence": 0.95
+      "word": "La",
+      "start": 15.857,
+      "end": 15.988,
+      "confidence": 0.99
     },
     {
       "id": "w-45",
-      "word": "La",
-      "start": 18.152,
-      "end": 18.279,
-      "confidence": 0.95
+      "word": "courbe",
+      "start": 15.988,
+      "end": 16.298,
+      "confidence": 0.99
     },
     {
       "id": "w-46",
-      "word": "courbe",
-      "start": 18.29,
-      "end": 18.671,
-      "confidence": 0.95
+      "word": "du",
+      "start": 16.298,
+      "end": 16.405,
+      "confidence": 0.99
     },
     {
       "id": "w-47",
-      "word": "du",
-      "start": 18.704,
-      "end": 18.831,
-      "confidence": 0.95
+      "word": "coût",
+      "start": 16.405,
+      "end": 16.56,
+      "confidence": 0.99
     },
     {
       "id": "w-48",
-      "word": "coût",
-      "start": 18.842,
-      "end": 19.096,
-      "confidence": 0.95
+      "word": "annuel",
+      "start": 16.56,
+      "end": 16.917,
+      "confidence": 0.99
     },
     {
       "id": "w-49",
-      "word": "annuel",
-      "start": 19.118,
-      "end": 19.499,
-      "confidence": 0.95
+      "word": "des",
+      "start": 16.917,
+      "end": 17.012,
+      "confidence": 0.99
     },
     {
       "id": "w-50",
-      "word": "des",
-      "start": 19.532,
-      "end": 19.722,
-      "confidence": 0.95
+      "word": "agios",
+      "start": 17.012,
+      "end": 17.31,
+      "confidence": 0.99
     },
     {
       "id": "w-51",
-      "word": "agios",
-      "start": 19.739,
-      "end": 20.056,
-      "confidence": 0.95
+      "word": "subis",
+      "start": 17.31,
+      "end": 17.786,
+      "confidence": 0.99
     },
     {
       "id": "w-52",
-      "word": "subis",
-      "start": 20.084,
-      "end": 20.401,
-      "confidence": 0.95
+      "word": "peut",
+      "start": 17.893,
+      "end": 18.012,
+      "confidence": 0.99
     },
     {
       "id": "w-53",
-      "word": "peut",
-      "start": 20.429,
-      "end": 20.682,
-      "confidence": 0.95
+      "word": "chuter",
+      "start": 18.012,
+      "end": 18.31,
+      "confidence": 0.99
     },
     {
       "id": "w-54",
-      "word": "chuter",
-      "start": 20.704,
-      "end": 21.085,
-      "confidence": 0.95
+      "word": "de",
+      "start": 18.31,
+      "end": 18.44,
+      "confidence": 0.99
     },
     {
       "id": "w-55",
-      "word": "de",
-      "start": 21.118,
-      "end": 21.245,
-      "confidence": 0.95
+      "word": "180",
+      "start": 18.44,
+      "end": 18.793,
+      "confidence": 0.99
     },
     {
       "id": "w-56",
-      "word": "180",
-      "start": 21.256,
-      "end": 21.447,
-      "confidence": 0.95
+      "word": "euros",
+      "start": 18.793,
+      "end": 19.381,
+      "confidence": 0.99
     },
     {
       "id": "w-57",
-      "word": "euros",
-      "start": 21.463,
-      "end": 21.781,
-      "confidence": 0.95
+      "word": "à",
+      "start": 19.452,
+      "end": 19.548,
+      "confidence": 0.99
     },
     {
       "id": "w-58",
-      "word": "à",
-      "start": 21.808,
-      "end": 21.935,
-      "confidence": 0.95
+      "word": "24",
+      "start": 19.548,
+      "end": 19.765,
+      "confidence": 0.99
     },
     {
       "id": "w-59",
-      "word": "24",
-      "start": 21.946,
-      "end": 22.073,
-      "confidence": 0.95
+      "word": "euros",
+      "start": 19.765,
+      "end": 20.31,
+      "confidence": 0.99
     },
     {
       "id": "w-60",
-      "word": "euros.",
-      "start": 22.084,
-      "end": 22.465,
-      "confidence": 0.95
+      "word": "Quand",
+      "start": 20.631,
+      "end": 20.821,
+      "confidence": 0.99
     },
     {
       "id": "w-61",
-      "word": "Quand",
-      "start": 22.498,
-      "end": 22.815,
-      "confidence": 0.95
+      "word": "tu",
+      "start": 20.821,
+      "end": 20.952,
+      "confidence": 0.99
     },
     {
       "id": "w-62",
-      "word": "tu",
-      "start": 22.843,
-      "end": 22.97,
-      "confidence": 0.95
+      "word": "compares",
+      "start": 20.952,
+      "end": 21.333,
+      "confidence": 0.99
     },
     {
       "id": "w-63",
-      "word": "compares",
-      "start": 22.981,
-      "end": 23.488,
-      "confidence": 0.95
+      "word": "un",
+      "start": 21.333,
+      "end": 21.393,
+      "confidence": 0.99
     },
     {
       "id": "w-64",
-      "word": "un",
-      "start": 23.533,
-      "end": 23.659,
-      "confidence": 0.95
+      "word": "découvert",
+      "start": 21.393,
+      "end": 21.845,
+      "confidence": 0.99
     },
     {
       "id": "w-65",
-      "word": "découvert",
-      "start": 23.671,
-      "end": 24.242,
-      "confidence": 0.95
+      "word": "subi",
+      "start": 21.845,
+      "end": 22.155,
+      "confidence": 0.99
     },
     {
       "id": "w-66",
-      "word": "subi",
-      "start": 24.291,
-      "end": 24.545,
-      "confidence": 0.95
+      "word": "toute",
+      "start": 22.155,
+      "end": 22.345,
+      "confidence": 0.99
     },
     {
       "id": "w-67",
-      "word": "toute",
-      "start": 24.567,
-      "end": 24.885,
-      "confidence": 0.95
+      "word": "l’année",
+      "start": 22.345,
+      "end": 22.643,
+      "confidence": 0.99
     },
     {
       "id": "w-68",
-      "word": "l’année",
-      "start": 24.912,
-      "end": 25.356,
-      "confidence": 0.95
+      "word": "à",
+      "start": 22.643,
+      "end": 22.714,
+      "confidence": 0.99
     },
     {
       "id": "w-69",
-      "word": "à",
-      "start": 25.395,
-      "end": 25.522,
-      "confidence": 0.95
+      "word": "un",
+      "start": 22.714,
+      "end": 22.774,
+      "confidence": 0.99
     },
     {
       "id": "w-70",
-      "word": "un",
-      "start": 25.533,
-      "end": 25.66,
-      "confidence": 0.95
+      "word": "plafond",
+      "start": 22.774,
+      "end": 23.083,
+      "confidence": 0.99
     },
     {
       "id": "w-71",
-      "word": "plafond",
-      "start": 25.671,
-      "end": 26.115,
-      "confidence": 0.95
+      "word": "encadré",
+      "start": 23.083,
+      "end": 23.643,
+      "confidence": 0.99
     },
     {
       "id": "w-72",
-      "word": "encadré,",
-      "start": 26.154,
-      "end": 26.661,
-      "confidence": 0.95
+      "word": "tu",
+      "start": 23.988,
+      "end": 24.095,
+      "confidence": 0.99
     },
     {
       "id": "w-73",
-      "word": "tu",
-      "start": 26.706,
-      "end": 26.832,
-      "confidence": 0.95
+      "word": "divises",
+      "start": 24.095,
+      "end": 24.417,
+      "confidence": 0.99
     },
     {
       "id": "w-74",
-      "word": "divises",
-      "start": 26.844,
-      "end": 27.288,
-      "confidence": 0.95
+      "word": "la",
+      "start": 24.417,
+      "end": 24.5,
+      "confidence": 0.99
     },
     {
       "id": "w-75",
-      "word": "la",
-      "start": 27.326,
-      "end": 27.453,
-      "confidence": 0.95
+      "word": "facture",
+      "start": 24.5,
+      "end": 24.833,
+      "confidence": 0.99
     },
     {
       "id": "w-76",
-      "word": "facture",
-      "start": 27.464,
-      "end": 27.909,
-      "confidence": 0.95
+      "word": "par",
+      "start": 24.833,
+      "end": 25.012,
+      "confidence": 0.99
     },
     {
       "id": "w-77",
-      "word": "par",
-      "start": 27.947,
-      "end": 28.138,
-      "confidence": 0.95
+      "word": "sept.",
+      "start": 25.012,
+      "end": 25.5,
+      "confidence": 0.99
     },
     {
       "id": "w-78",
-      "word": "sept.",
-      "start": 28.154,
-      "end": 28.471,
-      "confidence": 0.95
+      "word": "Avant",
+      "start": 25.869,
+      "end": 26.107,
+      "confidence": 0.99
     },
     {
       "id": "w-79",
-      "word": "Avant",
-      "start": 28.499,
-      "end": 28.816,
-      "confidence": 0.95
+      "word": "la",
+      "start": 26.107,
+      "end": 26.19,
+      "confidence": 0.99
     },
     {
       "id": "w-80",
-      "word": "la",
-      "start": 28.844,
-      "end": 28.971,
-      "confidence": 0.95
+      "word": "date",
+      "start": 26.19,
+      "end": 26.405,
+      "confidence": 0.99
     },
     {
       "id": "w-81",
-      "word": "date",
-      "start": 28.982,
-      "end": 29.236,
-      "confidence": 0.95
+      "word": "clé",
+      "start": 26.405,
+      "end": 26.75,
+      "confidence": 0.99
     },
     {
       "id": "w-82",
-      "word": "clé,",
-      "start": 29.258,
-      "end": 29.512,
-      "confidence": 0.95
+      "word": "ouvre",
+      "start": 27.06,
+      "end": 27.298,
+      "confidence": 0.99
     },
     {
       "id": "w-83",
-      "word": "ouvre",
-      "start": 29.534,
-      "end": 29.851,
-      "confidence": 0.95
+      "word": "ton",
+      "start": 27.298,
+      "end": 27.405,
+      "confidence": 0.99
     },
     {
       "id": "w-84",
-      "word": "ton",
-      "start": 29.879,
-      "end": 30.069,
-      "confidence": 0.95
+      "word": "application",
+      "start": 27.405,
+      "end": 27.905,
+      "confidence": 0.99
     },
     {
       "id": "w-85",
-      "word": "application",
-      "start": 30.085,
-      "end": 30.784,
-      "confidence": 0.95
+      "word": "bancaire",
+      "start": 27.905,
+      "end": 28.464,
+      "confidence": 0.99
     },
     {
       "id": "w-86",
-      "word": "bancaire,",
-      "start": 30.844,
-      "end": 31.415,
-      "confidence": 0.95
+      "word": "vérifie",
+      "start": 28.786,
+      "end": 29.131,
+      "confidence": 0.99
     },
     {
       "id": "w-87",
-      "word": "vérifie",
-      "start": 31.465,
-      "end": 31.909,
-      "confidence": 0.95
+      "word": "ton",
+      "start": 29.131,
+      "end": 29.262,
+      "confidence": 0.99
     },
     {
       "id": "w-88",
-      "word": "ton",
-      "start": 31.948,
-      "end": 32.138,
-      "confidence": 0.95
+      "word": "plafond",
+      "start": 29.262,
+      "end": 29.714,
+      "confidence": 0.99
     },
     {
       "id": "w-89",
-      "word": "plafond",
-      "start": 32.155,
-      "end": 32.599,
-      "confidence": 0.95
+      "word": "et",
+      "start": 29.798,
+      "end": 29.905,
+      "confidence": 0.99
     },
     {
       "id": "w-90",
-      "word": "et",
-      "start": 32.638,
-      "end": 32.765,
-      "confidence": 0.95
+      "word": "active",
+      "start": 29.905,
+      "end": 30.262,
+      "confidence": 0.99
     },
     {
       "id": "w-91",
-      "word": "active",
-      "start": 32.776,
-      "end": 33.156,
-      "confidence": 0.95
+      "word": "l’alerte",
+      "start": 30.262,
+      "end": 30.643,
+      "confidence": 0.99
     },
     {
       "id": "w-92",
-      "word": "l’alerte",
-      "start": 33.189,
-      "end": 33.697,
-      "confidence": 0.95
+      "word": "de",
+      "start": 30.643,
+      "end": 30.762,
+      "confidence": 0.99
     },
     {
       "id": "w-93",
-      "word": "de",
-      "start": 33.741,
-      "end": 33.868,
-      "confidence": 0.95
+      "word": "solde",
+      "start": 30.762,
+      "end": 31.286,
+      "confidence": 0.99
     },
     {
       "id": "w-94",
-      "word": "solde.",
-      "start": 33.879,
-      "end": 34.26,
-      "confidence": 0.95
+      "word": "Selon",
+      "start": 31.643,
+      "end": 31.94,
+      "confidence": 0.99
     },
     {
       "id": "w-95",
-      "word": "Selon",
-      "start": 34.293,
-      "end": 34.61,
-      "confidence": 0.95
+      "word": "Service-Public",
+      "start": 31.94,
+      "end": 32.643,
+      "confidence": 0.99
     },
     {
       "id": "w-96",
-      "word": "Service-Public",
-      "start": 34.638,
-      "end": 35.526,
-      "confidence": 0.95
+      "word": "et",
+      "start": 32.643,
+      "end": 32.703,
+      "confidence": 0.99
     },
     {
       "id": "w-97",
-      "word": "&",
-      "start": 35.604,
-      "end": 35.731,
-      "confidence": 0.95
+      "word": "Directive",
+      "start": 32.679,
+      "end": 33.238,
+      "confidence": 0.99
     },
     {
       "id": "w-98",
-      "word": "Directive",
-      "start": 35.742,
-      "end": 36.313,
-      "confidence": 0.95
+      "word": "UE",
+      "start": 33.333,
+      "end": 33.5,
+      "confidence": 0.99
     },
     {
       "id": "w-99",
-      "word": "UE",
-      "start": 36.362,
-      "end": 36.489,
-      "confidence": 0.95
+      "word": "2026",
+      "start": 33.5,
+      "end": 34.357,
+      "confidence": 0.99
     },
     {
       "id": "w-100",
-      "word": "2026,",
-      "start": 36.5,
-      "end": 36.818,
-      "confidence": 0.95
+      "word": "les",
+      "start": 34.679,
+      "end": 34.774,
+      "confidence": 0.99
     },
     {
       "id": "w-101",
-      "word": "les",
-      "start": 36.845,
-      "end": 37.036,
-      "confidence": 0.95
+      "word": "foyers",
+      "start": 34.774,
+      "end": 35.06,
+      "confidence": 0.99
     },
     {
       "id": "w-102",
-      "word": "foyers",
-      "start": 37.052,
-      "end": 37.433,
-      "confidence": 0.95
+      "word": "déjà",
+      "start": 35.06,
+      "end": 35.333,
+      "confidence": 0.99
     },
     {
       "id": "w-103",
-      "word": "déjà",
-      "start": 37.466,
-      "end": 37.72,
-      "confidence": 0.95
+      "word": "prévenus",
+      "start": 35.333,
+      "end": 35.714,
+      "confidence": 0.99
     },
     {
       "id": "w-104",
-      "word": "prévenus",
-      "start": 37.742,
-      "end": 38.25,
-      "confidence": 0.95
+      "word": "économisent",
+      "start": 35.726,
+      "end": 36.214,
+      "confidence": 0.99
     },
     {
       "id": "w-105",
-      "word": "économisent",
-      "start": 38.294,
-      "end": 38.992,
-      "confidence": 0.95
+      "word": "l’essentiel",
+      "start": 36.214,
+      "end": 36.774,
+      "confidence": 0.99
     },
     {
       "id": "w-106",
-      "word": "l’essentiel",
-      "start": 39.053,
-      "end": 39.751,
-      "confidence": 0.95
+      "word": "des",
+      "start": 36.774,
+      "end": 36.881,
+      "confidence": 0.99
     },
     {
       "id": "w-107",
-      "word": "des",
-      "start": 39.811,
-      "end": 40.002,
-      "confidence": 0.95
+      "word": "frais",
+      "start": 36.881,
+      "end": 37.036,
+      "confidence": 0.99
     },
     {
       "id": "w-108",
-      "word": "frais",
-      "start": 40.018,
-      "end": 40.336,
-      "confidence": 0.95
+      "word": "cachés",
+      "start": 37.036,
+      "end": 37.357,
+      "confidence": 0.99
     },
     {
       "id": "w-109",
-      "word": "cachés",
-      "start": 40.363,
-      "end": 40.744,
-      "confidence": 0.95
+      "word": "dès",
+      "start": 37.357,
+      "end": 37.452,
+      "confidence": 0.99
     },
     {
       "id": "w-110",
-      "word": "dès",
-      "start": 40.777,
-      "end": 40.967,
-      "confidence": 0.95
+      "word": "le",
+      "start": 37.452,
+      "end": 37.536,
+      "confidence": 0.99
     },
     {
       "id": "w-111",
-      "word": "le",
-      "start": 40.984,
-      "end": 41.111,
-      "confidence": 0.95
+      "word": "premier",
+      "start": 37.536,
+      "end": 37.798,
+      "confidence": 0.99
     },
     {
       "id": "w-112",
-      "word": "premier",
-      "start": 41.122,
-      "end": 41.566,
-      "confidence": 0.95
+      "word": "mois",
+      "start": 37.798,
+      "end": 38.131,
+      "confidence": 0.99
     },
     {
       "id": "w-113",
-      "word": "mois.",
-      "start": 41.605,
-      "end": 41.922,
-      "confidence": 0.95
+      "word": "Abonne-toi",
+      "start": 38.5,
+      "end": 39.131,
+      "confidence": 0.99
     },
     {
       "id": "w-114",
-      "word": "Abonne-toi",
-      "start": 41.95,
-      "end": 42.584,
-      "confidence": 0.95
+      "word": "et",
+      "start": 39.238,
+      "end": 39.333,
+      "confidence": 0.99
     },
     {
       "id": "w-115",
-      "word": "et",
-      "start": 42.639,
-      "end": 42.766,
-      "confidence": 0.95
+      "word": "active",
+      "start": 39.333,
+      "end": 39.643,
+      "confidence": 0.99
     },
     {
       "id": "w-116",
-      "word": "active",
-      "start": 42.777,
-      "end": 43.158,
-      "confidence": 0.95
+      "word": "la",
+      "start": 39.643,
+      "end": 39.738,
+      "confidence": 0.99
     },
     {
       "id": "w-117",
-      "word": "la",
-      "start": 43.191,
-      "end": 43.318,
-      "confidence": 0.95
+      "word": "cloche",
+      "start": 39.738,
+      "end": 40.143,
+      "confidence": 0.99
     },
     {
       "id": "w-118",
-      "word": "cloche",
-      "start": 43.329,
-      "end": 43.71,
-      "confidence": 0.95
+      "word": "pour",
+      "start": 40.143,
+      "end": 40.298,
+      "confidence": 0.99
     },
     {
       "id": "w-119",
-      "word": "pour",
-      "start": 43.743,
-      "end": 43.997,
-      "confidence": 0.95
+      "word": "ne",
+      "start": 40.298,
+      "end": 40.369,
+      "confidence": 0.99
     },
     {
       "id": "w-120",
-      "word": "ne",
-      "start": 44.019,
-      "end": 44.146,
-      "confidence": 0.95
+      "word": "rater",
+      "start": 40.369,
+      "end": 40.655,
+      "confidence": 0.99
     },
     {
       "id": "w-121",
-      "word": "rater",
-      "start": 44.157,
-      "end": 44.474,
-      "confidence": 0.95
+      "word": "aucune",
+      "start": 40.655,
+      "end": 40.917,
+      "confidence": 0.99
     },
     {
       "id": "w-122",
-      "word": "aucune",
-      "start": 44.502,
-      "end": 44.883,
-      "confidence": 0.95
+      "word": "règle",
+      "start": 40.917,
+      "end": 41.298,
+      "confidence": 0.99
     },
     {
       "id": "w-123",
-      "word": "règle",
-      "start": 44.916,
-      "end": 45.233,
-      "confidence": 0.95
+      "word": "qui",
+      "start": 41.298,
+      "end": 41.429,
+      "confidence": 0.99
     },
     {
       "id": "w-124",
-      "word": "qui",
-      "start": 45.261,
-      "end": 45.451,
-      "confidence": 0.95
+      "word": "touche",
+      "start": 41.429,
+      "end": 41.607,
+      "confidence": 0.99
     },
     {
       "id": "w-125",
-      "word": "touche",
-      "start": 45.468,
-      "end": 45.848,
-      "confidence": 0.95
+      "word": "directement",
+      "start": 41.607,
+      "end": 42.095,
+      "confidence": 0.99
     },
     {
       "id": "w-126",
-      "word": "directement",
-      "start": 45.881,
-      "end": 46.58,
-      "confidence": 0.95
+      "word": "ton",
+      "start": 42.095,
+      "end": 42.226,
+      "confidence": 0.99
     },
     {
       "id": "w-127",
-      "word": "ton",
-      "start": 46.64,
-      "end": 46.831,
-      "confidence": 0.95
-    },
-    {
-      "id": "w-128",
-      "word": "budget.",
-      "start": 46.847,
-      "end": 47.291,
-      "confidence": 0.95
+      "word": "budget",
+      "start": 42.226,
+      "end": 42.679,
+      "confidence": 0.99
     }
   ],
   "motionTrack": [
@@ -932,7 +925,7 @@
       "componentId": "comp-beat-1",
       "name": "Découverts bancaires et crédit",
       "start": 0,
-      "end": 5.1,
+      "end": 4.3,
       "type": "typography",
       "color": "#258EFF"
     },
@@ -940,8 +933,8 @@
       "id": "mot-beat-2",
       "componentId": "comp-beat-2",
       "name": "Règle du 20 novembre",
-      "start": 5.1,
-      "end": 11.29,
+      "start": 4.3,
+      "end": 9.78,
       "type": "card",
       "color": "#14161B"
     },
@@ -949,8 +942,8 @@
       "id": "mot-beat-3",
       "componentId": "comp-beat-3",
       "name": "Ce qui change en banque",
-      "start": 11.29,
-      "end": 18.11,
+      "start": 9.78,
+      "end": 15.99,
       "type": "card",
       "color": "#14161B"
     },
@@ -958,8 +951,8 @@
       "id": "mot-beat-4",
       "componentId": "comp-beat-4",
       "name": "Chute du coût des agios",
-      "start": 18.11,
-      "end": 22.48,
+      "start": 15.99,
+      "end": 20.82,
       "type": "chart",
       "color": "#14161B"
     },
@@ -967,8 +960,8 @@
       "id": "mot-beat-5",
       "componentId": "comp-beat-5",
       "name": "Coût réel des frais",
-      "start": 22.48,
-      "end": 28.48,
+      "start": 20.82,
+      "end": 25.68,
       "type": "chart",
       "color": "#14161B"
     },
@@ -976,8 +969,8 @@
       "id": "mot-beat-6",
       "componentId": "comp-beat-6",
       "name": "Régler ton compte",
-      "start": 28.48,
-      "end": 34.28,
+      "start": 25.68,
+      "end": 31.46,
       "type": "card",
       "color": "#14161B"
     },
@@ -985,8 +978,8 @@
       "id": "mot-beat-7",
       "componentId": "comp-beat-7",
       "name": "Ce que fixe la loi",
-      "start": 34.28,
-      "end": 41.94,
+      "start": 31.46,
+      "end": 38.32,
       "type": "chart",
       "color": "#14161B"
     },
@@ -994,8 +987,8 @@
       "id": "mot-beat-8",
       "componentId": "comp-beat-8",
       "name": "Garde ton pouvoir d’achat",
-      "start": 41.94,
-      "end": 47.89,
+      "start": 38.32,
+      "end": 43.46,
       "type": "rocket",
       "color": "#059669"
     }
@@ -1005,110 +998,110 @@
       "id": "layout-beat-1",
       "layout": "split",
       "start": 0,
-      "end": 5.1
+      "end": 4.3
     },
     {
       "id": "layout-beat-2",
       "layout": "split",
-      "start": 5.1,
-      "end": 11.29
+      "start": 4.3,
+      "end": 9.78
     },
     {
       "id": "layout-beat-3",
       "layout": "split",
-      "start": 11.29,
-      "end": 18.11
+      "start": 9.78,
+      "end": 15.99
     },
     {
       "id": "layout-beat-4",
       "layout": "fullscreen",
-      "start": 18.11,
-      "end": 22.48
+      "start": 15.99,
+      "end": 20.82
     },
     {
       "id": "layout-beat-5",
       "layout": "fullscreen",
-      "start": 22.48,
-      "end": 28.48
+      "start": 20.82,
+      "end": 25.68
     },
     {
       "id": "layout-beat-6",
       "layout": "split",
-      "start": 28.48,
-      "end": 34.28
+      "start": 25.68,
+      "end": 31.46
     },
     {
       "id": "layout-beat-7",
       "layout": "fullscreen",
-      "start": 34.28,
-      "end": 41.94
+      "start": 31.46,
+      "end": 38.32
     },
     {
       "id": "layout-beat-8",
       "layout": "split",
-      "start": 41.94,
-      "end": 47.89
+      "start": 38.32,
+      "end": 43.46
     }
   ],
   "sfxTrack": [
     {
       "id": "sfx-hook-shatter",
       "sound": "impact-boom",
-      "start": 2.45,
+      "start": 2.06,
       "volume": 0.46
     },
     {
       "id": "sfx-hook-boom",
       "sound": "riser",
-      "start": 2.45,
+      "start": 2.06,
       "volume": 0.38
     },
     {
       "id": "sfx-2",
       "sound": "pop",
-      "start": 5.22,
+      "start": 4.42,
       "volume": 0.34
     },
     {
       "id": "sfx-3",
       "sound": "thud",
-      "start": 11.41,
+      "start": 9.9,
       "volume": 0.34
     },
     {
       "id": "sfx-4",
       "sound": "zhhh",
-      "start": 18.23,
+      "start": 16.11,
       "volume": 0.34
     },
     {
       "id": "sfx-5",
       "sound": "riser",
-      "start": 22.6,
+      "start": 20.94,
       "volume": 0.26
     },
     {
       "id": "sfx-6",
       "sound": "tap",
-      "start": 28.6,
+      "start": 25.8,
       "volume": 0.34
     },
     {
       "id": "sfx-7",
       "sound": "zhhh",
-      "start": 34.4,
+      "start": 31.58,
       "volume": 0.34
     },
     {
       "id": "sfx-8",
       "sound": "pop-back",
-      "start": 42.64,
+      "start": 39.02,
       "volume": 0.34
     },
     {
       "id": "sfx-8-bell",
       "sound": "bell",
-      "start": 42.76,
+      "start": 39.14,
       "volume": 0.3
     }
   ],
@@ -1171,7 +1164,7 @@
           }
         ],
         "from": 0,
-        "to": 5.1,
+        "to": 4.3,
         "layout": "split"
       },
       {
@@ -1218,8 +1211,8 @@
           "Coût total affiché",
           "Frais d’incident plafonnés"
         ],
-        "from": 5.1,
-        "to": 11.29,
+        "from": 4.3,
+        "to": 9.78,
         "layout": "split"
       },
       {
@@ -1295,8 +1288,8 @@
           "value": "24 €/an",
           "ratio": 0.24
         },
-        "from": 11.29,
-        "to": 18.11,
+        "from": 9.78,
+        "to": 15.99,
         "layout": "split"
       },
       {
@@ -1353,8 +1346,8 @@
           "Coût total affiché",
           "Frais d’incident plafonnés"
         ],
-        "from": 18.11,
-        "to": 22.48,
+        "from": 15.99,
+        "to": 20.82,
         "layout": "fullscreen"
       },
       {
@@ -1396,8 +1389,8 @@
           "Alerte SMS",
           "Frais bloqués"
         ],
-        "from": 22.48,
-        "to": 28.48,
+        "from": 20.82,
+        "to": 25.68,
         "layout": "fullscreen"
       },
       {
@@ -1442,8 +1435,8 @@
         "sourceLabel": "Service-Public & Directive UE 2026",
         "statValue": "3/3 ACTIFS",
         "statLabel": "Réflexes immédiats",
-        "from": 28.48,
-        "to": 34.28,
+        "from": 25.68,
+        "to": 31.46,
         "layout": "split"
       },
       {
@@ -1478,8 +1471,8 @@
         "multiplierBadge": "÷7,5",
         "statValue": "20 NOV",
         "statLabel": "Réforme découvert bancaire",
-        "from": 34.28,
-        "to": 41.94,
+        "from": 31.46,
+        "to": 38.32,
         "layout": "fullscreen"
       },
       {
@@ -1496,8 +1489,8 @@
         "iconKind": "rocket",
         "statValue": "@alex.decode",
         "statLabel": "Argent, Banques & Décryptages",
-        "from": 41.94,
-        "to": 47.89,
+        "from": 38.32,
+        "to": 43.46,
         "layout": "split"
       }
     ]
@@ -1511,5 +1504,8 @@
     "captionsPosition": "bottom",
     "visualBeatsTarget": 8
   },
-  "hasMp4": true
+  "hasMp4": true,
+  "audioTrackUrl": "/storage/projects/proj-decouverts-bancaires-et-credit-conso-ce-/voice_v1.mp3",
+  "voiceProvider": "edge_neural",
+  "hasVoice": true
 }

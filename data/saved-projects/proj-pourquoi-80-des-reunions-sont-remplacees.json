@@ -27,7 +27,7 @@
       "audioTrackUrl": "/storage/projects/proj-pourquoi-80-des-reunions-sont-remplacees/voice_v2.mp3",
       "outputMp4": "/renders/pourquoi-80-des-reunions-sont-remplacees_v2.mp4",
       "contactSheetUrl": "/renders/pourquoi-80-des-reunions-sont-remplacees_v2_contact.jpg",
-      "hasMp4": false
+      "hasMp4": true
     },
     {
       "version": "v1",
@@ -36,7 +36,6 @@
       "duration": 26.4,
       "fps": 25,
       "notes": "V1 initiale · 5 séquences (révisée suite aux 4 retours studio)",
-      "outputMp4": "/renders/pourquoi-80-des-reunions-sont-remplacees_v1.mp4",
       "hasMp4": false
     }
   ],
@@ -1276,5 +1275,6 @@
     "captionsPosition": "bottom",
     "visualBeatsTarget": 8
   },
-  "hasMp4": false
+  "hasMp4": true,
+  "hasVoice": true
 }

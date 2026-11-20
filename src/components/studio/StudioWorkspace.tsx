@@ -21,7 +21,7 @@ import {
   Wand2,
   Wrench,
 } from 'lucide-react';
-import { audioEngine } from '../../engine/audioEngine';
+import { audioEngine, normalizeMusicBedId } from '../../engine/audioEngine';
 import { clamp } from '../../engine/math';
 import { DEFAULT_PLAYBACK_SPEED, SHORT_DURATION } from '../../data/shortSpec';
 import {
@@ -131,11 +131,14 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
   const activeVersionObj = (activeProject?.versions || []).find(
     (v) => v.version === activeProject?.currentVersion
   );
+  const hasVerifiedMp4 = Boolean(
+    activeVersionObj?.outputMp4 && activeVersionObj?.hasMp4 !== false
+  );
   const isReactFlagship =
     Boolean(activeProject?.isFlagshipReactStage) &&
-    (!activeVersionObj?.outputMp4 ||
-      activeVersionObj.outputMp4 === '/video/short-interdiction-15-ans.mp4');
-  const hasDynamicWebAudio = !isReactFlagship && !activeVersionObj?.outputMp4 && Boolean(activeProject?.audioTrackUrl);
+    (!hasVerifiedMp4 ||
+      activeVersionObj?.outputMp4 === '/video/short-interdiction-15-ans.mp4');
+  const hasDynamicWebAudio = !isReactFlagship && !hasVerifiedMp4 && Boolean(activeProject);
   const useWebAudio = isReactFlagship || hasDynamicWebAudio;
   const activeAudioSpeed = isReactFlagship ? playbackSpeed : 1.0;
 
@@ -143,15 +146,15 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
     if (!activeProject) return;
     if (isReactFlagship) {
       void audioEngine.setProjectAudio({});
-    } else if (activeProject.audioTrackUrl) {
-      const bed = (activeProject.musicTrack?.trackName || 'upbeat') as 'upbeat' | 'groove' | 'analytical' | 'clockwork' | 'chill';
+    } else {
+      const bed = normalizeMusicBedId(activeProject.musicTrack?.trackName);
       const sfxEvents = (activeProject.sfxTrack || []).map((s) => ({
         at: s.start,
-        kind: s.sound as 'impact-boom' | 'zhhh' | 'riser' | 'pop-back',
+        kind: s.sound as 'glass-shatter' | 'impact-boom' | 'zhhh' | 'riser' | 'pop-back' | 'thud' | 'pop' | 'tap' | 'bell',
         gain: s.volume,
       }));
       void audioEngine.setProjectAudio({
-        voiceUrl: activeProject.audioTrackUrl,
+        voiceUrl: activeProject.audioTrackUrl || null,
         musicBed: bed,
         sfxEvents,
       });
@@ -874,6 +877,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
                 timeRef.current = t;
                 setCurrentTime(t);
               }}
+              onEnded={() => setIsPlaying(false)}
             />
           ) : (
             <div
@@ -897,7 +901,10 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({
 
           <StudioPlaybackControls
             isPlaying={isPlaying}
-            onTogglePlay={() => setIsPlaying((p) => !p)}
+            onTogglePlay={() => {
+              audioEngine.unlockFromGesture();
+              setIsPlaying((p) => !p);
+            }}
             currentTime={currentTime}
             duration={activeDuration}
             onSeek={handleSeek}

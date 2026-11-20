@@ -9,6 +9,15 @@ import { DEFAULT_PLAYBACK_SPEED, MusicBedId, SFX_EVENTS, SfxEvent } from '../dat
  */
 const DEFAULT_VOICE_URL = '/audio/voice/short-interdiction-15-ans-fr.mp3';
 
+export function normalizeMusicBedId(raw?: string | null): MusicBedId {
+  const s = String(raw || '').toLowerCase();
+  if (s.includes('seamless') || s.includes('groove') && !s.includes('bright')) return 'groove';
+  if (s.includes('analytical')) return 'analytical';
+  if (s.includes('clockwork') || s.includes('tension')) return 'clockwork';
+  if (s.includes('chill') || s.includes('sleek')) return 'chill';
+  return 'upbeat';
+}
+
 class ShortAudioEngine {
   private ctx: AudioContext | null = null;
   private musicGain: GainNode | null = null;
@@ -18,7 +27,7 @@ class ShortAudioEngine {
   private voiceSource: AudioBufferSourceNode | null = null;
   private musicBuffers: Partial<Record<MusicBedId, AudioBuffer>> = {};
   private voiceBuffersByUrl: Record<string, AudioBuffer> = {};
-  private activeVoiceUrl: string = DEFAULT_VOICE_URL;
+  private activeVoiceUrl: string | null = DEFAULT_VOICE_URL;
   private activeSfxEvents: SfxEvent[] = SFX_EVENTS;
   private sfxBuffers: Record<string, AudioBuffer> = {};
   private currentBed: MusicBedId = 'upbeat';
@@ -35,8 +44,8 @@ class ShortAudioEngine {
 
   private targetMusicGain(): number {
     if (!this.musicEnabled) return 0;
-    // Energetic corporate groove (-12.5 dB relative to source) balanced cleanly under Brian's warm baritone
-    return this.voiceEnabled ? 0.24 : 0.36;
+    // Balanced corporate groove (-15% lower under voice narration, audible bed if no voice loaded)
+    return this.voiceEnabled && this.activeVoiceUrl ? 0.2 : 0.34;
   }
 
   private ensureContext(): AudioContext {
@@ -51,19 +60,37 @@ class ShortAudioEngine {
 
       this.musicGain.gain.value = this.targetMusicGain();
       this.voiceGain.gain.value = this.voiceEnabled ? 1.0 : 0;
-      this.sfxGain.gain.value = this.sfxEnabled ? 0.52 : 0;
+      this.sfxGain.gain.value = this.sfxEnabled ? 0.56 : 0;
 
       this.musicGain.connect(this.ctx.destination);
       this.voiceGain.connect(this.ctx.destination);
       this.sfxGain.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
-      void this.ctx.resume();
+      void this.ctx.resume().catch(() => {});
     }
     return this.ctx;
   }
 
-  async ensureVoiceUrlLoaded(url: string): Promise<void> {
+  /**
+   * Call synchronously inside user click/tap handlers before React async effects run
+   * so Chromium/iFrame autoplay policies unlock AudioContext immediately.
+   */
+  unlockFromGesture(): void {
+    try {
+      const ctx = this.ensureContext();
+      if (ctx.state === 'suspended') {
+        void ctx.resume().catch(() => {});
+      }
+      if (this.musicGain) {
+        this.musicGain.gain.setValueAtTime(this.targetMusicGain(), ctx.currentTime);
+      }
+    } catch {
+      // ignore if AudioContext unavailable
+    }
+  }
+
+  async ensureVoiceUrlLoaded(url: string | null | undefined): Promise<void> {
     if (!url || this.voiceBuffersByUrl[url]) return;
     try {
       const ctx = this.ensureContext();
@@ -77,17 +104,23 @@ class ShortAudioEngine {
   }
 
   async setProjectAudio(opts: {
-    voiceUrl?: string;
-    musicBed?: MusicBedId;
+    voiceUrl?: string | null;
+    musicBed?: MusicBedId | string;
     sfxEvents?: SfxEvent[];
   }): Promise<void> {
-    const nextVoice = opts.voiceUrl || DEFAULT_VOICE_URL;
+    // Allow explicit null so non-flagship projects never fall back to the wrong voiceover
+    const nextVoice = opts.voiceUrl === undefined ? DEFAULT_VOICE_URL : opts.voiceUrl;
     this.activeVoiceUrl = nextVoice;
     if (opts.musicBed) {
-      this.currentBed = opts.musicBed;
+      this.currentBed = normalizeMusicBedId(opts.musicBed);
     }
     this.activeSfxEvents = opts.sfxEvents ? [...opts.sfxEvents].sort((a, b) => a.at - b.at) : SFX_EVENTS;
-    await this.ensureVoiceUrlLoaded(nextVoice);
+    if (this.musicGain && this.ctx) {
+      this.musicGain.gain.setTargetAtTime(this.targetMusicGain(), this.ctx.currentTime, 0.05);
+    }
+    if (nextVoice) {
+      await this.ensureVoiceUrlLoaded(nextVoice);
+    }
   }
 
   async preload(): Promise<void> {
@@ -98,21 +131,19 @@ class ShortAudioEngine {
           window.AudioContext ||
           (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (!AudioCtx) return;
-        const ctx = this.ctx || new AudioCtx();
-        if (!this.ctx) {
-          this.ctx = ctx;
-          this.musicGain = ctx.createGain();
-          this.voiceGain = ctx.createGain();
-          this.sfxGain = ctx.createGain();
-          this.musicGain.gain.value = this.targetMusicGain();
-          this.voiceGain.gain.value = this.voiceEnabled ? 1.0 : 0;
-          this.sfxGain.gain.value = this.sfxEnabled ? 0.52 : 0;
-          this.musicGain.connect(ctx.destination);
-          this.voiceGain.connect(ctx.destination);
-          this.sfxGain.connect(ctx.destination);
-        }
+        const ctx = this.ensureContext();
 
-        const sfxNames = ['glass-shatter', 'impact-boom', 'zhhh', 'riser', 'pop-back'];
+        const sfxNames = [
+          'glass-shatter',
+          'impact-boom',
+          'zhhh',
+          'riser',
+          'pop-back',
+          'bell',
+          'pop',
+          'tap',
+          'thud',
+        ];
         const bedNames: MusicBedId[] = ['upbeat', 'groove', 'analytical', 'clockwork', 'chill'];
 
         await Promise.all([
@@ -145,8 +176,8 @@ class ShortAudioEngine {
     return this.loadingPromise;
   }
 
-  setBed(bed: MusicBedId, isPlaying: boolean, currentTime: number) {
-    this.currentBed = bed;
+  setBed(bed: MusicBedId | string, isPlaying: boolean, currentTime: number) {
+    this.currentBed = normalizeMusicBedId(bed);
     if (isPlaying) {
       this.stopMusic();
       this.startMusic(currentTime);
@@ -174,7 +205,7 @@ class ShortAudioEngine {
     if (opts.sfxEnabled !== undefined) {
       this.sfxEnabled = opts.sfxEnabled;
       if (this.sfxGain && this.ctx) {
-        this.sfxGain.gain.setTargetAtTime(this.sfxEnabled ? 0.52 : 0, this.ctx.currentTime, 0.05);
+        this.sfxGain.gain.setTargetAtTime(this.sfxEnabled ? 0.56 : 0, this.ctx.currentTime, 0.05);
       }
     }
     if (opts.voiceEnabled !== undefined) {
@@ -224,8 +255,9 @@ class ShortAudioEngine {
   private startMusic(t: number) {
     if (!this.ctx || !this.musicGain) return;
     this.stopMusic();
-    const buf = this.musicBuffers[this.currentBed];
+    const buf = this.musicBuffers[this.currentBed] || this.musicBuffers.upbeat;
     if (!buf) return;
+    this.musicGain.gain.setTargetAtTime(this.targetMusicGain(), this.ctx.currentTime, 0.04);
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
     src.loop = true;
@@ -236,6 +268,7 @@ class ShortAudioEngine {
   }
 
   private startVoice(t: number, speed: number) {
+    if (!this.activeVoiceUrl) return;
     const voiceBuf = this.voiceBuffersByUrl[this.activeVoiceUrl];
     if (!this.ctx || !this.voiceGain || !voiceBuf) return;
     this.stopVoice();
