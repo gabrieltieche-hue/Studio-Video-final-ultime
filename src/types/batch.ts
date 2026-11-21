@@ -13,40 +13,64 @@ export type BatchItemStep =
   | 'error'
   | 'cancelled';
 
-export type MelvynxArchetypeType =
-  // Catégorie A — Hooks, Attention & Révélations
+/**
+ * 22 universal domain-agnostic Melvynx visual primitives + end CTA.
+ */
+export type UniversalPrimitiveType =
+  | 'metric_shock_hook'
+  | 'dot_population_scale'
+  | 'paper_receipt_payslip'
+  | 'countdown_calendar_stamp'
+  | 'balance_scale_duel'
+  | 'trap_barrier_alert'
+  | 'hydraulic_compressor'
+  | 'scrolling_checklist_spotlight'
+  | 'radial_mindmap_hub'
+  | 'audit_table_detector'
+  | 'profile_objection_deck'
+  | 'notification_explosion_stamp'
+  | 'segmented_quota_slider'
+  | 'hand_drawn_marker_highlight'
+  | 'before_after_morph'
+  | 'animated_data_chart'
+  | 'split_comparison_window'
+  | 'process_pipeline'
+  | 'terminal_chat_window'
+  | 'rotary_control_deck'
+  | 'globe_network_flow'
+  | 'editorial_evidence_board'
+  | 'channel_end_cta';
+
+/**
+ * Legacy type names kept strictly as TypeScript union aliases so pre-existing saved projects
+ * continue loading cleanly and map automatically onto UniversalPrimitiveType at render time.
+ */
+export type LegacyVisualType =
   | 'massive_dot_matrix_zoom'
   | 'avatar_crowd_highlight'
   | 'confidential_vault_slam'
   | 'paywall_shock_stack'
-  // Catégorie B — Terminal, Claude, IA & Code
   | 'chat_prompt_refusal_cascade'
   | 'neural_shield_abliteration'
   | 'night_shift_multi_agent_laptop'
   | 'claude_code_slash_cli'
   | 'rotary_mixing_knobs'
   | 'code_and_live_preview_split'
-  // Catégorie C — Preuve, Data, GitHub & Social
   | 'github_repo_star_rocket'
   | 'article_highlighter_zoom'
   | 'pixel_diff_clone_loop'
   | 'github_heatmap_and_runs'
   | 'social_feed_waterfall'
-  // Catégorie D — Transformation, Comparaison & Hardware
   | 'conveyor_belt_cleaner'
   | 'red_strike_live_rewrite'
   | 'ugly_to_apple_ui_morph'
   | 'retro_crt_1995_parallel'
   | 'physical_cable_app_plug'
   | 'metallic_toolbox_explode'
-  // Catégorie E — Business, Stratégie & Audio
   | 'card_fan_explosion_10x'
   | 'ab_hook_leaderboard'
   | 'cloud_vs_offline_shield'
-  | 'voice_shortcut_waveform';
-
-export type DynamicVisualType =
-  | MelvynxArchetypeType
+  | 'voice_shortcut_waveform'
   | 'hook_shatter'
   | 'hook_stat'
   | 'hook_alert'
@@ -73,6 +97,8 @@ export type DynamicVisualType =
   | 'checklist_audit'
   | 'gauge'
   | 'cta_card';
+
+export type DynamicVisualType = UniversalPrimitiveType | LegacyVisualType;
 
 export type BrandLogoId =
   | 'claude'
@@ -105,9 +131,37 @@ export type DynamicIconKind =
   | 'scale'
   | 'users';
 
+export interface ReceiptLineItem {
+  label: string;
+  amount: string;
+  highlight?: boolean;
+  tone?: 'neutral' | 'negative' | 'positive';
+}
+
+export interface AuditTableRow {
+  label: string;
+  detail: string;
+  status: 'alert' | 'ok' | 'removed';
+  badge: string;
+}
+
+export interface ProfileCardItem {
+  name: string;
+  role: string;
+  metric: string;
+  quote: string;
+}
+
+export interface MindmapNodeItem {
+  label: string;
+  detail?: string;
+}
+
 export interface BatchBeatSpec {
   id: string;
   title: string;
+  highlightWord?: string;
+  strikeWord?: string;
   shortLabel: string;
   screenLabel: string;
   spokenLine: string;
@@ -115,10 +169,14 @@ export interface BatchBeatSpec {
   layoutHint?: 'split' | 'fullscreen';
   brollKey?: string;
   subBrollKeys?: string[];
+  subBrollUrls?: string[];
   brollCaption?: string;
+  visualQuery?: string;
   iconKind?: DynamicIconKind;
   brandLogo?: BrandLogoId;
   notoIcon?: string;
+
+  // Parameterized payloads for the 22 universal primitives
   stampWord?: string;
   statValue?: string;
   statLabel?: string;
@@ -155,7 +213,6 @@ export interface BatchBeatSpec {
   newsYears?: [string, string];
   neuralLayers?: string[];
   neuralEquation?: string;
-  // Extended @melvynx.dev 25-archetype payload fields
   codeLines?: string[];
   repoName?: string;
   repoStars?: string;
@@ -170,7 +227,48 @@ export interface BatchBeatSpec {
   crtMetric?: string;
   beforeBadText?: string;
   afterGoodText?: string;
-  sfxKind?: 'glass-shatter' | 'impact-boom' | 'zhhh' | 'riser' | 'pop-back' | 'thud' | 'tap' | 'pop' | 'bell';
+
+  // Extended clean typed payloads for tactile Melvynx metaphors
+  receiptItems?: ReceiptLineItem[];
+  receiptTotalLabel?: string;
+  receiptTotalValue?: string;
+  calendarMonth?: string;
+  calendarYear?: string;
+  calendarDaysMarked?: number[];
+  calendarHighlightDay?: number;
+  calendarNote?: string;
+  scaleTilt?: 'left' | 'right' | 'balanced';
+  barrierBadge?: string;
+  barrierRuleText?: string;
+  compressorFrom?: string;
+  compressorTo?: string;
+  compressorUnitLabel?: string;
+  mindmapCenter?: string;
+  mindmapNodes?: MindmapNodeItem[];
+  auditRows?: AuditTableRow[];
+  profileCards?: ProfileCardItem[];
+  notifCount?: string;
+  notifItems?: Array<{ sender: string; message: string; time?: string }>;
+  quotaActualLabel?: string;
+  quotaPlannedLabel?: string;
+  quotaBars?: Array<{ label: string; pct: number }>;
+  globeOrigin?: string;
+  globeDestinations?: Array<{ label: string; value: string }>;
+
+  sfxKind?:
+    | 'glass-shatter'
+    | 'impact-boom'
+    | 'zhhh'
+    | 'whoosh'
+    | 'riser'
+    | 'pop-back'
+    | 'thud'
+    | 'stamp'
+    | 'tap'
+    | 'click'
+    | 'tick'
+    | 'pop'
+    | 'bell';
 }
 
 export interface ParsedCustomTopic {

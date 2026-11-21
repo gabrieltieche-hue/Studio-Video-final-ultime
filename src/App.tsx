@@ -1121,8 +1121,11 @@ export default function App() {
   }, [isFlagshipReactPlayer, dynamicBeats, t, activeProject]);
 
   if (isRenderMode) {
+    const expectsDynamic =
+      Boolean(renderParams.projectId) &&
+      renderParams.projectId !== 'proj-interdiction-15-ans';
     return (
-      <div id="short-render-root" className="w-[1080px] h-[1920px] overflow-hidden bg-[#F1EEE6]">
+      <div id="short-render-root" className="w-[1080px] h-[1920px] overflow-hidden bg-[#F8F7F3]">
         {renderProject ? (
           <DynamicShortStage
             project={renderProject}
@@ -1131,6 +1134,8 @@ export default function App() {
             showSafeZones={false}
             renderMode
           />
+        ) : expectsDynamic ? (
+          <div data-testid="short-loading-stage" className="w-[1080px] h-[1920px] bg-[#F8F7F3]" />
         ) : (
           <ShortStage t={t} look={look} showSafeZones={false} renderMode />
         )}

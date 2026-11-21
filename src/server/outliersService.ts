@@ -390,7 +390,7 @@ export async function scanWatchlistOutliers(params?: {
           return rows.map((r) => ({
             ...r,
             niche: creator.niche,
-            remakeAngle: `Remake style @alex.decode d'après ${creator.handle} (${creator.signatureFormat})`,
+            remakeAngle: `Remake analytique d'après ${creator.handle} (${creator.signatureFormat})`,
             suggestedHook: r.titleOrHook,
           }));
         })

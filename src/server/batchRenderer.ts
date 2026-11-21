@@ -52,10 +52,10 @@ export function resolveSfxAssetPath(soundName: string): string | null {
   if (!clean) return null;
   const candidates = [clean];
   if (clean.includes('pop')) candidates.push('pop-back', 'pop');
-  else if (clean.includes('tap') || clean.includes('click')) candidates.push('tap', 'pop-back');
-  else if (clean.includes('thud') || clean.includes('boom') || clean.includes('hit')) candidates.push('thud', 'impact-boom');
+  else if (clean.includes('tap') || clean.includes('click') || clean.includes('tick')) candidates.push('tap', 'pop-back');
+  else if (clean.includes('thud') || clean.includes('boom') || clean.includes('hit') || clean.includes('stamp')) candidates.push('thud', 'impact-boom');
   else if (clean.includes('bell') || clean.includes('ding')) candidates.push('bell', 'pop-back');
-  else if (clean.includes('whoosh') || clean.includes('swipe')) candidates.push('zhhh');
+  else if (clean.includes('whoosh') || clean.includes('swipe') || clean.includes('zhhh')) candidates.push('zhhh');
 
   for (const name of candidates) {
     for (const ext of ['mp3', 'wav', 'm4a', 'ogg']) {
@@ -84,8 +84,8 @@ export function probeAudioDurationSec(audioPath: string, fallback = 30): number 
       { encoding: 'utf-8', timeout: 20_000 }
     );
     const val = Number(out.trim());
-    if (Number.isFinite(val) && val > 0.5) {
-      return Number(val.toFixed(2));
+    if (Number.isFinite(val) && val > 0.2) {
+      return Number(val.toFixed(3));
     }
   } catch {
     // fallback below
@@ -98,9 +98,10 @@ export function applyVoiceSpeedMp3(
   targetMp3Path: string,
   speed = 1.10
 ): number {
-  const safeSpeed = Math.max(0.75, Math.min(1.5, speed || 1.10));
+  const safeSpeed = Math.max(0.75, Math.min(1.35, speed || 1.10));
+  // Gentle thresholds (-48dB/-46dB) preserve soft French consonant contractions like "t'info" / "d'un"
   const silenceFilter =
-    'silenceremove=start_periods=1:start_silence=0.03:start_threshold=-40dB:stop_periods=-1:stop_duration=0.06:stop_threshold=-38dB';
+    'silenceremove=start_periods=1:start_silence=0.04:start_threshold=-48dB:stop_periods=-1:stop_duration=0.07:stop_threshold=-46dB';
   const filterChain =
     Math.abs(safeSpeed - 1.0) > 0.01
       ? `${silenceFilter},atempo=${safeSpeed.toFixed(3)}`
@@ -119,6 +120,10 @@ export function applyVoiceSpeedMp3(
       rawMp3Path,
       '-filter:a',
       filterChain,
+      '-ar',
+      '24000',
+      '-ac',
+      '1',
       '-c:a',
       'libmp3lame',
       '-b:a',
@@ -130,7 +135,80 @@ export function applyVoiceSpeedMp3(
   if (tempOut !== targetMp3Path && fs.existsSync(tempOut)) {
     fs.renameSync(tempOut, targetMp3Path);
   }
-  return probeAudioDurationSec(targetMp3Path, 35);
+  return probeAudioDurationSec(targetMp3Path, 4.0);
+}
+
+/**
+ * Concatenates individually synthesized beat MP3s with crisp 0.08s natural breath pauses
+ * and returns the exact total measured duration + exact start offset of every beat.
+ */
+export function concatBeatMp3sWithPadding(
+  beatMp3Paths: string[],
+  targetMp3Path: string,
+  breathGapSec = 0.08
+): { totalDurationSec: number; beatWindows: Array<{ from: number; to: number }> } {
+  if (beatMp3Paths.length === 0) {
+    throw new Error('Aucun fichier audio de beat à concaténer.');
+  }
+
+  const gapDur = Math.max(0, Math.min(0.25, breathGapSec));
+  const beatDurations = beatMp3Paths.map((p) => probeAudioDurationSec(p, 4.0));
+  const beatWindows: Array<{ from: number; to: number }> = [];
+
+  let cursor = 0;
+  for (let i = 0; i < beatDurations.length; i++) {
+    const dur = beatDurations[i];
+    const from = Number(cursor.toFixed(3));
+    const to = Number((cursor + dur + (i < beatDurations.length - 1 ? gapDur : 0)).toFixed(3));
+    beatWindows.push({ from, to });
+    cursor = to;
+  }
+
+  const filterInputs: string[] = [];
+  const concatLabels: string[] = [];
+  const ffArgs: string[] = ['-y'];
+
+  beatMp3Paths.forEach((p, idx) => {
+    ffArgs.push('-i', p);
+    const padTail = idx < beatMp3Paths.length - 1 && gapDur > 0 ? `,apad=pad_dur=${gapDur.toFixed(3)}` : '';
+    filterInputs.push(
+      `[${idx}:a]aformat=channel_layouts=mono:sample_rates=24000,asetpts=PTS-STARTPTS${padTail}[b${idx}]`
+    );
+    concatLabels.push(`[b${idx}]`);
+  });
+
+  const filterComplex = `${filterInputs.join(';')};${concatLabels.join('')}concat=n=${beatMp3Paths.length}:v=0:a=1[outv]`;
+
+  execFileSync(
+    'ffmpeg',
+    [
+      ...ffArgs,
+      '-filter_complex',
+      filterComplex,
+      '-map',
+      '[outv]',
+      '-c:a',
+      'libmp3lame',
+      '-b:a',
+      '192k',
+      '-ar',
+      '24000',
+      '-ac',
+      '1',
+      targetMp3Path,
+    ],
+    { stdio: 'pipe', timeout: 90_000 }
+  );
+
+  const actualTotal = probeAudioDurationSec(targetMp3Path, cursor);
+  if (beatWindows.length > 0) {
+    beatWindows[beatWindows.length - 1].to = Number(Math.max(beatWindows[beatWindows.length - 1].from + 0.5, actualTotal).toFixed(3));
+  }
+
+  return {
+    totalDurationSec: actualTotal,
+    beatWindows,
+  };
 }
 
 function launchRenderChrome(chromeExe: string, url: string) {

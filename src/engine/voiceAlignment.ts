@@ -188,3 +188,139 @@ export function parseVerboseWordsToWhisperWords(
 
   return out;
 }
+
+function tokenizeSourceForCaptions(sourceText: string): string[] {
+  const clean = String(sourceText || '')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return [];
+
+  // Re-attach isolated spacing before punctuation except French double signs (? ! : ;) kept cleanly attached
+  const rawTokens = clean.split(' ').filter(Boolean);
+  const tokens: string[] = [];
+  for (const tok of rawTokens) {
+    if (/^[.,!?:;…]+$/.test(tok) && tokens.length > 0) {
+      tokens[tokens.length - 1] = `${tokens[tokens.length - 1]}${tok}`;
+    } else {
+      tokens.push(tok);
+    }
+  }
+  return tokens;
+}
+
+function estimateSpokenExpansionWeight(displayTok: string): number {
+  const clean = displayTok.trim();
+  if (!clean) return 1;
+  // Domains like info.gouv.fr expand to multiple spoken words
+  if (/\.[a-z]{2,}/i.test(clean) && !/^\d+[.,]\d+$/.test(clean)) {
+    return Math.max(2, clean.split(/[./-]/).filter(Boolean).length * 1.6);
+  }
+  // Decimals / numbers
+  if (/\d+[.,]\d+/.test(clean)) return 3;
+  // Acronyms or symbols
+  if (clean === '%' || clean === '€' || clean === '$') return 1.5;
+  return Math.max(1, Math.min(3, clean.length / 4.5));
+}
+
+/**
+ * Aligns raw TTS WordBoundary/Whisper words (from phonetically normalized speech)
+ * back onto the exact punctuated display tokens of a single beat, guaranteeing:
+ * - Zero stripped punctuation (`.`, `,`, `?`, `!` stay attached so sentences never fuse)
+ * - Exact duration parity with the beat's measured MP3 slice
+ * - Zero drift across beats when combined beat-by-beat
+ */
+export function realignWordsToSourceBeatText(params: {
+  rawBeatWords: WhisperWord[];
+  sourceBeatText: string;
+  beatStartOffsetSec: number;
+  beatDurationSec: number;
+  idPrefix?: string;
+}): WhisperWord[] {
+  const sourceTokens = tokenizeSourceForCaptions(params.sourceBeatText);
+  if (sourceTokens.length === 0) return [];
+
+  const dur = Math.max(0.4, params.beatDurationSec);
+  const offset = Math.max(0, params.beatStartOffsetSec);
+  const raw = params.rawBeatWords.filter((w) => w.word && w.word.trim().length > 0);
+  const prefix = params.idPrefix || 'w';
+
+  if (raw.length === 0) {
+    // Proportional distribution weighted by syllable/character length
+    const weights = sourceTokens.map((t) => estimateSpokenExpansionWeight(t));
+    const totalW = weights.reduce((a, b) => a + b, 0) || 1;
+    const usable = Math.max(0.3, dur - 0.06);
+    let cursor = offset + 0.02;
+    return sourceTokens.map((tok, i) => {
+      const slice = (weights[i] / totalW) * usable;
+      const start = Number(cursor.toFixed(3));
+      const end = Number(Math.min(offset + dur - 0.01, Math.max(start + 0.05, cursor + slice)).toFixed(3));
+      cursor = end;
+      return {
+        id: `${prefix}-${i + 1}`,
+        word: tok,
+        start,
+        end,
+        confidence: 0.94,
+      };
+    });
+  }
+
+  // Rescale raw beat words so they fit inside [0, dur - 0.03] cleanly
+  const firstStart = Math.max(0, raw[0].start);
+  const rawLastEnd = Math.max(firstStart + 0.2, raw[raw.length - 1].end);
+  const targetSpan = Math.max(0.25, dur - 0.05);
+  const scale = rawLastEnd > 0.1 ? targetSpan / rawLastEnd : 1;
+
+  const scaledRaw = raw.map((w) => ({
+    start: Number(Math.max(0, w.start * scale).toFixed(3)),
+    end: Number(Math.min(dur - 0.01, Math.max(w.start * scale + 0.04, w.end * scale)).toFixed(3)),
+    confidence: w.confidence ?? 0.97,
+  }));
+
+  // Map weighted cumulative positions in sourceTokens onto scaledRaw spans
+  const weights = sourceTokens.map((t) => estimateSpokenExpansionWeight(t));
+  const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+
+  const out: WhisperWord[] = [];
+  let rawIdx = 0;
+  let cumW = 0;
+
+  for (let i = 0; i < sourceTokens.length; i++) {
+    const tok = sourceTokens[i];
+    const startFrac = cumW / totalWeight;
+    cumW += weights[i];
+    const endFrac = i === sourceTokens.length - 1 ? 1 : cumW / totalWeight;
+
+    const firstRawIdx = Math.min(
+      scaledRaw.length - 1,
+      Math.max(rawIdx, Math.floor(startFrac * scaledRaw.length))
+    );
+    const lastRawIdx =
+      i === sourceTokens.length - 1
+        ? scaledRaw.length - 1
+        : Math.min(
+            scaledRaw.length - 1,
+            Math.max(firstRawIdx, Math.ceil(endFrac * scaledRaw.length) - 1)
+          );
+
+    const spanStart = offset + scaledRaw[firstRawIdx].start;
+    const spanEnd = offset + scaledRaw[lastRawIdx].end;
+    const prevEnd = out.length > 0 ? out[out.length - 1].end : offset;
+    const safeStart = Number(Math.max(prevEnd, spanStart).toFixed(3));
+    const safeEnd = Number(Math.min(offset + dur - 0.01, Math.max(safeStart + 0.045, spanEnd)).toFixed(3));
+
+    out.push({
+      id: `${prefix}-${i + 1}`,
+      word: tok,
+      start: safeStart,
+      end: safeEnd,
+      confidence: scaledRaw[firstRawIdx].confidence,
+    });
+
+    rawIdx = Math.min(scaledRaw.length - 1, lastRawIdx + 1);
+  }
+
+  return out;
+}
+

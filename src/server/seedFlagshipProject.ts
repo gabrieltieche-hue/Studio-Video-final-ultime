@@ -217,7 +217,7 @@ body { margin: 0; background: transparent; font-family: system-ui, sans-serif; d
       previewUrl: fs.existsSync(contactSheetPath) ? `/renders/${contactSheetFilename}` : undefined,
     })),
     styleProfile: {
-      name: 'Papier signature (@alex.decode)',
+      name: 'Papier signature (Studio)',
       fontFamily: '"Bricolage Grotesque", sans-serif',
       accentColor: '#258EFF',
       textColor: '#14161B',

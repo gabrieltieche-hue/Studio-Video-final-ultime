@@ -22,6 +22,7 @@ export interface DynamicBeat {
   visualType?: DynamicVisualType;
   brollKey?: string;
   subBrollKeys?: string[];
+  subBrollUrls?: string[];
   brollCaption?: string;
   iconKind?: DynamicIconKind;
   stampWord?: string;
@@ -76,6 +77,34 @@ export interface DynamicBeat {
   crtMetric?: string;
   beforeBadText?: string;
   afterGoodText?: string;
+  highlightWord?: string;
+  strikeWord?: string;
+  visualQuery?: string;
+  receiptItems?: Array<{ label: string; amount: string; highlight?: boolean; tone?: 'neutral' | 'negative' | 'positive' }>;
+  receiptTotalLabel?: string;
+  receiptTotalValue?: string;
+  calendarMonth?: string;
+  calendarYear?: string;
+  calendarDaysMarked?: number[];
+  calendarHighlightDay?: number;
+  calendarNote?: string;
+  scaleTilt?: 'left' | 'right' | 'balanced';
+  barrierBadge?: string;
+  barrierRuleText?: string;
+  compressorFrom?: string;
+  compressorTo?: string;
+  compressorUnitLabel?: string;
+  mindmapCenter?: string;
+  mindmapNodes?: Array<{ label: string; detail?: string }>;
+  auditRows?: Array<{ label: string; detail: string; status: 'alert' | 'ok' | 'removed'; badge: string }>;
+  profileCards?: Array<{ name: string; role: string; metric: string; quote: string }>;
+  notifCount?: string;
+  notifItems?: Array<{ sender: string; message: string; time?: string }>;
+  quotaActualLabel?: string;
+  quotaPlannedLabel?: string;
+  quotaBars?: Array<{ label: string; pct: number }>;
+  globeOrigin?: string;
+  globeDestinations?: Array<{ label: string; value: string }>;
 }
 
 /**
@@ -165,6 +194,7 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
         visualType: vType,
         brollKey: typeof b.brollKey === 'string' ? b.brollKey : undefined,
         subBrollKeys: Array.isArray(b.subBrollKeys) ? b.subBrollKeys.map(String) : undefined,
+        subBrollUrls: Array.isArray(b.subBrollUrls) ? b.subBrollUrls.map(String) : undefined,
         brollCaption: typeof b.brollCaption === 'string' ? b.brollCaption : undefined,
         iconKind: typeof b.iconKind === 'string' ? (b.iconKind as DynamicIconKind) : undefined,
         stampWord: typeof b.stampWord === 'string' ? b.stampWord : undefined,
@@ -241,6 +271,39 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
         crtMetric: typeof b.crtMetric === 'string' ? b.crtMetric : undefined,
         beforeBadText: typeof b.beforeBadText === 'string' ? b.beforeBadText : undefined,
         afterGoodText: typeof b.afterGoodText === 'string' ? b.afterGoodText : undefined,
+        highlightWord: typeof b.highlightWord === 'string' ? b.highlightWord : undefined,
+        strikeWord: typeof b.strikeWord === 'string' ? b.strikeWord : undefined,
+        visualQuery: typeof b.visualQuery === 'string' ? b.visualQuery : undefined,
+        receiptItems: Array.isArray(b.receiptItems) ? (b.receiptItems as DynamicBeat['receiptItems']) : undefined,
+        receiptTotalLabel: typeof b.receiptTotalLabel === 'string' ? b.receiptTotalLabel : undefined,
+        receiptTotalValue: typeof b.receiptTotalValue === 'string' ? b.receiptTotalValue : undefined,
+        calendarMonth: typeof b.calendarMonth === 'string' ? b.calendarMonth : undefined,
+        calendarYear: typeof b.calendarYear === 'string' ? b.calendarYear : undefined,
+        calendarDaysMarked: Array.isArray(b.calendarDaysMarked) ? b.calendarDaysMarked.map(Number) : undefined,
+        calendarHighlightDay: typeof b.calendarHighlightDay === 'number' ? b.calendarHighlightDay : undefined,
+        calendarNote: typeof b.calendarNote === 'string' ? b.calendarNote : undefined,
+        scaleTilt:
+          b.scaleTilt === 'left' || b.scaleTilt === 'right' || b.scaleTilt === 'balanced'
+            ? b.scaleTilt
+            : undefined,
+        barrierBadge: typeof b.barrierBadge === 'string' ? b.barrierBadge : undefined,
+        barrierRuleText: typeof b.barrierRuleText === 'string' ? b.barrierRuleText : undefined,
+        compressorFrom: typeof b.compressorFrom === 'string' ? b.compressorFrom : undefined,
+        compressorTo: typeof b.compressorTo === 'string' ? b.compressorTo : undefined,
+        compressorUnitLabel: typeof b.compressorUnitLabel === 'string' ? b.compressorUnitLabel : undefined,
+        mindmapCenter: typeof b.mindmapCenter === 'string' ? b.mindmapCenter : undefined,
+        mindmapNodes: Array.isArray(b.mindmapNodes) ? (b.mindmapNodes as DynamicBeat['mindmapNodes']) : undefined,
+        auditRows: Array.isArray(b.auditRows) ? (b.auditRows as DynamicBeat['auditRows']) : undefined,
+        profileCards: Array.isArray(b.profileCards) ? (b.profileCards as DynamicBeat['profileCards']) : undefined,
+        notifCount: typeof b.notifCount === 'string' ? b.notifCount : undefined,
+        notifItems: Array.isArray(b.notifItems) ? (b.notifItems as DynamicBeat['notifItems']) : undefined,
+        quotaActualLabel: typeof b.quotaActualLabel === 'string' ? b.quotaActualLabel : undefined,
+        quotaPlannedLabel: typeof b.quotaPlannedLabel === 'string' ? b.quotaPlannedLabel : undefined,
+        quotaBars: Array.isArray(b.quotaBars) ? (b.quotaBars as DynamicBeat['quotaBars']) : undefined,
+        globeOrigin: typeof b.globeOrigin === 'string' ? b.globeOrigin : undefined,
+        globeDestinations: Array.isArray(b.globeDestinations)
+          ? (b.globeDestinations as DynamicBeat['globeDestinations'])
+          : undefined,
       };
     });
   }

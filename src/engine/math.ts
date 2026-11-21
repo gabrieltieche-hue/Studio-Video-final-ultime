@@ -87,7 +87,9 @@ const ATOMIC_COMPOUND_PAIRS: Array<[RegExp, RegExp]> = [
   [/^open$/i, /^(?:ai|source)[.,!?:;—…]*$/i],
   [/^apple$/i, /^ui[.,!?:;—…]*$/i],
   [/^mcp$/i, /^servers?[.,!?:;—…]*$/i],
+  [/^hec$/i, /^paris[.,!?:;—…]*$/i],
   [/^moins$/i, /^de$/i],
+  [/^[+-]?\d+(?:[.,]\d+)?$/, /^[%€$×][.,!?:;—…]*$/i],
 ];
 
 const ORPHAN_TRAILING_RE =
@@ -102,13 +104,13 @@ function normalizeSpacingAroundPunctuation(raw: string): string {
     .trim()
     .replace(/\s+/g, ' ')
     .replace(/\s+([,.)»”])/g, '$1')
-    .replace(/([(\[«“])\s+/g, '$1');
+    .replace(/([([«“])\s+/g, '$1');
 }
 
 /**
  * Normalizes spacing around punctuation and merges atomic multi-word tokens
- * (-28 %, 13 $/j, 2 000 $, 0,6 %, 1,10x, Claude Code, DeepSeek V4.1, Banque de France, paths)
- * so subtitle chunks never tear semantic units apart.
+ * (-28 %, +1,6 %, 13 $/j, 2 000 $, 1 426 €, Claude Code, Banque de France, paths)
+ * without EVER crossing a hard sentence boundary.
  */
 export function mergeAtomicTokens(words: WordCue[]): WordCue[] {
   if (!words || words.length === 0) return [];
@@ -121,7 +123,7 @@ export function mergeAtomicTokens(words: WordCue[]): WordCue[] {
     cleanTokens.push({ ...raw, text });
   }
 
-  // Step 2: Merge known multi-word atomic phrases & number + unit pairs BEFORE gluing trailing punctuation
+  // Step 2: Merge known multi-word atomic phrases & number + unit pairs WITHOUT crossing sentence ends
   const merged: WordCue[] = [];
   let i = 0;
   while (i < cleanTokens.length) {
@@ -129,9 +131,13 @@ export function mergeAtomicTokens(words: WordCue[]): WordCue[] {
     const next = cleanTokens[i + 1];
     const next2 = cleanTokens[i + 2];
 
-    // 3-word atomic: "Banque de France", "2 000 $", "20 000 €"
+    const currEndsSentence = HARD_SENTENCE_END_RE.test(curr.text);
+
+    // 3-word atomic: "Banque de France", "2 000 $", "1 426 €"
     if (
+      !currEndsSentence &&
       next &&
+      !HARD_SENTENCE_END_RE.test(next.text) &&
       next2 &&
       ((/^banque$/i.test(curr.text) && /^de$/i.test(next.text) && /^france[.,!?:;—…]*$/i.test(next2.text)) ||
         (/^\d{1,3}$/.test(curr.text) && /^\d{3}$/.test(next.text) && NUMBER_UNIT_FOLLOW_RE.test(next2.text)))
@@ -146,8 +152,8 @@ export function mergeAtomicTokens(words: WordCue[]): WordCue[] {
       continue;
     }
 
-    // 2-word atomic: number + unit (-28 %, 13 $/j, 0,6 %, 1,10 x), spaced thousands (2 000), or named compound
-    if (next) {
+    // 2-word atomic: number + unit (-28 %, +1,6 %, 13 $/j, 1,10 x), spaced thousands (1 426), or named compound
+    if (!currEndsSentence && next) {
       const isNumPlusUnit = NUMBER_LEAD_RE.test(curr.text) && NUMBER_UNIT_FOLLOW_RE.test(next.text);
       const isThousandPair = /^\d{1,3}$/.test(curr.text) && /^\d{3}[.,!?:;—…]*$/.test(next.text);
       const isNamedCompound = ATOMIC_COMPOUND_PAIRS.some(
@@ -256,18 +262,14 @@ export function buildCaptionChunks(
     }
 
     // Soft breath pause at commas or ideal length when followed by a word that wouldn't fit well
-    if (
-      avoidOrphan &&
-      current.length >= 2 &&
-      /,$/u.test(w.text)
-    ) {
+    if (avoidOrphan && current.length >= 2 && /,$/u.test(w.text)) {
       flush();
     } else if (
       avoidOrphan &&
       current.length >= 3 &&
       nextW &&
       !ORPHAN_TRAILING_RE.test(w.text) &&
-      chars >= (options.idealMaxChars ?? 22)
+      chars >= (options.idealMaxChars ?? 20)
     ) {
       flush();
     }
@@ -277,15 +279,15 @@ export function buildCaptionChunks(
 }
 
 /**
- * Primary @melvynx.dev semantic breath-group subtitle chunker (2-4 words max, 1 line <= 28 chars,
+ * Primary @melvynx.dev semantic breath-group subtitle chunker (2-4 words max, 1 line <= 24 chars,
  * strict sentence locks, atomic numbers/paths/compounds, zero trailing orphan prepositions).
  */
 export function buildSemanticCaptionChunks(
   words: WordCue[],
   options: SemanticChunkOptions = {}
 ): Array<{ words: WordCue[]; start: number; end: number }> {
-  return buildCaptionChunks(words, options.maxWords ?? 4, options.maxChars ?? 28, {
-    idealMaxChars: options.idealMaxChars ?? 22,
+  return buildCaptionChunks(words, options.maxWords ?? 4, options.maxChars ?? 24, {
+    idealMaxChars: options.idealMaxChars ?? 20,
     avoidOrphanEnding: options.avoidOrphanEnding ?? true,
   });
 }

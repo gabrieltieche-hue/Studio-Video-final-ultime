@@ -3,14 +3,20 @@ import os from 'node:os';
 import path from 'node:path';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { sanitizeScriptText } from '../engine/batchShortBuilder';
+import { normalizeFrenchForSpeech } from '../engine/frenchSpeechNormalizer';
 import {
   parseEdgeWordBoundariesToWords,
   parseVerboseWordsToWhisperWords,
+  realignWordsToSourceBeatText,
   type VoiceEngineProvider,
   type VoiceStudioConfig,
 } from '../engine/voiceAlignment';
 import type { WhisperWord } from '../types/studio';
-import { applyVoiceSpeedMp3, probeAudioDurationSec } from './batchRenderer';
+import {
+  applyVoiceSpeedMp3,
+  concatBeatMp3sWithPadding,
+  probeAudioDurationSec,
+} from './batchRenderer';
 import { STORAGE_DIR, writeJsonAtomic } from './storageManager';
 
 export const VOICE_CONFIG_FILE = path.join(STORAGE_DIR, 'voice-config.json');
@@ -574,6 +580,108 @@ export async function synthesizeVoiceoverUnified(params: {
   };
 }
 
+export interface BeatVoiceSynthesisResult extends UnifiedVoiceResult {
+  beatWindows: Array<{ from: number; to: number }>;
+}
+
+/**
+ * Beat-by-beat neural voice synthesis pipeline:
+ * 1) Applies `normalizeFrenchForSpeech` strictly to TTS input (leaving subtitle punctuation pristine)
+ * 2) Synthesizes & trims (`-48dB`) each beat separately with `atempo=1.100`
+ * 3) Measures real `ffprobe` MP3 duration per beat & realigns words onto punctuated source tokens
+ * 4) Concatenates beats with crisp `0.08s` breath gaps -> 0.00s cumulative drift
+ */
+export async function synthesizeVoiceoverByBeats(params: {
+  projectDir: string;
+  beats: Array<{ id: string; spokenLine: string }>;
+  speed: number;
+  voiceFilename?: string;
+}): Promise<BeatVoiceSynthesisResult> {
+  if (!params.beats || params.beats.length === 0) {
+    throw new Error('Aucun beat à synthétiser.');
+  }
+
+  fs.mkdirSync(params.projectDir, { recursive: true });
+  const beatsWorkDir = path.join(params.projectDir, '.voice_beats_tmp');
+  fs.mkdirSync(beatsWorkDir, { recursive: true });
+
+  const voiceFilename = params.voiceFilename || 'voice_v1.mp3';
+  const finalVoicePath = path.join(params.projectDir, voiceFilename);
+  const clampedSpeed = Math.min(1.25, Math.max(0.95, params.speed || 1.10));
+
+  const beatMp3Paths: string[] = [];
+  const rawBeatOutputs: Array<{
+    sourceText: string;
+    rawWords: WhisperWord[];
+    measuredDur: number;
+    providerUsed: UnifiedVoiceResult['providerUsed'];
+    voiceUsed: string;
+  }> = [];
+
+  try {
+    for (let i = 0; i < params.beats.length; i++) {
+      const beat = params.beats[i];
+      const sourceText = sanitizeScriptText(beat.spokenLine);
+      const speechText = normalizeFrenchForSpeech(sourceText);
+      const beatFile = `beat_${String(i + 1).padStart(2, '0')}.mp3`;
+
+      const res = await synthesizeVoiceoverUnified({
+        projectDir: beatsWorkDir,
+        fullText: speechText,
+        speed: clampedSpeed,
+        voiceFilename: beatFile,
+      });
+
+      if (!res.voiceMp3Path || !fs.existsSync(res.voiceMp3Path) || res.providerUsed === 'synthetic') {
+        throw new Error(`Synthèse vocale échouée sur le beat ${i + 1} ("${sourceText.slice(0, 48)}").`);
+      }
+
+      const measuredDur = probeAudioDurationSec(res.voiceMp3Path, res.durationSec);
+      beatMp3Paths.push(res.voiceMp3Path);
+      rawBeatOutputs.push({
+        sourceText,
+        rawWords: res.words,
+        measuredDur,
+        providerUsed: res.providerUsed,
+        voiceUsed: res.voiceUsed,
+      });
+    }
+
+    const { totalDurationSec, beatWindows } = concatBeatMp3sWithPadding(
+      beatMp3Paths,
+      finalVoicePath,
+      0.08
+    );
+
+    const alignedWords: WhisperWord[] = [];
+    for (let i = 0; i < rawBeatOutputs.length; i++) {
+      const bOut = rawBeatOutputs[i];
+      const win = beatWindows[i];
+      const realigned = realignWordsToSourceBeatText({
+        rawBeatWords: bOut.rawWords,
+        sourceBeatText: bOut.sourceText,
+        beatStartOffsetSec: win.from,
+        beatDurationSec: bOut.measuredDur,
+        idPrefix: `b${i + 1}`,
+      });
+      alignedWords.push(...realigned);
+    }
+
+    const lastOut = rawBeatOutputs[rawBeatOutputs.length - 1];
+    return {
+      providerUsed: lastOut.providerUsed,
+      voiceUsed: lastOut.voiceUsed,
+      voiceMp3Path: finalVoicePath,
+      audioTrackUrl: `/storage/projects/${path.basename(params.projectDir)}/${voiceFilename}`,
+      words: alignedWords,
+      durationSec: Number(Math.max(totalDurationSec + 0.15, beatWindows[beatWindows.length - 1]?.to || totalDurationSec).toFixed(2)),
+      beatWindows,
+    };
+  } finally {
+    fs.rmSync(beatsWorkDir, { recursive: true, force: true });
+  }
+}
+
 export async function previewVoiceSample(sampleText?: string): Promise<{
   providerUsed: string;
   voiceUsed: string;
@@ -583,9 +691,11 @@ export async function previewVoiceSample(sampleText?: string): Promise<{
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voice-preview-'));
   try {
     const text =
-      sanitizeScriptText(
-        sampleText ||
-          'Voici un aperçu net de la nouvelle voix studio en français, rapide, claire et prête pour tes Shorts.'
+      normalizeFrenchForSpeech(
+        sanitizeScriptText(
+          sampleText ||
+            'Voici un aperçu net de la nouvelle voix studio en français, rapide, claire et prête pour tes Shorts.'
+        )
       ) || 'Aperçu de la voix studio.';
     const res = await synthesizeVoiceoverUnified({
       projectDir: tmpDir,

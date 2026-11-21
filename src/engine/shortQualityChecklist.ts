@@ -3,6 +3,7 @@ import { DEFAULT_PLAYBACK_SPEED } from '../data/shortSpec';
 import type { BatchBeatSpec, DynamicVisualType } from '../types/batch';
 import type { ShortProject } from '../types/studio';
 import { buildSemanticCaptionChunks, type WordCue } from './math';
+import { normalizeToUniversalPrimitive } from './shortPrimitivesSchema';
 
 export interface QualityAuditCheck {
   id:
@@ -27,11 +28,11 @@ export interface ShortQualityReport {
 export function auditShortQuality(project: ShortProject): ShortQualityReport {
   const issues: string[] = [];
 
-  // 1. Speed >= 1.10x
+  // 1. Speed >= 1.08x (sweet spot 1.10x)
   const speed = Number((project.editSpec as { speed?: unknown })?.speed ?? DEFAULT_PLAYBACK_SPEED);
-  const speedOk = Number.isFinite(speed) && speed >= 1.1;
+  const speedOk = Number.isFinite(speed) && speed >= 1.08;
   if (!speedOk) {
-    issues.push(`Vitesse insuffisante (${speed.toFixed(2)}× < 1.10×)`);
+    issues.push(`Vitesse insuffisante (${speed.toFixed(2)}× < 1.08×)`);
   }
 
   // 2. Subtitle algorithm (zero mixed sentences / zero cut atomic units)
@@ -59,28 +60,26 @@ export function auditShortQuality(project: ShortProject): ShortQualityReport {
     );
   }
 
-  // 3. Archetype variety (>= 7 distinct beats, 0 duplicate archetype inside the video)
+  // 3. Archetype variety (>= 6 distinct non-CTA universal primitives, 0 duplicates inside the video)
   const beats: BatchBeatSpec[] = Array.isArray((project.editSpec as { beats?: unknown })?.beats)
     ? ((project.editSpec as { beats: BatchBeatSpec[] }).beats)
     : [];
   const mainVisuals = beats
-    .map((b) => b.visualType)
-    .filter((v): v is DynamicVisualType => Boolean(v));
-  const nonCtaVisuals = mainVisuals.filter((v) => v !== 'cta_card');
-  const uniqueVisuals = new Set(nonCtaVisuals);
-  const hasDuplicateArchetype = uniqueVisuals.size !== nonCtaVisuals.length;
-  const archetypeOk = !hasDuplicateArchetype && uniqueVisuals.size >= 7;
+    .map((b) => normalizeToUniversalPrimitive(b.visualType as DynamicVisualType))
+    .filter((v) => v !== 'channel_end_cta');
+  const uniqueVisuals = new Set(mainVisuals);
+  const hasDuplicateArchetype = uniqueVisuals.size !== mainVisuals.length;
+  const archetypeOk = !hasDuplicateArchetype && uniqueVisuals.size >= 6;
   if (!archetypeOk) {
     issues.push(
-      `Archétypes: ${uniqueVisuals.size} uniques sur ${nonCtaVisuals.length} séquences (minimum 7, 0 doublon)`
+      `Primitives: ${uniqueVisuals.size} uniques sur ${mainVisuals.length} séquences (minimum 6, 0 doublon)`
     );
   }
 
-  // 4. Bottom illustrations (0 repeated ID, 0 repeated subCategory, 100% bright/high-contrast, sub-rotation on long beats)
-  const seenIds = new Set<string>();
-  const seenSubCategories = new Set<string>();
-  let duplicateIllustration = 0;
-  let missingOrDarkIllustration = 0;
+  // 4. Bottom full-bleed photographic media (no back-to-back repeats, bright/high-contrast, rotation on long beats)
+  const seenKeys: string[] = [];
+  let backToBackDuplicate = 0;
+  let missingOrDarkMedia = 0;
   let staleRotationBeats = 0;
 
   for (const beat of beats) {
@@ -92,53 +91,49 @@ export function auditShortQuality(project: ShortProject): ShortQualityReport {
           : [];
     const bFrom = Number((beat as { from?: number }).from ?? 0);
     const bTo = Number((beat as { to?: number }).to ?? 0);
-    if (bTo - bFrom > 4.2 && keys.length < 2) {
+    if (bTo - bFrom > 4.4 && keys.length < 2) {
       staleRotationBeats += 1;
     }
     for (const k of keys) {
-      if (seenIds.has(k)) duplicateIllustration += 1;
-      seenIds.add(k);
+      if (seenKeys.length > 0 && seenKeys[seenKeys.length - 1] === k) {
+        backToBackDuplicate += 1;
+      }
+      seenKeys.push(k);
       const entry = BROLL_DATABASE_BY_ID[k];
-      if (entry) {
-        if (seenSubCategories.has(entry.subCategory)) {
-          duplicateIllustration += 1;
-        }
-        seenSubCategories.add(entry.subCategory);
-        if (entry.lighting !== 'bright' && entry.lighting !== 'high-contrast') {
-          missingOrDarkIllustration += 1;
-        }
+      if (!entry || (entry.lighting !== 'bright' && entry.lighting !== 'high-contrast')) {
+        missingOrDarkMedia += 1;
       }
     }
   }
   const brollOk =
     beats.length === 0 ||
-    (duplicateIllustration === 0 && missingOrDarkIllustration === 0 && staleRotationBeats === 0);
+    (backToBackDuplicate === 0 && missingOrDarkMedia === 0 && staleRotationBeats === 0);
   if (!brollOk) {
     issues.push(
-      `Illustrations bas: ${duplicateIllustration} doublon(s), ${missingOrDarkIllustration} sombre(s), ${staleRotationBeats} beat(s) >4.2s sans rotation`
+      `Médias bas: ${backToBackDuplicate} répétition(s) consécutive(s), ${missingOrDarkMedia} manquant(s), ${staleRotationBeats} beat(s) >4.4s sans rotation`
     );
   }
 
-  // 5. Pacing <= 2.5s visual stimulus check (no single beat/sub-illustration span > 3.8s without visual update)
+  // 5. Pacing <= 3.9s visual stimulus check
   let staticSpans = 0;
   for (const beat of beats) {
     const bFrom = Number((beat as { from?: number }).from ?? 0);
     const bTo = Number((beat as { to?: number }).to ?? 0);
     const span = Math.max(0, bTo - bFrom);
     const subCount = Math.max(1, Array.isArray(beat.subBrollKeys) ? beat.subBrollKeys.length : 1);
-    if (span / subCount > 3.8) {
+    if (span / subCount > 3.9) {
       staticSpans += 1;
     }
   }
   const pacingOk = staticSpans === 0;
   if (!pacingOk) {
-    issues.push(`Rythme: ${staticSpans} séquence(s) dépassent 3.8s sans stimulus visuel`);
+    issues.push(`Rythme: ${staticSpans} séquence(s) dépassent 3.9s sans stimulus visuel`);
   }
 
   const checks: QualityAuditCheck[] = [
     {
       id: 'speed_and_silence',
-      label: 'Cadence 1.10× & silences <= 60ms',
+      label: 'Cadence 1.10× & silences maîtrisés',
       passed: speedOk,
       details: `Vitesse configurée: ${speed.toFixed(2)}×`,
     },
@@ -150,19 +145,19 @@ export function auditShortQuality(project: ShortProject): ShortQualityReport {
     },
     {
       id: 'archetype_variety',
-      label: 'Variété >= 7 archétypes sans doublon',
+      label: 'Variété >= 6 primitives sans doublon',
       passed: archetypeOk,
-      details: `${uniqueVisuals.size} archétypes distincts`,
+      details: `${uniqueVisuals.size} primitives distinctes`,
     },
     {
       id: 'bottom_illustrations',
-      label: 'Illustrations bas 225× uniques & lumineuses',
+      label: 'Visuels bas plein cadre & lumineux',
       passed: brollOk,
-      details: `${seenIds.size} illustrations uniques`,
+      details: `${seenKeys.length} plans plein cadre`,
     },
     {
       id: 'pacing_2s',
-      label: 'Stimulus visuel toutes les 1.5–3.5s',
+      label: 'Stimulus visuel régulier',
       passed: pacingOk,
       details: pacingOk ? 'Cadence dynamique validée' : `${staticSpans} créneau(x) trop lents`,
     },

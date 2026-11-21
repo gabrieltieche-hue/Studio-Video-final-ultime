@@ -821,12 +821,21 @@ function resolveMusicAsset(trackName: string): string | null {
 function resolveSfxAsset(soundName: string): string | null {
   const clean = String(soundName || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!clean) return null;
+  const candidates = [clean];
+  if (clean.includes('pop')) candidates.push('pop-back', 'pop');
+  else if (clean.includes('tap') || clean.includes('click') || clean.includes('tick')) candidates.push('tap', 'pop-back');
+  else if (clean.includes('thud') || clean.includes('boom') || clean.includes('hit') || clean.includes('stamp')) candidates.push('thud', 'impact-boom');
+  else if (clean.includes('bell') || clean.includes('ding')) candidates.push('bell', 'pop-back');
+  else if (clean.includes('whoosh') || clean.includes('swipe') || clean.includes('zhhh')) candidates.push('zhhh');
+
   const exts = ['wav', 'mp3', 'm4a', 'ogg'];
-  for (const ext of exts) {
-    const p1 = path.join(SFX_DIR, `${clean}.${ext}`);
-    if (fs.existsSync(p1)) return p1;
-    const p2 = path.join(ROOT_DIR, 'public/audio/sfx', `${clean}.${ext}`);
-    if (fs.existsSync(p2)) return p2;
+  for (const name of candidates) {
+    for (const ext of exts) {
+      const p1 = path.join(SFX_DIR, `${name}.${ext}`);
+      if (fs.existsSync(p1)) return p1;
+      const p2 = path.join(ROOT_DIR, 'public/audio/sfx', `${name}.${ext}`);
+      if (fs.existsSync(p2)) return p2;
+    }
   }
   return null;
 }

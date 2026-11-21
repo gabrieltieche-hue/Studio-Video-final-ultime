@@ -505,7 +505,7 @@ export async function buildStructuredShortAssets(params: {
   }
 
   const fullText = script.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.10, targetDuration);
+  const { words, durationSec } = alignmentToWords(null, fullText, targetDuration);
   const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
 
   const forcedMode: 'split' | null =

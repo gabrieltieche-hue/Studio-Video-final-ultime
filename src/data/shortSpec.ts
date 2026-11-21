@@ -18,12 +18,12 @@ export const MUSIC_BEDS: MusicBedOption[] = [
   { id: 'chill', label: 'Sleek Chill', file: 'Sleek_Chill_Underscore_3bd1f10a.mp3' },
 ];
 
-// Configurable placeholder creator profile until user supplies their final channel handle
+// Configurable default channel profile (overridden dynamically by channel branding kit)
 export const CREATOR_PROFILE = {
-  handle: '@alex.decode',
-  initial: 'A',
-  tagline: 'Actualité Tech, IA & Décryptages',
-  ctaHeader: 'NOUVEL ÉPISODE CHAQUE SEMAINE',
+  handle: '@decryptage.fr',
+  initial: 'D',
+  tagline: 'Analyses, Économie & Tech · Décryptages',
+  ctaHeader: 'NOUVEL ÉPISODE CHAQUE JOUR',
 };
 
 export interface LookPreset {

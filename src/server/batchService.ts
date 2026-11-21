@@ -3,25 +3,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { LOOK_PRESETS } from '../data/shortSpec';
 import {
-  ALL_MELVYNX_ARCHETYPES,
-  alignmentToWords,
-  assignBeatTimingsAndTranscript,
-  buildFallbackBatchScript,
+  buildTimedProjectFromBeatAudios,
   computeStaggeredScheduleSlots,
   condenseVisualHeadline,
   parseBulkTopicsInput,
+  pickTopicIcon,
   resolveBeatLayout,
+  resolveChannelCtaProfile,
   sanitizeScriptText,
-  selectChoreographyForTopic,
   trimSpokenLineForPacing,
 } from '../engine/batchShortBuilder';
 import {
-  getBrollSequenceForTopic,
   isDevOrCodeTopic,
-  selectBottomIllustrationsForShort,
+  selectBottomMediaForShort,
 } from '../engine/brollKeys';
 import { humanizeFrenchScript, pickBestHookVariant } from '../engine/outliersMath';
 import { auditShortQuality } from '../engine/shortQualityChecklist';
+import {
+  PRIMITIVE_META_MAP,
+  UNIVERSAL_PRIMITIVES_CATALOG,
+  UNIVERSAL_PRIMITIVE_IDS,
+  validateFullShortPlan,
+} from '../engine/shortPrimitivesSchema';
 import {
   appendSessionToCsv,
   computeCompositeViralScore,
@@ -39,19 +42,16 @@ import type {
   BatchBeatSpec,
   BatchJobItem,
   BatchJobRecord,
-  BrandLogoId,
-  DynamicIconKind,
   DynamicVisualType,
   StartBatchRequest,
+  UniversalPrimitiveType,
 } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
-import {
-  applyVoiceSpeedMp3,
-  probeAudioDurationSec,
-  renderDynamicProjectToMp4,
-} from './batchRenderer';
+import { renderDynamicProjectToMp4 } from './batchRenderer';
+import { resolveAndCacheVisualQuery } from './brollResolverService';
 import { generateAiSocialCopy } from './socialPublisher';
 import { createScheduledPostsForProject } from './socialRouter';
+import { getChannelBrandingKit } from './socialStorage';
 import {
   PROJECTS_DIR,
   ROOT_DIR,
@@ -60,9 +60,12 @@ import {
   saveProject,
 } from './storageManager';
 import { triggerAutoSyncInBackground } from './syncManager';
-import { synthesizeVoiceoverUnified } from './voiceEngineService';
+import { synthesizeVoiceoverByBeats, synthesizeVoiceoverUnified } from './voiceEngineService';
 
 export const BATCH_JOBS_DIR = path.join(STORAGE_DIR, 'batch-jobs');
+
+const GEMINI_SCRIPT_TIMEOUT_MS = 60_000;
+const MAX_GEMINI_REPAIR_RETRIES = 2;
 
 const activeCancelledBatchIds = new Set<string>();
 
@@ -115,9 +118,13 @@ export function listBatchJobs(): BatchJobRecord[] {
   return jobs.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 }
 
-function createGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return null;
+function createGeminiClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    throw new Error(
+      'GEMINI_API_KEY manquante ou non configurée. Impossible de générer un script sur mesure sans fallback.'
+    );
+  }
   return new GoogleGenAI({
     apiKey,
     httpOptions: {
@@ -145,128 +152,657 @@ async function generateBatchTopicsWithGemini(
   const ai = createGeminiClient();
   const safeCount = Math.max(1, Math.min(10, count || 3));
 
-  if (!ai) {
-    const unused = existingRows.filter((r) => r.statut !== 'Produit');
-    if (unused.length >= safeCount) {
-      return unused.slice(0, safeCount).map((r) => ({
-        topicId: r.id,
-        category: r.categorie,
-        theme: r.theme,
-        angle: r.angle_viral_fr,
-        hookHint: r.hook_propose,
-        sources: r.sources,
-      }));
-    }
-    const baseTopic = focus?.trim() || 'Tech & Société';
-    return Array.from({ length: safeCount }, (_, i) => ({
-      category: 'Tech & Société',
-      theme: `${baseTopic} · Décryptage #${i + 1}`,
-      angle: `Analyse chiffrée et impact concret pour les Français en 2026.`,
-    }));
-  }
-
   const today = new Date().toISOString().slice(0, 10);
   const existingList = existingRows.map((r) => `- ${r.theme}`).join('\n');
   const focusClause = focus?.trim()
     ? `Thématique ou niche demandée par le créateur : "${focus.trim()}".`
-    : 'Varie les catégories entre IA, Actualité, Business, Politique, Conseils de vie et Tech & Société.';
+    : 'Varie les catégories entre Économie, Restauration/Business, Immobilier, Droit, Emploi, Santé et Tech.';
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: [
-        `Tu es le stratège éditorial d'une chaîne française de YouTube Shorts / Reels / TikTok style @melvynxdev (ton analytique, direct, chiffré, 40-50s).`,
-        `Date du jour : ${today}. ${focusClause}`,
-        `Thèmes déjà produits ou listés (NE PAS RÉPÉTER) :\n${existingList || '(aucun)'}`,
-        `Génère exactement ${safeCount} sujets distincts à très fort potentiel viral en France.`,
-        `Zéro tiret cadratin (pas de —). Chaque hook_propose < 18 mots.`,
-      ].join('\n\n'),
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              categorie: { type: Type.STRING },
-              theme: { type: Type.STRING },
-              angle_viral_fr: { type: Type.STRING },
-              hook_propose: { type: Type.STRING },
-              hook_ecran: { type: Type.STRING },
-              score_viral_fr: { type: Type.INTEGER },
-              score_actualite: { type: Type.INTEGER },
-              score_save_share: { type: Type.INTEGER },
-              tension_emotion: { type: Type.STRING },
-              sources: { type: Type.STRING },
-              slug_short: { type: Type.STRING },
-              raison_selection: { type: Type.STRING },
-            },
-            required: [
-              'categorie',
-              'theme',
-              'angle_viral_fr',
-              'hook_propose',
-              'hook_ecran',
-              'score_viral_fr',
-              'score_actualite',
-              'score_save_share',
-              'tension_emotion',
-              'sources',
-              'slug_short',
-              'raison_selection',
-            ],
+  const response = await ai.models.generateContent({
+    model: 'gemini-4-hydrogen',
+    contents: [
+      `Tu es le stratège éditorial d'une chaîne française de YouTube Shorts / Reels / TikTok style @melvynxdev (ton analytique, direct, chiffré, 42-54s).`,
+      `Date du jour : ${today}. ${focusClause}`,
+      `Thèmes déjà produits ou listés (NE PAS RÉPÉTER) :\n${existingList || '(aucun)'}`,
+      `Génère exactement ${safeCount} sujets distincts à très fort potentiel viral en France.`,
+      `Zéro tiret cadratin (pas de —). Chaque hook_propose < 16 mots.`,
+    ].join('\n\n'),
+    config: {
+      tools: [{ googleSearch: {} }],
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            categorie: { type: Type.STRING },
+            theme: { type: Type.STRING },
+            angle_viral_fr: { type: Type.STRING },
+            hook_propose: { type: Type.STRING },
+            hook_ecran: { type: Type.STRING },
+            score_viral_fr: { type: Type.INTEGER },
+            score_actualite: { type: Type.INTEGER },
+            score_save_share: { type: Type.INTEGER },
+            tension_emotion: { type: Type.STRING },
+            sources: { type: Type.STRING },
+            slug_short: { type: Type.STRING },
+            raison_selection: { type: Type.STRING },
           },
+          required: [
+            'categorie',
+            'theme',
+            'angle_viral_fr',
+            'hook_propose',
+            'hook_ecran',
+            'score_viral_fr',
+            'score_actualite',
+            'score_save_share',
+            'tension_emotion',
+            'sources',
+            'slug_short',
+            'raison_selection',
+          ],
         },
       },
-    });
+    },
+  });
 
-    const parsed = JSON.parse(response.text || '[]') as Array<
-      Omit<NewTopicCandidate, 'categorie' | 'plateformes_cibles'> & { categorie: string }
-    >;
+  const parsed = JSON.parse(response.text || '[]') as Array<
+    Omit<NewTopicCandidate, 'categorie' | 'plateformes_cibles'> & { categorie: string }
+  >;
 
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      const sessionId = `BATCH-${today}-${String(Date.now()).slice(-4)}`;
-      const normalized: NewTopicCandidate[] = parsed.slice(0, safeCount).map((p) => ({
-        ...p,
-        categorie: p.categorie as TopicCategory,
-        plateformes_cibles: 'TikTok · Reels · YT Shorts',
-      }));
-      const { rows, added } = appendSessionToCsv(existingRows, sessionId, today, normalized);
-      writeTopicsCsv(ROOT_DIR, rows);
-
-      return added.map((r) => ({
-        topicId: r.id,
-        category: r.categorie,
-        theme: r.theme,
-        angle: r.angle_viral_fr,
-        hookHint: r.hook_propose,
-        sources: r.sources,
-      }));
-    }
-  } catch (err) {
-    console.warn('Gemini batch topic research fallback:', err);
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('Gemini n’a retourné aucun sujet exploitable.');
   }
 
-  const fallbackUnused = existingRows.filter((r) => r.statut !== 'Produit');
-  if (fallbackUnused.length > 0) {
-    return fallbackUnused.slice(0, safeCount).map((r) => ({
-      topicId: r.id,
-      category: r.categorie,
-      theme: r.theme,
-      angle: r.angle_viral_fr,
-      hookHint: r.hook_propose,
-      sources: r.sources,
-    }));
-  }
+  const sessionId = `BATCH-${today}-${String(Date.now()).slice(-4)}`;
+  const normalized: NewTopicCandidate[] = parsed.slice(0, safeCount).map((p) => ({
+    ...p,
+    categorie: p.categorie as TopicCategory,
+    plateformes_cibles: 'TikTok · Reels · YT Shorts',
+  }));
+  const { rows, added } = appendSessionToCsv(existingRows, sessionId, today, normalized);
+  writeTopicsCsv(ROOT_DIR, rows);
 
-  return Array.from({ length: safeCount }, (_, i) => ({
-    category: 'Tech & Société',
-    theme: `${focus?.trim() || 'Tendance France 2026'} · Épisode #${i + 1}`,
-    angle: 'Décryptage chiffré et conséquences concrètes.',
+  return added.map((r) => ({
+    topicId: r.id,
+    category: r.categorie,
+    theme: r.theme,
+    angle: r.angle_viral_fr,
+    hookHint: r.hook_propose,
+    sources: r.sources,
   }));
 }
 
+interface RawGeminiBeat {
+  title?: string;
+  highlightWord?: string;
+  strikeWord?: string;
+  shortLabel?: string;
+  screenLabel?: string;
+  spokenLine?: string;
+  visualType?: string;
+  layoutHint?: string;
+  visualQuery?: string;
+  brollKey?: string;
+  stampWord?: string;
+  statValue?: string;
+  statLabel?: string;
+  dateBadge?: string;
+  sourceLabel?: string;
+  quoteText?: string;
+  quoteHighlight?: string;
+  beforeBadText?: string;
+  afterGoodText?: string;
+  leftCard?: { label?: string; value?: string; sub?: string };
+  rightCard?: { label?: string; value?: string; sub?: string };
+  comparisonLeft?: { label?: string; value?: string; ratio?: number };
+  comparisonRight?: { label?: string; value?: string; ratio?: number };
+  multiplierBadge?: string;
+  gaugePct?: number;
+  matrixHighlightPct?: number;
+  matrixCalloutLabel?: string;
+  bullets?: string[];
+  steps?: string[];
+  chartUnit?: string;
+  chartPoints?: Array<{ label?: string; value?: number; highlight?: boolean }>;
+  dialKnobs?: Array<{ label?: string; value?: number; unit?: string; active?: boolean }>;
+  terminalCmd?: string;
+  terminalOut?: string[];
+  fanCards?: Array<{ tag?: string; metric?: string; label?: string }>;
+  receiptItems?: Array<{ label?: string; amount?: string; highlight?: boolean; tone?: string }>;
+  receiptTotalLabel?: string;
+  receiptTotalValue?: string;
+  calendarMonth?: string;
+  calendarYear?: string;
+  calendarDaysMarked?: number[];
+  calendarHighlightDay?: number;
+  calendarNote?: string;
+  barrierBadge?: string;
+  barrierRuleText?: string;
+  compressorFrom?: string;
+  compressorTo?: string;
+  compressorUnitLabel?: string;
+  mindmapCenter?: string;
+  mindmapNodes?: Array<{ label?: string; detail?: string }>;
+  auditRows?: Array<{ label?: string; detail?: string; status?: string; badge?: string }>;
+  profileCards?: Array<{ name?: string; role?: string; metric?: string; quote?: string }>;
+  notifCount?: string;
+  notifItems?: Array<{ sender?: string; message?: string; time?: string }>;
+  quotaActualLabel?: string;
+  quotaPlannedLabel?: string;
+  quotaBars?: Array<{ label?: string; pct?: number }>;
+  globeOrigin?: string;
+  globeDestinations?: Array<{ label?: string; value?: string }>;
+}
+
+interface RawGeminiPlan {
+  hookText?: string;
+  hookVariants?: string[];
+  youtubeTitle?: string;
+  caption?: string;
+  hashtags?: string[];
+  beats?: RawGeminiBeat[];
+}
+
+function normalizeGeminiPlanToBeats(
+  rawPlan: RawGeminiPlan,
+  item: Pick<BatchJobItem, 'theme' | 'category'>,
+  channelHandle: string,
+  channelTagline: string,
+  isDev: boolean
+): {
+  hookText: string;
+  hookVariants: string[];
+  youtubeTitle: string;
+  caption: string;
+  hashtags: string[];
+  beats: BatchBeatSpec[];
+} {
+  const rawBeats = Array.isArray(rawPlan.beats) ? rawPlan.beats.slice(0, 8) : [];
+  const iconKind = pickTopicIcon(item.category, item.theme);
+  const hookVariants = Array.isArray(rawPlan.hookVariants)
+    ? rawPlan.hookVariants.map((h) => sanitizeScriptText(String(h || ''))).filter(Boolean)
+    : [];
+  const bestHook = hookVariants.length > 0 ? pickBestHookVariant(hookVariants) : null;
+
+  const beats: BatchBeatSpec[] = rawBeats.map((b, idx) => {
+    const isLast = idx === rawBeats.length - 1;
+    const rawVt = String(b.visualType || '').trim();
+    const vt: DynamicVisualType = isLast
+      ? 'channel_end_cta'
+      : UNIVERSAL_PRIMITIVE_IDS.has(rawVt as UniversalPrimitiveType)
+        ? (rawVt as UniversalPrimitiveType)
+        : (rawVt as DynamicVisualType);
+
+    const meta = UNIVERSAL_PRIMITIVE_IDS.has(vt as UniversalPrimitiveType)
+      ? PRIMITIVE_META_MAP[vt as UniversalPrimitiveType]
+      : undefined;
+
+    const layoutHint: 'split' | 'fullscreen' = isLast
+      ? 'split'
+      : b.layoutHint === 'fullscreen' || b.layoutHint === 'split'
+        ? b.layoutHint
+        : meta?.preferLayout || 'split';
+
+    const rawSpoken =
+      idx === 0 && bestHook && bestHook.score >= 7 && bestHook.hook.length >= 16
+        ? bestHook.hook
+        : String(b.spokenLine || '');
+    const cleanSpoken = trimSpokenLineForPacing(
+      humanizeFrenchScript(sanitizeScriptText(rawSpoken)).cleaned,
+      idx === 0 ? 15 : 19
+    );
+
+    const cleanTone = (v?: string): 'neutral' | 'negative' | 'positive' =>
+      v === 'negative' || v === 'positive' ? v : 'neutral';
+
+    const cleanStatus = (v?: string): 'alert' | 'ok' | 'removed' =>
+      v === 'ok' || v === 'removed' ? v : 'alert';
+
+    return {
+      id: `beat-${idx + 1}`,
+      title: condenseVisualHeadline(String(b.title || ''), 6, 44),
+      highlightWord: b.highlightWord ? sanitizeScriptText(b.highlightWord).slice(0, 26) : undefined,
+      strikeWord: b.strikeWord ? sanitizeScriptText(b.strikeWord).slice(0, 22) : undefined,
+      shortLabel: sanitizeScriptText(b.shortLabel || `Séquence ${idx + 1}`).slice(0, 24),
+      screenLabel: sanitizeScriptText(b.screenLabel || '').toUpperCase().slice(0, 28),
+      spokenLine: cleanSpoken,
+      visualType: vt,
+      layoutHint,
+      visualQuery: b.visualQuery ? sanitizeScriptText(b.visualQuery).slice(0, 80) : undefined,
+      brollKey: b.brollKey ? String(b.brollKey).trim() : undefined,
+      iconKind,
+      stampWord: b.stampWord ? sanitizeScriptText(b.stampWord).toUpperCase().slice(0, 22) : undefined,
+      statValue: isLast
+        ? channelHandle
+        : b.statValue
+          ? sanitizeScriptText(b.statValue).slice(0, 20)
+          : undefined,
+      statLabel: isLast
+        ? sanitizeScriptText(b.statLabel || channelTagline).slice(0, 64)
+        : b.statLabel
+          ? sanitizeScriptText(b.statLabel).slice(0, 64)
+          : undefined,
+      dateBadge: b.dateBadge ? sanitizeScriptText(b.dateBadge).toUpperCase().slice(0, 24) : undefined,
+      sourceLabel: b.sourceLabel ? sanitizeScriptText(b.sourceLabel).slice(0, 56) : undefined,
+      quoteText: b.quoteText ? sanitizeScriptText(b.quoteText).slice(0, 180) : undefined,
+      quoteHighlight: b.quoteHighlight ? sanitizeScriptText(b.quoteHighlight).slice(0, 60) : undefined,
+      beforeBadText: b.beforeBadText ? sanitizeScriptText(b.beforeBadText).slice(0, 100) : undefined,
+      afterGoodText: b.afterGoodText ? sanitizeScriptText(b.afterGoodText).slice(0, 100) : undefined,
+      leftCard: b.leftCard?.label
+        ? {
+            label: sanitizeScriptText(b.leftCard.label).slice(0, 28),
+            value: sanitizeScriptText(b.leftCard.value || '').slice(0, 18),
+            sub: sanitizeScriptText(b.leftCard.sub || '').slice(0, 42),
+          }
+        : undefined,
+      rightCard: b.rightCard?.label
+        ? {
+            label: sanitizeScriptText(b.rightCard.label).slice(0, 28),
+            value: sanitizeScriptText(b.rightCard.value || '').slice(0, 18),
+            sub: sanitizeScriptText(b.rightCard.sub || '').slice(0, 42),
+          }
+        : undefined,
+      comparisonLeft: b.comparisonLeft?.label
+        ? {
+            label: sanitizeScriptText(b.comparisonLeft.label).slice(0, 32),
+            value: sanitizeScriptText(b.comparisonLeft.value || '').slice(0, 18),
+            ratio: Math.max(0.08, Math.min(1, Number(b.comparisonLeft.ratio) || 0.75)),
+          }
+        : undefined,
+      comparisonRight: b.comparisonRight?.label
+        ? {
+            label: sanitizeScriptText(b.comparisonRight.label).slice(0, 32),
+            value: sanitizeScriptText(b.comparisonRight.value || '').slice(0, 18),
+            ratio: Math.max(0.08, Math.min(1, Number(b.comparisonRight.ratio) || 0.35)),
+          }
+        : undefined,
+      multiplierBadge: b.multiplierBadge ? sanitizeScriptText(b.multiplierBadge).slice(0, 14) : undefined,
+      gaugePct: typeof b.gaugePct === 'number' ? Math.max(5, Math.min(99, Math.round(b.gaugePct))) : undefined,
+      matrixHighlightPct:
+        typeof b.matrixHighlightPct === 'number'
+          ? Math.max(2, Math.min(98, Math.round(b.matrixHighlightPct)))
+          : undefined,
+      matrixCalloutLabel: b.matrixCalloutLabel
+        ? sanitizeScriptText(b.matrixCalloutLabel).slice(0, 36)
+        : undefined,
+      bullets: Array.isArray(b.bullets)
+        ? b.bullets.map((x) => sanitizeScriptText(x).slice(0, 56)).filter(Boolean).slice(0, 5)
+        : undefined,
+      steps: Array.isArray(b.steps)
+        ? b.steps.map((x) => sanitizeScriptText(x).slice(0, 42)).filter(Boolean).slice(0, 4)
+        : undefined,
+      chartUnit: b.chartUnit ? sanitizeScriptText(b.chartUnit).slice(0, 10) : undefined,
+      chartPoints: Array.isArray(b.chartPoints)
+        ? b.chartPoints
+            .filter((pt) => pt && pt.label && Number.isFinite(Number(pt.value)))
+            .map((pt) => ({
+              label: sanitizeScriptText(String(pt.label)).slice(0, 12),
+              value: Number(pt.value),
+              highlight: Boolean(pt.highlight),
+            }))
+            .slice(0, 6)
+        : undefined,
+      dialKnobs: Array.isArray(b.dialKnobs)
+        ? b.dialKnobs
+            .filter((k) => k && k.label && Number.isFinite(Number(k.value)))
+            .map((k, kIdx) => ({
+              label: sanitizeScriptText(String(k.label)).slice(0, 20),
+              value: Math.max(0, Math.min(100, Math.round(Number(k.value)))),
+              unit: (k.unit || '%').slice(0, 6),
+              active: k.active ?? kIdx !== 1,
+            }))
+            .slice(0, 3)
+        : undefined,
+      terminalCmd: isDev && b.terminalCmd ? sanitizeScriptText(b.terminalCmd).slice(0, 52) : undefined,
+      terminalOut:
+        isDev && Array.isArray(b.terminalOut)
+          ? b.terminalOut.map((l) => sanitizeScriptText(l).slice(0, 54)).filter(Boolean).slice(0, 4)
+          : undefined,
+      fanCards: Array.isArray(b.fanCards)
+        ? b.fanCards
+            .filter((fc) => fc && fc.label && fc.metric)
+            .map((fc) => ({
+              tag: sanitizeScriptText(String(fc.tag || '')).slice(0, 14),
+              metric: sanitizeScriptText(String(fc.metric || '')).slice(0, 18),
+              label: sanitizeScriptText(String(fc.label || '')).slice(0, 46),
+            }))
+            .slice(0, 4)
+        : undefined,
+      receiptItems: Array.isArray(b.receiptItems)
+        ? b.receiptItems
+            .filter((ri) => ri && ri.label && ri.amount)
+            .map((ri) => ({
+              label: sanitizeScriptText(String(ri.label)).slice(0, 34),
+              amount: sanitizeScriptText(String(ri.amount)).slice(0, 18),
+              highlight: Boolean(ri.highlight),
+              tone: cleanTone(ri.tone),
+            }))
+            .slice(0, 5)
+        : undefined,
+      receiptTotalLabel: b.receiptTotalLabel ? sanitizeScriptText(b.receiptTotalLabel).slice(0, 28) : undefined,
+      receiptTotalValue: b.receiptTotalValue ? sanitizeScriptText(b.receiptTotalValue).slice(0, 18) : undefined,
+      calendarMonth: b.calendarMonth ? sanitizeScriptText(b.calendarMonth).slice(0, 18) : undefined,
+      calendarYear: b.calendarYear ? sanitizeScriptText(b.calendarYear).slice(0, 8) : undefined,
+      calendarDaysMarked: Array.isArray(b.calendarDaysMarked)
+        ? b.calendarDaysMarked.map(Number).filter((n) => Number.isFinite(n) && n >= 1 && n <= 31).slice(0, 10)
+        : undefined,
+      calendarHighlightDay:
+        typeof b.calendarHighlightDay === 'number' ? Math.max(1, Math.min(31, Math.round(b.calendarHighlightDay))) : undefined,
+      calendarNote: b.calendarNote ? sanitizeScriptText(b.calendarNote).slice(0, 48) : undefined,
+      barrierBadge: b.barrierBadge ? sanitizeScriptText(b.barrierBadge).toUpperCase().slice(0, 22) : undefined,
+      barrierRuleText: b.barrierRuleText ? sanitizeScriptText(b.barrierRuleText).slice(0, 84) : undefined,
+      compressorFrom: b.compressorFrom ? sanitizeScriptText(b.compressorFrom).slice(0, 16) : undefined,
+      compressorTo: b.compressorTo ? sanitizeScriptText(b.compressorTo).slice(0, 16) : undefined,
+      compressorUnitLabel: b.compressorUnitLabel ? sanitizeScriptText(b.compressorUnitLabel).slice(0, 28) : undefined,
+      mindmapCenter: b.mindmapCenter ? sanitizeScriptText(b.mindmapCenter).slice(0, 26) : undefined,
+      mindmapNodes: Array.isArray(b.mindmapNodes)
+        ? b.mindmapNodes
+            .filter((n) => n && n.label)
+            .map((n) => ({
+              label: sanitizeScriptText(String(n.label)).slice(0, 28),
+              detail: n.detail ? sanitizeScriptText(String(n.detail)).slice(0, 32) : undefined,
+            }))
+            .slice(0, 5)
+        : undefined,
+      auditRows: Array.isArray(b.auditRows)
+        ? b.auditRows
+            .filter((r) => r && r.label && r.badge)
+            .map((r) => ({
+              label: sanitizeScriptText(String(r.label)).slice(0, 32),
+              detail: sanitizeScriptText(String(r.detail || '')).slice(0, 38),
+              status: cleanStatus(r.status),
+              badge: sanitizeScriptText(String(r.badge)).slice(0, 16),
+            }))
+            .slice(0, 4)
+        : undefined,
+      profileCards: Array.isArray(b.profileCards)
+        ? b.profileCards
+            .filter((p) => p && p.name && p.metric)
+            .map((p) => ({
+              name: sanitizeScriptText(String(p.name)).slice(0, 24),
+              role: sanitizeScriptText(String(p.role || '')).slice(0, 28),
+              metric: sanitizeScriptText(String(p.metric)).slice(0, 16),
+              quote: sanitizeScriptText(String(p.quote || '')).slice(0, 56),
+            }))
+            .slice(0, 3)
+        : undefined,
+      notifCount: b.notifCount ? sanitizeScriptText(b.notifCount).slice(0, 12) : undefined,
+      notifItems: Array.isArray(b.notifItems)
+        ? b.notifItems
+            .filter((ni) => ni && ni.sender && ni.message)
+            .map((ni) => ({
+              sender: sanitizeScriptText(String(ni.sender)).slice(0, 24),
+              message: sanitizeScriptText(String(ni.message)).slice(0, 52),
+              time: ni.time ? sanitizeScriptText(String(ni.time)).slice(0, 12) : undefined,
+            }))
+            .slice(0, 3)
+        : undefined,
+      quotaActualLabel: b.quotaActualLabel ? sanitizeScriptText(b.quotaActualLabel).slice(0, 28) : undefined,
+      quotaPlannedLabel: b.quotaPlannedLabel ? sanitizeScriptText(b.quotaPlannedLabel).slice(0, 28) : undefined,
+      quotaBars: Array.isArray(b.quotaBars)
+        ? b.quotaBars
+            .filter((qb) => qb && qb.label && Number.isFinite(Number(qb.pct)))
+            .map((qb) => ({
+              label: sanitizeScriptText(String(qb.label)).slice(0, 14),
+              pct: Math.max(5, Math.min(100, Math.round(Number(qb.pct)))),
+            }))
+            .slice(0, 5)
+        : undefined,
+      globeOrigin: b.globeOrigin ? sanitizeScriptText(b.globeOrigin).slice(0, 24) : undefined,
+      globeDestinations: Array.isArray(b.globeDestinations)
+        ? b.globeDestinations
+            .filter((gd) => gd && gd.label && gd.value)
+            .map((gd) => ({
+              label: sanitizeScriptText(String(gd.label)).slice(0, 24),
+              value: sanitizeScriptText(String(gd.value)).slice(0, 18),
+            }))
+            .slice(0, 4)
+        : undefined,
+      sfxKind: meta?.defaultSfx || 'tap',
+    };
+  });
+
+  const normalizedHashtags = Array.isArray(rawPlan.hashtags)
+    ? rawPlan.hashtags
+        .map((h) => sanitizeScriptText(String(h || '')).trim())
+        .filter(Boolean)
+        .map((h) => (h.startsWith('#') ? h : `#${h}`))
+        .slice(0, 5)
+    : [];
+
+  return {
+    hookText: humanizeFrenchScript(sanitizeScriptText(beats[0]?.spokenLine || rawPlan.hookText || '')).cleaned,
+    hookVariants,
+    youtubeTitle: humanizeFrenchScript(sanitizeScriptText(rawPlan.youtubeTitle || item.theme)).cleaned.slice(0, 60),
+    caption: humanizeFrenchScript(sanitizeScriptText(rawPlan.caption || item.theme)).cleaned,
+    hashtags: normalizedHashtags.length > 0 ? normalizedHashtags : ['#decryptage', '#actualite', '#france', '#shorts'],
+    beats,
+  };
+}
+
+function buildUniversalPrimitivesPromptGuide(isDev: boolean): string {
+  const usable = UNIVERSAL_PRIMITIVES_CATALOG.filter((p) => isDev || !p.devOnly);
+  return usable
+    .map((p) => `- "${p.id}" (${p.label}, préféré: ${p.preferLayout}) -> ${p.useCase}`)
+    .join('\n');
+}
+
+function buildGeminiScriptResponseSchema() {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      hookText: { type: Type.STRING },
+      hookVariants: { type: Type.ARRAY, items: { type: Type.STRING } },
+      youtubeTitle: { type: Type.STRING },
+      caption: { type: Type.STRING },
+      hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+      beats: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            highlightWord: { type: Type.STRING },
+            strikeWord: { type: Type.STRING },
+            shortLabel: { type: Type.STRING },
+            screenLabel: { type: Type.STRING },
+            spokenLine: { type: Type.STRING },
+            visualType: { type: Type.STRING },
+            layoutHint: { type: Type.STRING },
+            visualQuery: { type: Type.STRING },
+            stampWord: { type: Type.STRING },
+            statValue: { type: Type.STRING },
+            statLabel: { type: Type.STRING },
+            sourceLabel: { type: Type.STRING },
+            quoteText: { type: Type.STRING },
+            quoteHighlight: { type: Type.STRING },
+            beforeBadText: { type: Type.STRING },
+            afterGoodText: { type: Type.STRING },
+            leftCard: {
+              type: Type.OBJECT,
+              properties: {
+                label: { type: Type.STRING },
+                value: { type: Type.STRING },
+                sub: { type: Type.STRING },
+              },
+            },
+            rightCard: {
+              type: Type.OBJECT,
+              properties: {
+                label: { type: Type.STRING },
+                value: { type: Type.STRING },
+                sub: { type: Type.STRING },
+              },
+            },
+            comparisonLeft: {
+              type: Type.OBJECT,
+              properties: {
+                label: { type: Type.STRING },
+                value: { type: Type.STRING },
+                ratio: { type: Type.NUMBER },
+              },
+            },
+            comparisonRight: {
+              type: Type.OBJECT,
+              properties: {
+                label: { type: Type.STRING },
+                value: { type: Type.STRING },
+                ratio: { type: Type.NUMBER },
+              },
+            },
+            multiplierBadge: { type: Type.STRING },
+            gaugePct: { type: Type.INTEGER },
+            matrixHighlightPct: { type: Type.INTEGER },
+            matrixCalloutLabel: { type: Type.STRING },
+            bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+            steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+            chartUnit: { type: Type.STRING },
+            chartPoints: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  value: { type: Type.NUMBER },
+                  highlight: { type: Type.BOOLEAN },
+                },
+              },
+            },
+            dialKnobs: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  value: { type: Type.INTEGER },
+                  unit: { type: Type.STRING },
+                  active: { type: Type.BOOLEAN },
+                },
+              },
+            },
+            terminalCmd: { type: Type.STRING },
+            terminalOut: { type: Type.ARRAY, items: { type: Type.STRING } },
+            fanCards: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  tag: { type: Type.STRING },
+                  metric: { type: Type.STRING },
+                  label: { type: Type.STRING },
+                },
+              },
+            },
+            receiptItems: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  amount: { type: Type.STRING },
+                  highlight: { type: Type.BOOLEAN },
+                  tone: { type: Type.STRING },
+                },
+              },
+            },
+            receiptTotalLabel: { type: Type.STRING },
+            receiptTotalValue: { type: Type.STRING },
+            calendarMonth: { type: Type.STRING },
+            calendarYear: { type: Type.STRING },
+            calendarDaysMarked: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+            calendarHighlightDay: { type: Type.INTEGER },
+            calendarNote: { type: Type.STRING },
+            barrierBadge: { type: Type.STRING },
+            barrierRuleText: { type: Type.STRING },
+            compressorFrom: { type: Type.STRING },
+            compressorTo: { type: Type.STRING },
+            compressorUnitLabel: { type: Type.STRING },
+            mindmapCenter: { type: Type.STRING },
+            mindmapNodes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  detail: { type: Type.STRING },
+                },
+              },
+            },
+            auditRows: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  detail: { type: Type.STRING },
+                  status: { type: Type.STRING },
+                  badge: { type: Type.STRING },
+                },
+              },
+            },
+            profileCards: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  role: { type: Type.STRING },
+                  metric: { type: Type.STRING },
+                  quote: { type: Type.STRING },
+                },
+              },
+            },
+            notifCount: { type: Type.STRING },
+            notifItems: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  sender: { type: Type.STRING },
+                  message: { type: Type.STRING },
+                  time: { type: Type.STRING },
+                },
+              },
+            },
+            quotaActualLabel: { type: Type.STRING },
+            quotaPlannedLabel: { type: Type.STRING },
+            quotaBars: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  pct: { type: Type.INTEGER },
+                },
+              },
+            },
+            globeOrigin: { type: Type.STRING },
+            globeDestinations: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  value: { type: Type.STRING },
+                },
+              },
+            },
+          },
+          required: ['title', 'highlightWord', 'shortLabel', 'spokenLine', 'visualType', 'layoutHint'],
+        },
+      },
+    },
+    required: ['hookText', 'hookVariants', 'youtubeTitle', 'caption', 'hashtags', 'beats'],
+  };
+}
+
+/**
+ * Generates a 100% bespoke Short script + visual storyboard strictly validated against the 22 universal
+ * Melvynx primitives. Retries up to 2 times if Gemini output is malformed or incomplete; NEVER falls back
+ * silently to hardcoded presets or cross-topic demo copy.
+ */
 export async function generateScriptForBatchItem(
   item: Pick<BatchJobItem, 'theme' | 'category' | 'angle' | 'hookHint' | 'sources'> & {
     variationIndex?: number;
@@ -278,197 +814,101 @@ export async function generateScriptForBatchItem(
   caption: string;
   hashtags: string[];
   archetypeLabel: string;
-  generatedBy: 'gemini' | 'fallback';
+  generatedBy: 'gemini';
   beats: BatchBeatSpec[];
 }> {
   const ai = createGeminiClient();
-  const blueprint = selectChoreographyForTopic({
-    theme: item.theme,
-    category: item.category,
-    variationIndex: item.variationIndex,
-  });
-  const brollSeq = getBrollSequenceForTopic(item.category, item.theme);
   const isDev = isDevOrCodeTopic(item.category, item.theme);
 
-  const fallbackBase = buildFallbackBatchScript({
-    theme: item.theme,
-    category: item.category,
-    angle: item.angle,
-    hookHint: item.hookHint,
-    sources: item.sources,
-    variationIndex: item.variationIndex,
-  });
-
-  if (!ai) {
-    return {
-      ...fallbackBase,
-      archetypeLabel: blueprint.label,
-      generatedBy: 'fallback',
-    };
+  let branding = resolveChannelCtaProfile();
+  try {
+    const kit = getChannelBrandingKit();
+    branding = resolveChannelCtaProfile({
+      handle: kit.handle,
+      brandName: kit.brandName,
+      tagline: kit.tagline,
+    });
+  } catch {
+    // Keep clean neutral default if branding file isn't present yet
   }
 
-  try {
-    const sequenceSpec = blueprint.beatTypes
-      .map((vt, i) => `Beat ${i + 1}: visualType="${vt}", layoutHint="${blueprint.layouts[i]}", brollKey="${i === 7 ? 'studio' : brollSeq[i % brollSeq.length]}"`)
-      .join('\n');
+  const primitivesGuide = buildUniversalPrimitivesPromptGuide(isDev);
+  const basePrompt = [
+    `Tu es le Directeur Artistique et Scénariste d'une chaîne française YouTube Shorts / Reels / TikTok style @melvynxdev (montage motion design éditorial, rythme sec, 42–54 secondes).`,
+    `SUJET EXACT À TRAITER (100 % sur mesure, zéro contenu générique) :`,
+    `- Thème : "${item.theme}"`,
+    `- Catégorie : ${item.category}`,
+    item.angle ? `- Angle éditorial : ${item.angle}` : '',
+    item.hookHint ? `- Piste de hook : ${item.hookHint}` : '',
+    item.sources ? `- Sources : ${item.sources}` : '',
+    `- Compte chaîne : ${branding.handle} (${branding.tagline})`,
+    ``,
+    `PRIMITIVES VISUELLES DISPONIBLES (choisis LIBREMENT les plus adaptées au sens de chaque phrase — INTERDICTION de répéter deux fois la même primitive sur les beats 1 à 7) :`,
+    primitivesGuide,
+    `- "channel_end_cta" : EXCLUSIVEMENT pour le dernier beat (Beat 8).`,
+    ``,
+    `RÈGLES DE STRUCTURE & DE QUALITÉ STRICTES :`,
+    `1. GÉNÈRE D'ABORD "hookVariants" : exactement 3 variantes de hook parlé (< 15 mots chacune) sur des angles distincts (paradoxe, chiffre choc daté, erreur coûteuse). Zéro salut/intro ("dans cette vidéo", "bonjour").`,
+    `2. Écris exactement 8 beats (Beats 1 à 7 = narration + preuve visuelle, Beat 8 = CTA d'abonnement/cloche sur ${branding.handle} avec boucle logique vers le Beat 1, sans JAMAIS demander de commentaire).`,
+    `3. Longueur totale : 95 à 145 mots parlés au total. Chaque "spokenLine" fait 10 à 18 mots en français oral naturel, concret et chiffré.`,
+    `4. Titre visuel façon @melvynxdev sur CHAQUE beat : "title" (2 à 5 mots, max 36 caractères, JAMAIS tronqué) + "highlightWord" (EXACTEMENT 1 mot ou expression courte présente dans "title" qui sera affichée en pastille bleue #007AFF).`,
+    `5. Re-hook géométrique obligatoire : varie librement "layoutHint" entre "split" (visuel haut + B-roll photo plein cadre en bas) et "fullscreen" (au moins 2 beats en "fullscreen" au milieu de la vidéo pour les schémas riches comme audit_table_detector, scrolling_checklist_spotlight, balance_scale_duel, animated_data_chart, hydraulic_compressor, radial_mindmap_hub, segmented_quota_slider, split_comparison_window, before_after_morph, editorial_evidence_board). Beats 1 et 8 en "split".`,
+    `6. REMPLIS IMPÉRATIVEMENT les champs concrets spécifiques à la primitive choisie pour chaque beat (100 % liés au sujet "${item.theme}") :`,
+    `   - metric_shock_hook -> statValue, statLabel, stampWord`,
+    `   - dot_population_scale -> matrixHighlightPct (1..98), matrixCalloutLabel`,
+    `   - paper_receipt_payslip -> receiptItems (3..5 lignes {label, amount, highlight, tone}), receiptTotalLabel, receiptTotalValue`,
+    `   - countdown_calendar_stamp -> calendarMonth, calendarYear, calendarDaysMarked, calendarHighlightDay, calendarNote, stampWord`,
+    `   - balance_scale_duel -> leftCard {label, value, sub}, rightCard {label, value, sub}`,
+    `   - trap_barrier_alert -> barrierBadge, barrierRuleText, bullets`,
+    `   - hydraulic_compressor -> compressorFrom, compressorTo, compressorUnitLabel`,
+    `   - scrolling_checklist_spotlight -> bullets (3..5 règles/signes concrets)`,
+    `   - radial_mindmap_hub -> mindmapCenter, mindmapNodes (3..5 {label, detail})`,
+    `   - audit_table_detector -> auditRows (3..4 {label, detail, status: 'alert'|'ok'|'removed', badge})`,
+    `   - profile_objection_deck -> profileCards (2..3 {name, role, metric, quote})`,
+    `   - notification_explosion_stamp -> notifCount, notifItems (2..3 {sender, message, time}), stampWord`,
+    `   - segmented_quota_slider -> quotaActualLabel, quotaPlannedLabel, gaugePct, quotaBars`,
+    `   - hand_drawn_marker_highlight -> quoteText, quoteHighlight, sourceLabel`,
+    `   - before_after_morph -> beforeBadText, afterGoodText`,
+    `   - animated_data_chart -> chartUnit, chartPoints (4..5 {label, value, highlight})`,
+    `   - split_comparison_window -> comparisonLeft {label, value, ratio}, comparisonRight {label, value, ratio}, multiplierBadge`,
+    `   - process_pipeline -> steps (3..4 étapes)`,
+    isDev ? `   - terminal_chat_window -> terminalCmd, terminalOut (2..4 lignes)` : '',
+    `   - rotary_control_deck -> dialKnobs (3 {label, value, unit, active})`,
+    `   - globe_network_flow -> globeOrigin, globeDestinations (2..4 {label, value})`,
+    `   - editorial_evidence_board -> fanCards (3 {tag, metric, label})`,
+    `   - channel_end_cta -> statValue="${branding.handle}", statLabel="${branding.tagline}"`,
+    `7. Renseigne aussi "visualQuery" (2-4 mots décrivant la scène photo idéale en bas, ex: "bistrot cuisine addition", "fiche paie salaire france").`,
+    `8. INTERDICTIONS : zéro tiret cadratin (—), zéro cliché ("révolutionnaire", "incontournable", "plongeons dans"), zéro étiquette méta bidon.${!isDev ? ' Sujet non technique : interdit de mentionner terminal/code/CLI/GitHub !' : ''}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 
-    const prompt = [
-      `Tu es le directeur créatif et scénariste d'une chaîne française YouTube Shorts / Reels / TikTok style @melvynxdev (ton direct, analytique, preuves sourcées, zéro remplissage).`,
-      `MISSION : Écris un Short 100 % sur mesure pour CE sujet précis, avec un hook magnétique < 2,5s, un open loop maintenu jusqu'au pivot Beat 4, et aucune phrase générique.`,
-      `Sujet : "${item.theme}"`,
-      `Catégorie : ${item.category}`,
-      item.angle ? `Angle vérifié : ${item.angle}` : '',
-      item.hookHint ? `Piste de hook : ${item.hookHint}` : '',
-      item.sources ? `Sources : ${item.sources}` : '',
-      `Chorégraphie imposée (${blueprint.label}) : ${blueprint.narrativeGuide}`,
-      `Répartition visuelle des 8 séquences (ne jamais répéter un visualType) :\n${sequenceSpec}`,
-      ``,
-      `RÈGLES DE CHRONOLOGIE ET DE QUALITÉ (IMPÉRATIF — STANDARD @MELVYNX.DEV) :`,
-      `1. GÉNÈRE D'ABORD "hookVariants" : exactement 3 variantes de hook parlé (< 15 mots chacune) avec formules distinctes (1: Paradoxe/contre-intuitif, 2: Chiffre choc daté, 3: Erreur silencieuse). Zéro salut/intro, zéro cliché IA.`,
-      `2. Longueur équilibrée : 104 à 128 mots parlés au total. CHAQUE spokenLine doit être UNE phrase orale limpide (10 à 16 mots), en français parlé naturel ("tu", zéro phrase administrative ou abstraite), compréhensible dès la première écoute.`,
-      `3. Progression narrative ultra-claire :`,
-      `   - Beat 1 (Hook 0–4,2s en 2 actes) : tension immédiate dès frame 0 + rupture visuelle + open loop clair.`,
-      `   - Beat 2 (Preuve chiffrée / Exemple réel) : l'exemple exact ou pourcentage réel qui prouve le hook.`,
-      `   - Beat 3 (Comment ça marche en pratique) : mécanisme cause -> effet concret en unités réelles.`,
-      `   - Beat 4 (Pivot plein écran obligatoire) : changement complet de géométrie plein écran avec chiffre/courbe/diff visuel marquant.`,
-      `   - Beat 5 (Comparaison ou Chronomètre) : avant vs après concret (euros, secondes, précision).`,
-      `   - Beat 6 (Ce que tu dois faire) : 3 gestes simples ou réglages concrets applicables aujourd'hui.`,
-      `   - Beat 7 (Verdict sourcé) : cite l'étude/source naturellement sans URL et boucle logiquement vers le hook.`,
-      `   - Beat 8 (CTA) : invite à s'abonner et activer la cloche (@alex.decode), sans JAMAIS demander de commentaire ni mot-clé.`,
-      `4. INTERDICTIONS : zéro tiret cadratin (—), zéro mots clichés ("révolutionnaire", "incontournable", "plongeons dans", "dans cette vidéo"), zéro répétition entre beats.${!isDev ? ' N’utilise JAMAIS de jargon technique/code/bash sur ce sujet !' : ''}`,
-      `5. Chaque "title" écran doit faire 2 à 4 mots très courts (< 28 caractères). ZÉRO texte générique de fallback.`,
-      `6. Champs visuels riches (en français, 100 % spécifiques au sujet et adaptés aux archétypes @melvynx.dev) :`,
-      `   - brandLogo : parmi "claude","openai","deepseek","github","instagram","tiktok","apple","google","youtube","x","ai".`,
-      `   - notoIcon : slug Noto SVG (ex: "brain","lock","shield","rocket","chart-increasing","clock","bulb","magnifying-glass-tilted-left","robot","bank").`,
-      `   - stampWord : mot tampon court (ex: "2026", "CONFIDENTIEL", "PREUVE", "ENCADRÉ").`,
-      `   - statValue : chiffre ou badge court (<= 10 chars, ex: "72 %", "2×", "-40 %").`,
-      `   - statLabel : sous-titre factuel court (<= 40 chars).`,
-      `   - leftPair / rightPair : format "Label | Valeur | Détail".`,
-      `   - itemsPipe : 3 points distincts (ou 4 étapes) séparés par " | ".`,
-      `   - matrixHighlightPct / matrixCalloutLabel : entier 10..92 + légende loupe (<= 24 chars, ex: "TOI · 20 % restants").`,
-      `   - dialKnobsPipe : 3 cadrans "Label:85:%|Label2:40:%|Label3:95:%".`,
-      `   - diffBeforeLinesPipe / diffAfterLinesPipe / diffScore : 3 lignes courtes avant/après séparées par " | " + score 60..99.`,
-      `   - newsPublication / newsHeadline / newsHighlightPhrase / newsYearsPipe : média/auteur crédible + titre court + fragment à surligner + "2022|2026".`,
-      `   - neuralEquation : courte formule logique (ex: "Entrée × Filtre = Signal 94 %").`,
-      `   - quoteText / quoteHighlight : court extrait sourcé + fragment exact à surligner.`,
-      `   - uiUrl / uiActionLabel : URL crédible sans https:// + bouton court <= 18 chars.`,
-      `   - chartUnit / chartPointsPipe : unité + 4 ou 5 points "2022:100|2024:86|2026:72".`,
-      `   - gaugePct : entier 25..96.`,
-      `   - repoName / repoStars / authorName : nom dépôt ou compte crédible (ex: "anthropics/skills", "12.4k", "@simonw").`,
-      `   - cableAppLabel / crtYear / crtMetric : nom app/module (ex: "Notion MCP"), année rétro ("1995"), métrique rétro.`,
-      `   - beforeBadText / afterGoodText : phrase robotique/faible vs phrase percutante réécrite.`,
-      ``,
-      `Réponds en JSON strict avec hookVariants (3 hooks) + 8 beats sur mesure.`,
-    ]
-      .filter(Boolean)
-      .join('\n');
+  let lastErrors: string[] = [];
 
-    type GeminiFlatBeat = Partial<BatchBeatSpec> & {
-      leftPair?: string;
-      rightPair?: string;
-      itemsPipe?: string;
-      chartPointsPipe?: string;
-      dialKnobsPipe?: string;
-      diffBeforeLinesPipe?: string;
-      diffAfterLinesPipe?: string;
-      newsYearsPipe?: string;
-      neuralLayersPipe?: string;
-    };
-
-    let parsed: {
-      hookText?: string;
-      hookVariants?: string[];
-      youtubeTitle?: string;
-      caption?: string;
-      hashtags?: string[] | string;
-      beats?: GeminiFlatBeat[];
-    } = {};
-
-    const geminiPromise = ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            hookText: { type: Type.STRING },
-            hookVariants: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            youtubeTitle: { type: Type.STRING },
-            caption: { type: Type.STRING },
-            hashtags: { type: Type.STRING },
-            beats: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  shortLabel: { type: Type.STRING },
-                  screenLabel: { type: Type.STRING },
-                  spokenLine: { type: Type.STRING },
-                  visualType: { type: Type.STRING },
-                  brollKey: { type: Type.STRING },
-                  iconKind: { type: Type.STRING },
-                  brandLogo: { type: Type.STRING },
-                  notoIcon: { type: Type.STRING },
-                  stampWord: { type: Type.STRING },
-                  statValue: { type: Type.STRING },
-                  statLabel: { type: Type.STRING },
-                  leftPair: { type: Type.STRING },
-                  rightPair: { type: Type.STRING },
-                  itemsPipe: { type: Type.STRING },
-                  quoteText: { type: Type.STRING },
-                  quoteHighlight: { type: Type.STRING },
-                  uiUrl: { type: Type.STRING },
-                  uiActionLabel: { type: Type.STRING },
-                  chartUnit: { type: Type.STRING },
-                  chartPointsPipe: { type: Type.STRING },
-                  gaugePct: { type: Type.INTEGER },
-                  matrixHighlightPct: { type: Type.INTEGER },
-                  matrixCalloutLabel: { type: Type.STRING },
-                  dialKnobsPipe: { type: Type.STRING },
-                  diffBeforeLinesPipe: { type: Type.STRING },
-                  diffAfterLinesPipe: { type: Type.STRING },
-                  diffScore: { type: Type.INTEGER },
-                  newsPublication: { type: Type.STRING },
-                  newsHeadline: { type: Type.STRING },
-                  newsHighlightPhrase: { type: Type.STRING },
-                  newsYearsPipe: { type: Type.STRING },
-                  neuralEquation: { type: Type.STRING },
-                  repoName: { type: Type.STRING },
-                  repoStars: { type: Type.STRING },
-                  authorName: { type: Type.STRING },
-                  cableAppLabel: { type: Type.STRING },
-                  crtYear: { type: Type.STRING },
-                  crtMetric: { type: Type.STRING },
-                  beforeBadText: { type: Type.STRING },
-                  afterGoodText: { type: Type.STRING },
-                },
-                required: [
-                  'title',
-                  'shortLabel',
-                  'screenLabel',
-                  'spokenLine',
-                  'visualType',
-                  'brollKey',
-                  'iconKind',
-                ],
-              },
-            },
-          },
-          required: ['hookText', 'hookVariants', 'youtubeTitle', 'caption', 'hashtags', 'beats'],
-        },
-      },
-    });
+  for (let attempt = 0; attempt <= MAX_GEMINI_REPAIR_RETRIES; attempt++) {
+    const prompt =
+      attempt === 0
+        ? basePrompt
+        : [
+            basePrompt,
+            ``,
+            `CORRECTION OBLIGATOIRE (tentative précédente rejetée pour erreurs de schéma) :`,
+            ...lastErrors.map((e) => `- ${e}`),
+            `Corrige TOUS ces points dans ta réponse JSON stricte.`,
+          ].join('\n');
 
     try {
       const response = await Promise.race([
-        geminiPromise,
+        ai.models.generateContent({
+          model: 'gemini-4-hydrogen',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: buildGeminiScriptResponseSchema(),
+          },
+        }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Gemini script timeout (25s)')), 25_000)
+          setTimeout(() => reject(new Error(`Timeout Gemini (${GEMINI_SCRIPT_TIMEOUT_MS / 1000}s)`)), GEMINI_SCRIPT_TIMEOUT_MS)
         ),
       ]);
 
@@ -477,579 +917,79 @@ export async function generateScriptForBatchItem(
         .replace(/^```(?:json)?\s*/i, '')
         .replace(/```\s*$/, '');
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      const candidate = JSON.parse(jsonMatch ? jsonMatch[0] : rawText) as typeof parsed;
-      if (Array.isArray(candidate.beats) && candidate.beats.length >= 6) {
-        parsed = candidate;
-      }
-    } catch (geminiErr) {
-      console.warn(
-        'Gemini batch script fallback triggered:',
-        geminiErr instanceof Error ? geminiErr.message : geminiErr
+      const rawPlan = JSON.parse(jsonMatch ? jsonMatch[0] : rawText) as RawGeminiPlan;
+
+      const normalized = normalizeGeminiPlanToBeats(
+        rawPlan,
+        item,
+        branding.handle,
+        branding.tagline,
+        isDev
       );
-    }
 
-    if (!Array.isArray(parsed.beats) || parsed.beats.length < 6) {
-      return {
-        ...fallbackBase,
-        archetypeLabel: blueprint.label,
-        generatedBy: 'fallback',
-      };
-    }
+      const validation = validateFullShortPlan(
+        {
+          hookText: normalized.hookText,
+          hookVariants: normalized.hookVariants,
+          beats: normalized.beats,
+        },
+        { isDevTopic: isDev }
+      );
 
-    const validVisualTypes = new Set<DynamicVisualType>([
-      ...ALL_MELVYNX_ARCHETYPES,
-      'hook_shatter',
-      'hook_stat',
-      'hook_alert',
-      'hook_versus',
-      'hook_question',
-      'dot_matrix_zoom',
-      'neural_scan',
-      'dual_stopwatch',
-      'rotary_console',
-      'pixel_diff',
-      'humanizer_belt',
-      'headline_news',
-      'counter_flip',
-      'comparison_bars',
-      'chart_curve',
-      'source_quote',
-      'ui_window',
-      'timeline_steps',
-      'toggles_switch',
-      'terminal_flow',
-      'key_points',
-      'myth_vs_fact',
-      'alert_rule',
-      'checklist_audit',
-      'gauge',
-      'cta_card',
-    ]);
-    const validBrandLogos = new Set<BrandLogoId>([
-      'claude',
-      'openai',
-      'deepseek',
-      'github',
-      'instagram',
-      'tiktok',
-      'apple',
-      'x',
-      'google',
-      'youtube',
-      'chrome',
-      'ai',
-    ]);
-    const validIcons = new Set<DynamicIconKind>([
-      'ai',
-      'calendar',
-      'chart',
-      'clock',
-      'euro',
-      'law',
-      'lock',
-      'rocket',
-      'terminal',
-      'phone',
-      'shield',
-      'bank',
-      'alert',
-      'scale',
-      'users',
-    ]);
-    const validBrolls = new Set([
-      'ai_meetings',
-      'economy',
-      'tech_code',
-      'business',
-      'parliament',
-      'teen_phone',
-      'studio',
-      'focus_clockwork',
-      'data_analytics',
-      'mobile_attention',
-      'startup_team',
-      'ai_lab',
-    ]);
+      if (validation.valid) {
+        const mediaPicks = selectBottomMediaForShort({
+          beats: normalized.beats,
+          category: item.category,
+          theme: item.theme,
+          batchCooldownIds: item.batchCooldownIds,
+        });
 
-    const bestHookCandidate = Array.isArray(parsed.hookVariants) && parsed.hookVariants.length > 0
-      ? pickBestHookVariant([...parsed.hookVariants, parsed.hookText || ''])
-      : null;
-
-    const rawBeats = parsed.beats.slice(0, 8);
-    const usedVisualTypes = new Set<DynamicVisualType>();
-    const beats: BatchBeatSpec[] = rawBeats.map((b, idx) => {
-      const fb = fallbackBase.beats[idx % fallbackBase.beats.length];
-      let vt: DynamicVisualType =
-        idx === 0
-          ? blueprint.hookType
-          : idx === rawBeats.length - 1
-            ? 'cta_card'
-            : validVisualTypes.has(b.visualType as DynamicVisualType)
-              ? (b.visualType as DynamicVisualType)
-              : blueprint.beatTypes[idx % blueprint.beatTypes.length];
-
-      if ((vt === 'terminal_flow' || vt === 'claude_code_slash_cli' || vt === 'code_and_live_preview_split') && !isDev) {
-        vt = blueprint.beatTypes[idx % blueprint.beatTypes.length];
-      }
-      if (idx > 0 && idx < rawBeats.length - 1 && usedVisualTypes.has(vt)) {
-        const replacement = ALL_MELVYNX_ARCHETYPES.find(
-          (cand) =>
-            !usedVisualTypes.has(cand) &&
-            (isDev || (cand !== 'claude_code_slash_cli' && cand !== 'code_and_live_preview_split'))
+        // Optionally enrich split beats that define bespoke visualQuery via local bright-image cache
+        const usedQueryHashes = new Set<string>();
+        const cachedUrlsPerBeat = await Promise.all(
+          normalized.beats.map(async (b, bIdx) => {
+            const layout = resolveBeatLayout(b, bIdx, normalized.beats.length);
+            if (layout === 'fullscreen' || !b.visualQuery || bIdx === normalized.beats.length - 1) {
+              return undefined;
+            }
+            const cached = await resolveAndCacheVisualQuery(b.visualQuery, usedQueryHashes).catch(() => null);
+            return cached ? [cached] : undefined;
+          })
         );
-        if (replacement) vt = replacement;
-      }
-      usedVisualTypes.add(vt);
 
-      const sfxByVt: Partial<Record<DynamicVisualType, BatchBeatSpec['sfxKind']>> = {
-        massive_dot_matrix_zoom: 'impact-boom',
-        avatar_crowd_highlight: 'pop',
-        confidential_vault_slam: 'thud',
-        paywall_shock_stack: 'glass-shatter',
-        chat_prompt_refusal_cascade: 'tap',
-        neural_shield_abliteration: 'zhhh',
-        night_shift_multi_agent_laptop: 'tap',
-        claude_code_slash_cli: 'pop',
-        rotary_mixing_knobs: 'tap',
-        code_and_live_preview_split: 'pop',
-        github_repo_star_rocket: 'riser',
-        article_highlighter_zoom: 'pop',
-        pixel_diff_clone_loop: 'pop',
-        github_heatmap_and_runs: 'tap',
-        social_feed_waterfall: 'zhhh',
-        conveyor_belt_cleaner: 'pop',
-        red_strike_live_rewrite: 'tap',
-        ugly_to_apple_ui_morph: 'bell',
-        retro_crt_1995_parallel: 'thud',
-        physical_cable_app_plug: 'pop',
-        metallic_toolbox_explode: 'thud',
-        card_fan_explosion_10x: 'riser',
-        ab_hook_leaderboard: 'pop',
-        cloud_vs_offline_shield: 'thud',
-        voice_shortcut_waveform: 'pop',
-        hook_shatter: 'glass-shatter',
-        hook_alert: 'impact-boom',
-        hook_versus: 'zhhh',
-        hook_stat: 'impact-boom',
-        hook_question: 'glass-shatter',
-        dot_matrix_zoom: 'pop',
-        neural_scan: 'thud',
-        dual_stopwatch: 'tap',
-        rotary_console: 'tap',
-        pixel_diff: 'pop',
-        humanizer_belt: 'pop',
-        headline_news: 'thud',
-        counter_flip: 'thud',
-        alert_rule: 'thud',
-        myth_vs_fact: 'pop',
-        source_quote: 'pop',
-        chart_curve: 'zhhh',
-        ui_window: 'tap',
-        timeline_steps: 'tap',
-        gauge: 'zhhh',
-        comparison_bars: 'riser',
-        toggles_switch: 'tap',
-        checklist_audit: 'tap',
-        key_points: 'pop',
-        terminal_flow: 'pop',
-        cta_card: 'pop-back',
-      };
-
-      const candidateHookLine =
-        idx === 0 && bestHookCandidate && bestHookCandidate.score >= 6
-          ? bestHookCandidate.hook
-          : b.spokenLine || fb.spokenLine;
-      const rawSpoken = humanizeFrenchScript(sanitizeScriptText(candidateHookLine)).cleaned;
-      const safeSpoken =
-        idx === rawBeats.length - 1 && /commentaire/i.test(rawSpoken)
-          ? fb.spokenLine
-          : rawSpoken;
-      const spokenLine = trimSpokenLineForPacing(safeSpoken, idx === 0 ? 15 : 18);
-
-      const iconKind = validIcons.has(b.iconKind as DynamicIconKind)
-        ? (b.iconKind as DynamicIconKind)
-        : fb.iconKind;
-
-      const brandLogo = validBrandLogos.has(b.brandLogo as BrandLogoId)
-        ? (b.brandLogo as BrandLogoId)
-        : fb.brandLogo;
-
-      const notoIcon = typeof b.notoIcon === 'string' && b.notoIcon.trim()
-        ? b.notoIcon.trim().replace(/[^a-z0-9-]/gi, '').toLowerCase()
-        : fb.notoIcon;
-
-      const brollKey =
-        idx === rawBeats.length - 1
-          ? 'studio'
-          : b.brollKey && validBrolls.has(b.brollKey)
-            ? b.brollKey
-            : fb.brollKey;
-
-      const layoutHint =
-        idx === 0
-          ? 'split'
-          : idx === 3 ||
-              vt === 'gauge' ||
-              vt === 'comparison_bars' ||
-              vt === 'chart_curve' ||
-              vt === 'pixel_diff' ||
-              vt === 'humanizer_belt' ||
-              vt === 'neural_scan' ||
-              vt === 'pixel_diff_clone_loop' ||
-              vt === 'conveyor_belt_cleaner' ||
-              vt === 'neural_shield_abliteration' ||
-              vt === 'night_shift_multi_agent_laptop' ||
-              vt === 'metallic_toolbox_explode' ||
-              vt === 'card_fan_explosion_10x'
-            ? 'fullscreen'
-            : blueprint.layouts[idx] || (b.layoutHint === 'fullscreen' ? 'fullscreen' : 'split');
-
-      const parsePairTriplet = (
-        raw: string | undefined,
-        fallback?: { label: string; value: string; sub: string },
-        defaultLabel = 'Repère'
-      ): { label: string; value: string; sub: string } | undefined => {
-        const clean = raw ? sanitizeScriptText(raw) : '';
-        if (!clean) return fallback;
-        const parts = clean
-          .split('|')
-          .map((p) => p.trim())
-          .filter(Boolean);
-        if (parts.length === 0) return fallback;
-        if (parts.length === 1) {
+        const enrichedBeats: BatchBeatSpec[] = normalized.beats.map((b, bIdx) => {
+          const pick = mediaPicks[bIdx];
+          if (!pick) return b;
+          pick.subBrollKeys.forEach((id) => item.batchCooldownIds?.add(id));
           return {
-            label: sanitizeScriptText(fallback?.label || defaultLabel).slice(0, 22),
-            value: parts[0].slice(0, 14),
-            sub: sanitizeScriptText(fallback?.sub || '').slice(0, 24),
+            ...b,
+            brollKey: pick.primaryId,
+            subBrollKeys: pick.subBrollKeys,
+            subBrollUrls: cachedUrlsPerBeat[bIdx],
+            brollCaption: pick.caption,
           };
-        }
+        });
+
         return {
-          label: parts[0].slice(0, 22),
-          value: (parts[1] || fallback?.value || '-').slice(0, 14),
-          sub: (parts[2] || fallback?.sub || '').slice(0, 24),
+          hookText: normalized.hookText,
+          youtubeTitle: normalized.youtubeTitle,
+          caption: normalized.caption,
+          hashtags: normalized.hashtags,
+          archetypeLabel: 'Melvynx Universel IA',
+          generatedBy: 'gemini',
+          beats: enrichedBeats,
         };
-      };
+      }
 
-      const parsedLeft = b.leftCard && typeof b.leftCard === 'object'
-        ? {
-            label: sanitizeScriptText(b.leftCard.label || fb.leftCard?.label || 'Avant').slice(0, 22),
-            value: sanitizeScriptText(b.leftCard.value || fb.leftCard?.value || '-').slice(0, 14),
-            sub: sanitizeScriptText(b.leftCard.sub || fb.leftCard?.sub || '').slice(0, 24),
-          }
-        : parsePairTriplet(b.leftPair, fb.leftCard, 'Avant');
-
-      const parsedRight = b.rightCard && typeof b.rightCard === 'object'
-        ? {
-            label: sanitizeScriptText(b.rightCard.label || fb.rightCard?.label || 'Réalité').slice(0, 22),
-            value: sanitizeScriptText(b.rightCard.value || fb.rightCard?.value || '-').slice(0, 14),
-            sub: sanitizeScriptText(b.rightCard.sub || fb.rightCard?.sub || '').slice(0, 24),
-          }
-        : parsePairTriplet(b.rightPair, fb.rightCard, 'Réalité');
-
-      const pipeItems = (b.itemsPipe || '')
-        .split(/\||;|\n/)
-        .map((x) => sanitizeScriptText(x).trim())
-        .filter(Boolean);
-
-      const resolvedBullets =
-        Array.isArray(b.bullets) && b.bullets.length > 0
-          ? b.bullets.map((x) => condenseVisualHeadline(x, 5, 36)).slice(0, 3)
-          : pipeItems.length > 0
-            ? pipeItems.map((x) => condenseVisualHeadline(x, 5, 36)).slice(0, 3)
-            : fb.bullets;
-
-      const resolvedSteps =
-        Array.isArray(b.steps) && b.steps.length > 0
-          ? b.steps.map((x) => condenseVisualHeadline(x, 2, 18)).slice(0, 4)
-          : pipeItems.length > 0
-            ? pipeItems.map((x) => condenseVisualHeadline(x, 2, 18)).slice(0, 4)
-            : fb.steps;
-
-      const resolvedToggles =
-        Array.isArray(b.toggles) && b.toggles.length > 0
-          ? b.toggles.slice(0, 3).map((t) => ({
-              label: condenseVisualHeadline(t.label || 'Levier', 4, 30),
-              before: sanitizeScriptText(t.before || 'OFF').toUpperCase().slice(0, 12),
-              after: sanitizeScriptText(t.after || 'ON').toUpperCase().slice(0, 12),
-              activeAfter: Boolean(t.activeAfter),
-            }))
-          : pipeItems.length >= 2
-            ? pipeItems.slice(0, 3).map((labelText, tIdx) => ({
-                label: condenseVisualHeadline(labelText, 4, 30),
-                before: tIdx === 0 ? 'SUBI' : 'OFF',
-                after: tIdx === 0 ? 'CORRIGÉ' : 'ACTIF',
-                activeAfter: tIdx > 0,
-              }))
-            : fb.toggles;
-
-      const resolvedComparisonLeft = b.comparisonLeft
-        ? {
-            label: sanitizeScriptText(b.comparisonLeft.label || 'Avant').slice(0, 26),
-            value: sanitizeScriptText(b.comparisonLeft.value || 'Avant').slice(0, 14),
-            ratio: Math.max(0.12, Math.min(1, Number(b.comparisonLeft.ratio) || 0.85)),
-          }
-        : parsedLeft && b.leftPair
-          ? {
-              label: sanitizeScriptText(parsedLeft.label || 'Avant').slice(0, 26),
-              value: sanitizeScriptText(parsedLeft.value || 'Avant').slice(0, 14),
-              ratio: fb.comparisonLeft?.ratio ?? 0.85,
-            }
-          : fb.comparisonLeft;
-
-      const resolvedComparisonRight = b.comparisonRight
-        ? {
-            label: sanitizeScriptText(b.comparisonRight.label || 'Après').slice(0, 26),
-            value: sanitizeScriptText(b.comparisonRight.value || 'Après').slice(0, 14),
-            ratio: Math.max(0.12, Math.min(1, Number(b.comparisonRight.ratio) || 0.25)),
-          }
-        : parsedRight && b.rightPair
-          ? {
-              label: sanitizeScriptText(parsedRight.label || 'Après').slice(0, 26),
-              value: sanitizeScriptText(parsedRight.value || 'Après').slice(0, 14),
-              ratio: fb.comparisonRight?.ratio ?? 0.35,
-            }
-          : fb.comparisonRight;
-
-      const resolvedSubStats =
-        Array.isArray(b.subStats) && b.subStats.length > 0
-          ? b.subStats.slice(0, 2).map((s) => ({
-              value: sanitizeScriptText(s.value || '').slice(0, 14),
-              label: sanitizeScriptText(s.label || '').slice(0, 24),
-            }))
-          : b.leftPair || b.rightPair
-            ? [
-                {
-                  value: (parsedLeft?.value || b.statValue || fb.subStats?.[0]?.value || '-').slice(0, 14),
-                  label: (parsedLeft?.label || fb.subStats?.[0]?.label || 'Avant').slice(0, 24),
-                },
-                {
-                  value: (parsedRight?.value || fb.subStats?.[1]?.value || '-').slice(0, 14),
-                  label: (parsedRight?.label || fb.subStats?.[1]?.label || 'Impact').slice(0, 24),
-                },
-              ]
-            : fb.subStats;
-
-      return {
-        id: `beat-${idx + 1}`,
-        title: condenseVisualHeadline(humanizeFrenchScript(b.title || fb.title).cleaned, 5, 36),
-        shortLabel: sanitizeScriptText(b.shortLabel || fb.shortLabel).slice(0, 22),
-        screenLabel: sanitizeScriptText(b.screenLabel || fb.screenLabel).toUpperCase().slice(0, 32),
-        spokenLine,
-        visualType: vt,
-        layoutHint,
-        brollKey,
-        brollCaption: sanitizeScriptText(b.brollCaption || fb.brollCaption || '').slice(0, 36) || undefined,
-        iconKind,
-        brandLogo,
-        notoIcon,
-        stampWord: b.stampWord ? sanitizeScriptText(b.stampWord).toUpperCase().slice(0, 14) : fb.stampWord,
-        statValue: b.statValue ? sanitizeScriptText(b.statValue).slice(0, 16) : fb.statValue,
-        statLabel: b.statLabel ? sanitizeScriptText(b.statLabel).slice(0, 44) : fb.statLabel,
-        dateBadge: b.dateBadge ? sanitizeScriptText(b.dateBadge).toUpperCase().slice(0, 22) : fb.dateBadge,
-        sourceLabel: b.sourceLabel ? sanitizeScriptText(b.sourceLabel).slice(0, 46) : fb.sourceLabel,
-        quoteText: b.quoteText ? sanitizeScriptText(b.quoteText).slice(0, 140) : fb.quoteText,
-        quoteHighlight: b.quoteHighlight ? sanitizeScriptText(b.quoteHighlight).slice(0, 48) : fb.quoteHighlight,
-        uiUrl: b.uiUrl ? sanitizeScriptText(b.uiUrl).slice(0, 44) : fb.uiUrl,
-        uiActionLabel: b.uiActionLabel ? sanitizeScriptText(b.uiActionLabel).slice(0, 22) : fb.uiActionLabel,
-        chartUnit: typeof b.chartUnit === 'string' ? b.chartUnit.slice(0, 6) : fb.chartUnit,
-        chartPoints: (() => {
-          if (Array.isArray(b.chartPoints) && b.chartPoints.length >= 3) {
-            return b.chartPoints.slice(0, 5);
-          }
-          if (typeof b.chartPointsPipe === 'string' && b.chartPointsPipe.includes(':')) {
-            const parsedPts = b.chartPointsPipe
-              .split('|')
-              .map((segStr) => segStr.split(':').map((s) => s.trim()))
-              .filter((p) => p.length >= 2 && Number.isFinite(Number(p[1].replace(',', '.'))))
-              .map((p, pIdx, arr) => ({
-                label: p[0].slice(0, 8),
-                value: Number(p[1].replace(',', '.')),
-                highlight: pIdx === arr.length - 1,
-              }));
-            if (parsedPts.length >= 3) return parsedPts.slice(0, 5);
-          }
-          return fb.chartPoints;
-        })(),
-        leftCard: parsedLeft,
-        rightCard: parsedRight,
-        subStats: resolvedSubStats,
-        bullets: resolvedBullets,
-        steps: resolvedSteps,
-        toggles: resolvedToggles,
-        terminalCmd: b.terminalCmd ? sanitizeScriptText(b.terminalCmd).slice(0, 40) : fb.terminalCmd,
-        terminalOut:
-          Array.isArray(b.terminalOut) && b.terminalOut.length > 0
-            ? b.terminalOut.map((l) => sanitizeScriptText(l).slice(0, 44)).slice(0, 3)
-            : isDev && pipeItems.length > 0
-              ? pipeItems.slice(0, 3).map((l) => l.slice(0, 44))
-              : fb.terminalOut,
-        comparisonLeft: resolvedComparisonLeft,
-        comparisonRight: resolvedComparisonRight,
-        multiplierBadge: b.multiplierBadge
-          ? sanitizeScriptText(b.multiplierBadge).slice(0, 10)
-          : fb.multiplierBadge,
-        gaugePct:
-          typeof b.gaugePct === 'number'
-            ? Math.max(20, Math.min(98, Math.round(b.gaugePct)))
-            : fb.gaugePct,
-        matrixHighlightPct:
-          typeof b.matrixHighlightPct === 'number'
-            ? Math.max(5, Math.min(95, Math.round(b.matrixHighlightPct)))
-            : fb.matrixHighlightPct,
-        matrixTotalDots: fb.matrixTotalDots,
-        matrixCalloutLabel: b.matrixCalloutLabel
-          ? sanitizeScriptText(b.matrixCalloutLabel).slice(0, 28)
-          : fb.matrixCalloutLabel,
-        dialKnobs: (() => {
-          if (typeof b.dialKnobsPipe === 'string' && b.dialKnobsPipe.includes(':')) {
-            const parsedKnobs = b.dialKnobsPipe
-              .split('|')
-              .map((kStr, kIdx) => {
-                const [lbl, val, unit] = kStr.split(':').map((s) => s.trim());
-                return {
-                  label: sanitizeScriptText(lbl || `Axe ${kIdx + 1}`).slice(0, 14),
-                  value: Math.max(5, Math.min(100, Number(val) || 75)),
-                  unit: (unit || '%').slice(0, 4),
-                  active: kIdx !== 1,
-                };
-              })
-              .slice(0, 3);
-            if (parsedKnobs.length >= 2) return parsedKnobs;
-          }
-          return fb.dialKnobs;
-        })(),
-        diffBeforeLines:
-          typeof b.diffBeforeLinesPipe === 'string' && b.diffBeforeLinesPipe.trim()
-            ? b.diffBeforeLinesPipe.split('|').map((s) => sanitizeScriptText(s).slice(0, 34)).filter(Boolean).slice(0, 3)
-            : fb.diffBeforeLines,
-        diffAfterLines:
-          typeof b.diffAfterLinesPipe === 'string' && b.diffAfterLinesPipe.trim()
-            ? b.diffAfterLinesPipe.split('|').map((s) => sanitizeScriptText(s).slice(0, 34)).filter(Boolean).slice(0, 3)
-            : fb.diffAfterLines,
-        diffScore:
-          typeof b.diffScore === 'number' ? Math.max(50, Math.min(99, Math.round(b.diffScore))) : fb.diffScore,
-        newsPublication: b.newsPublication
-          ? sanitizeScriptText(b.newsPublication).slice(0, 28)
-          : fb.newsPublication,
-        newsHeadline: b.newsHeadline
-          ? sanitizeScriptText(b.newsHeadline).slice(0, 88)
-          : fb.newsHeadline,
-        newsHighlightPhrase: b.newsHighlightPhrase
-          ? sanitizeScriptText(b.newsHighlightPhrase).slice(0, 36)
-          : fb.newsHighlightPhrase,
-        newsYears:
-          typeof b.newsYearsPipe === 'string' && b.newsYearsPipe.includes('|')
-            ? (() => {
-                const yrs = b.newsYearsPipe.split('|').map((s) => s.trim().slice(0, 6)).filter(Boolean);
-                return yrs.length >= 2 ? [yrs[0], yrs[1]] as [string, string] : fb.newsYears;
-              })()
-            : fb.newsYears,
-        neuralLayers: fb.neuralLayers,
-        neuralEquation: b.neuralEquation
-          ? sanitizeScriptText(b.neuralEquation).slice(0, 44)
-          : fb.neuralEquation,
-        repoName: b.repoName ? sanitizeScriptText(b.repoName).slice(0, 32) : fb.repoName,
-        repoStars: b.repoStars ? sanitizeScriptText(b.repoStars).slice(0, 12) : fb.repoStars,
-        authorName: b.authorName ? sanitizeScriptText(b.authorName).slice(0, 26) : fb.authorName,
-        slashCommands: fb.slashCommands,
-        codeLines: fb.codeLines,
-        toolboxTools: fb.toolboxTools,
-        cableAppLabel: b.cableAppLabel
-          ? sanitizeScriptText(b.cableAppLabel).slice(0, 22)
-          : fb.cableAppLabel,
-        crtYear: b.crtYear ? sanitizeScriptText(b.crtYear).slice(0, 6) : fb.crtYear,
-        crtMetric: b.crtMetric ? sanitizeScriptText(b.crtMetric).slice(0, 22) : fb.crtMetric,
-        beforeBadText: b.beforeBadText
-          ? sanitizeScriptText(b.beforeBadText).slice(0, 60)
-          : fb.beforeBadText,
-        afterGoodText: b.afterGoodText
-          ? sanitizeScriptText(b.afterGoodText).slice(0, 60)
-          : fb.afterGoodText,
-        hookVariantsList:
-          Array.isArray(parsed.hookVariants) && parsed.hookVariants.length > 0
-            ? parsed.hookVariants.slice(0, 3).map((v, hIdx) => ({
-                hook: sanitizeScriptText(v).slice(0, 56),
-                retention: hIdx === 1 ? '94 %' : hIdx === 2 ? '76 %' : '62 %',
-              }))
-            : fb.hookVariantsList,
-        fanCards: fb.fanCards,
-        heatCells: fb.heatCells,
-        sfxKind: sfxByVt[vt] || 'tap',
-      };
-    });
-
-    const bottomPicks = selectBottomIllustrationsForShort({
-      beats,
-      theme: item.theme,
-      category: item.category,
-      batchCooldownIds: item.batchCooldownIds,
-    });
-    const enrichedBeats: BatchBeatSpec[] = beats.map((b, bIdx) => {
-      const pick = bottomPicks[bIdx];
-      if (!pick) return b;
-      pick.subBrollKeys.forEach((id) => item.batchCooldownIds?.add(id));
-      return {
-        ...b,
-        brollKey: pick.primaryId,
-        subBrollKeys: pick.subBrollKeys,
-        brollCaption: b.brollCaption || pick.caption,
-      };
-    });
-
-    const normalizedHashtags: string[] = Array.isArray(parsed.hashtags)
-      ? parsed.hashtags
-          .map((h) => sanitizeScriptText(h).trim())
-          .filter(Boolean)
-          .map((h) => (h.startsWith('#') ? h : `#${h}`))
-          .slice(0, 5)
-      : typeof parsed.hashtags === 'string'
-        ? parsed.hashtags
-            .split(/[\s,;]+/)
-            .map((h) => sanitizeScriptText(h).trim())
-            .filter(Boolean)
-            .map((h) => (h.startsWith('#') ? h : `#${h}`))
-            .slice(0, 5)
-        : [];
-
-    const finalHookText = humanizeFrenchScript(
-      sanitizeScriptText(beats[0]?.spokenLine || bestHookCandidate?.hook || parsed.hookText || '')
-    ).cleaned;
-
-    return {
-      hookText: finalHookText,
-      youtubeTitle: humanizeFrenchScript(sanitizeScriptText(parsed.youtubeTitle || item.theme)).cleaned.slice(0, 58),
-      caption: humanizeFrenchScript(sanitizeScriptText(parsed.caption || fallbackBase.caption)).cleaned,
-      hashtags: normalizedHashtags.length > 0 ? normalizedHashtags : fallbackBase.hashtags,
-      archetypeLabel: blueprint.label,
-      generatedBy: 'gemini',
-      beats: enrichedBeats,
-    };
-  } catch (err) {
-    console.warn('Gemini batch script fallback:', err);
-    const fbPicks = selectBottomIllustrationsForShort({
-      beats: fallbackBase.beats,
-      theme: item.theme,
-      category: item.category,
-      batchCooldownIds: item.batchCooldownIds,
-    });
-    const fbBeats: BatchBeatSpec[] = fallbackBase.beats.map((b, bIdx) => {
-      const pick = fbPicks[bIdx];
-      if (!pick) return b;
-      pick.subBrollKeys.forEach((id) => item.batchCooldownIds?.add(id));
-      return {
-        ...b,
-        brollKey: pick.primaryId,
-        subBrollKeys: pick.subBrollKeys,
-        brollCaption: b.brollCaption || pick.caption,
-      };
-    });
-    return {
-      ...fallbackBase,
-      beats: fbBeats,
-      archetypeLabel: blueprint.label,
-      generatedBy: 'fallback',
-    };
+      lastErrors = validation.errors;
+    } catch (err) {
+      lastErrors = [err instanceof Error ? err.message : 'Erreur parsing JSON Gemini'];
+    }
   }
+
+  throw new Error(
+    `Échec génération Gemini pour "${item.theme}" après ${MAX_GEMINI_REPAIR_RETRIES + 1} tentatives: ${lastErrors.slice(0, 3).join(' | ')}`
+  );
 }
 
 export async function synthesizeVoiceoverForProject(params: {
@@ -1122,14 +1062,14 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
 
     const item = job.items[i];
     try {
-      // 1. Scripting
+      // 1. Scripting strictly via Gemini (isolated per item — zero fallback leakage)
       job.items[i] = {
         ...item,
         step: 'scripting',
         progress: 12,
         startedAt: new Date().toISOString(),
       };
-      job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Écriture du script IA`;
+      job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Écriture & storyboard IA`;
       job = saveBatchJob(job);
 
       const script = await generateScriptForBatchItem({
@@ -1137,17 +1077,16 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
         variationIndex: i,
         batchCooldownIds,
       });
-      const fullSpokenText = script.beats.map((b) => b.spokenLine).join(' ');
 
       if (activeCancelledBatchIds.has(batchId)) continue;
 
-      // 2. Voiceover ElevenLabs / Edge Neural
+      // 2. Beat-by-beat Voiceover Synthesis (1.10x natural + French normalizer + exact durations)
       job.items[i] = {
         ...job.items[i],
         step: 'voiceover',
         progress: 34,
       };
-      job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Synthèse vocale FR (${script.archetypeLabel})`;
+      job.currentStepLabel = `Short ${i + 1}/${job.totalCount} · Voix FR beat par beat`;
       job = saveBatchJob(job);
 
       const existing = getAllProjects();
@@ -1156,17 +1095,18 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
       fs.mkdirSync(projectDir, { recursive: true });
 
       const clampedSpeed = Math.min(1.25, Math.max(0.95, Number(req.speed) || 1.10));
-      const voice = await synthesizeVoiceoverForProject({
+      const voice = await synthesizeVoiceoverByBeats({
         projectDir,
-        fullText: fullSpokenText,
+        beats: script.beats.map((b) => ({ id: b.id, spokenLine: b.spokenLine })),
         speed: clampedSpeed,
       });
 
-      const timed = assignBeatTimingsAndTranscript(
-        script.beats,
-        voice.words,
-        voice.durationSec
-      );
+      const timed = buildTimedProjectFromBeatAudios({
+        beatsSpec: script.beats,
+        beatWindows: voice.beatWindows,
+        words: voice.words,
+        totalDurationSec: voice.durationSec,
+      });
 
       const layoutTrack: ShortProject['layoutTrack'] = timed.beats.map((b, bIdx) => ({
         id: `layout-${b.id}`,
@@ -1198,7 +1138,7 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
             status: req.renderMp4 ? 'rendering' : 'done',
             duration: timed.durationSec,
             fps: 25,
-            notes: `${script.archetypeLabel} (${script.generatedBy === 'gemini' ? 'IA Gemini' : 'Structuré'}) · Look ${lookPreset.label}`,
+            notes: `${script.archetypeLabel} · Look ${lookPreset.label}`,
             audioTrackUrl: voice.audioTrackUrl,
           },
         ],

@@ -209,10 +209,14 @@ export type SemanticSfxSound =
   | 'glass-shatter'
   | 'impact-boom'
   | 'zhhh'
+  | 'whoosh'
   | 'riser'
   | 'pop-back'
   | 'thud'
+  | 'stamp'
   | 'tap'
+  | 'click'
+  | 'tick'
   | 'pop'
   | 'bell';
 
@@ -223,9 +227,9 @@ export interface SemanticSfxCue {
   reason: string;
 }
 
-const FRACTURE_WORD_RE = /^(?:explos|bloqu|chut|effondr|interdi|piège|erreur|stop|danger|jamais|zéro|rien|perdu|caché|secret|refus|censur|fractur|piég)/i;
+const FRACTURE_WORD_RE = /^(?:explos|bloqu|chut|effondr|interdi|piège|erreur|stop|danger|jamais|zéro|rien|perdu|caché|secret|refus|censur|fractur|piég|ferm|écras|chute|perd)/i;
 const NUMBER_WORD_RE = /(?:\d|%|\b(?:millions?|milliards?|fois|zéro|double|triple|dix|vingt|cinquante|cent)\b)/i;
-const ACTION_WORD_RE = /^(?:cliqu|activ|coup|install|test|regard|scann|vérifi|lanc|ouvr|chang|retir|nettoi|compar)/i;
+const ACTION_WORD_RE = /^(?:cliqu|activ|coup|install|test|regard|scann|vérifi|lanc|ouvr|chang|retir|nettoi|compar|calcul|supprim|réduit)/i;
 const CTA_SUB_WORD_RE = /^(?:abonne|abonner|suis|rejoins|clique)/i;
 const CTA_BELL_WORD_RE = /^(?:cloche|notif|enregistr|sauvegard)/i;
 
@@ -276,54 +280,66 @@ export function findSemanticWordTimestamps(params: {
   };
 
   if (beatIndex === 0) {
-    // Beat 1 Hook: find fracture / shock digit word inside Act 2 window (>= 1.10s)
+    // Beat 1 Hook: Primary semantic shock on fracture/number + crisp Act 1 entry snap
     const fractureWord = beatWords.find(
-      (w) => w.start >= beatFrom + 1.10 && FRACTURE_WORD_RE.test(cleanFrenchToken(w.word))
+      (w) => w.start >= beatFrom + 0.95 && FRACTURE_WORD_RE.test(cleanFrenchToken(w.word))
     );
     const numWord = beatWords.find(
-      (w) => w.start >= beatFrom + 1.10 && NUMBER_WORD_RE.test(w.word)
+      (w) => w.start >= beatFrom + 0.95 && NUMBER_WORD_RE.test(w.word)
     );
-    const pivotAt = fractureWord?.start ?? numWord?.start ?? beatFrom + Math.max(1.35, Math.min(2.2, span * 0.45));
+    const pivotAt = fractureWord?.start ?? numWord?.start ?? beatFrom + Math.max(1.25, Math.min(2.1, span * 0.44));
     const primary: SemanticSfxSound =
+      visualType === 'trap_barrier_alert' ||
+      visualType === 'notification_explosion_stamp' ||
       visualType === 'hook_alert' ||
       visualType === 'hook_stat' ||
       visualType === 'confidential_vault_slam' ||
       visualType === 'paywall_shock_stack'
         ? 'impact-boom'
-        : visualType === 'hook_versus' || visualType === 'avatar_crowd_highlight'
+        : visualType === 'balance_scale_duel' ||
+            visualType === 'hook_versus' ||
+            visualType === 'avatar_crowd_highlight'
           ? 'zhhh'
           : 'glass-shatter';
-    pushUnique(primary, pivotAt, 0.48, 'hook-act2-semantic');
+    pushUnique(primary, pivotAt, 0.46, 'hook-act2-semantic');
     if (numWord && fractureWord && Math.abs(numWord.start - fractureWord.start) > 0.32) {
       pushUnique('pop', numWord.start, 0.34, 'hook-digit');
     } else {
       pushUnique(
-        visualType === 'hook_alert' || visualType === 'confidential_vault_slam' ? 'riser' : 'thud',
+        visualType === 'trap_barrier_alert' || visualType === 'confidential_vault_slam' ? 'riser' : 'thud',
         Math.min(beatTo - 0.25, pivotAt + 0.3),
-        0.32,
+        0.30,
         'hook-resonance'
       );
     }
+    pushUnique('pop', beatFrom + 0.08, 0.34, 'hook-act1-entry');
     return cues;
   }
 
-  if (isLastBeat) {
+  if (isLastBeat || visualType === 'channel_end_cta' || visualType === 'cta_card') {
     const subWord = beatWords.find((w) => CTA_SUB_WORD_RE.test(cleanFrenchToken(w.word)));
     const bellWord = beatWords.find((w) => CTA_BELL_WORD_RE.test(cleanFrenchToken(w.word)));
     const subAt = subWord?.start ?? beatFrom + Math.min(0.95, span * 0.32);
     const bellAt = bellWord?.start ?? subAt + 0.45;
-    pushUnique('pop-back', subAt, 0.44, 'cta-subscribe');
+    pushUnique('pop-back', subAt, 0.42, 'cta-subscribe');
     pushUnique('bell', bellAt, 0.38, 'cta-bell');
     return cues;
   }
 
-  // Geometry transition whoosh only on genuine split <-> fullscreen switches
+  // Geometry transition whoosh on split <-> fullscreen switches
   if (previousLayout && previousLayout !== currentLayout) {
     pushUnique('zhhh', beatFrom + 0.04, 0.35, 'layout-transition');
   }
 
-  // Multi-event UI / interactive archetypes
+  // Multi-event UI / checklist / pipeline / audit primitives
   if (
+    visualType === 'scrolling_checklist_spotlight' ||
+    visualType === 'audit_table_detector' ||
+    visualType === 'rotary_control_deck' ||
+    visualType === 'process_pipeline' ||
+    visualType === 'paper_receipt_payslip' ||
+    visualType === 'radial_mindmap_hub' ||
+    visualType === 'editorial_evidence_board' ||
     visualType === 'toggles_switch' ||
     visualType === 'checklist_audit' ||
     visualType === 'rotary_console' ||
@@ -338,18 +354,25 @@ export function findSemanticWordTimestamps(params: {
       .filter((w) => ACTION_WORD_RE.test(cleanFrenchToken(w.word)))
       .slice(0, 3);
     if (actionHits.length >= 2) {
-      actionHits.forEach((w, i) => pushUnique(i === 2 ? 'pop' : 'tap', w.start, 0.35, `ui-word-${i}`));
+      actionHits.forEach((w, i) => pushUnique(i === 2 ? 'pop' : 'tap', w.start, 0.34, `ui-word-${i}`));
     } else {
-      [0.32, 0.88, 1.45].forEach((offset, i) => {
+      [0.24, 0.86, 1.48].forEach((offset, i) => {
         if (offset < span - 0.28) {
-          pushUnique(i === 2 ? 'pop' : 'tap', beatFrom + offset, 0.33, `ui-step-${i}`);
+          pushUnique(i === 2 ? 'pop' : 'tap', beatFrom + offset, 0.32, `ui-step-${i}`);
         }
       });
     }
     return cues;
   }
 
+  // Slam / compression / stamp / morph / trap primitives
   if (
+    visualType === 'hydraulic_compressor' ||
+    visualType === 'countdown_calendar_stamp' ||
+    visualType === 'notification_explosion_stamp' ||
+    visualType === 'trap_barrier_alert' ||
+    visualType === 'before_after_morph' ||
+    visualType === 'hand_drawn_marker_highlight' ||
     visualType === 'neural_scan' ||
     visualType === 'neural_shield_abliteration' ||
     visualType === 'pixel_diff' ||
@@ -364,8 +387,14 @@ export function findSemanticWordTimestamps(params: {
     const actHit = beatWords.find((w) => ACTION_WORD_RE.test(cleanFrenchToken(w.word)));
     if (actHit) pushUnique('tap', actHit.start, 0.33, 'scan-action');
     pushUnique(
-      visualType === 'neural_scan' || visualType === 'neural_shield_abliteration' ? 'thud' : 'pop',
-      numHit?.start ?? beatFrom + span * 0.54,
+      visualType === 'hydraulic_compressor' ||
+        visualType === 'countdown_calendar_stamp' ||
+        visualType === 'trap_barrier_alert' ||
+        visualType === 'neural_scan' ||
+        visualType === 'neural_shield_abliteration'
+        ? 'thud'
+        : 'pop',
+      numHit?.start ?? beatFrom + span * 0.52,
       0.38,
       'scan-payoff'
     );
@@ -378,10 +407,15 @@ export function findSemanticWordTimestamps(params: {
   const actHit = beatWords.find((w) => ACTION_WORD_RE.test(cleanFrenchToken(w.word)));
 
   if (fracHit) {
-    pushUnique('thud', fracHit.start, 0.4, `fracture-${fracHit.word}`);
+    pushUnique('thud', fracHit.start, 0.38, `fracture-${fracHit.word}`);
   } else if (numHit) {
     pushUnique(
-      visualType === 'comparison_bars' ||
+      visualType === 'animated_data_chart' ||
+        visualType === 'split_comparison_window' ||
+        visualType === 'balance_scale_duel' ||
+        visualType === 'dot_population_scale' ||
+        visualType === 'segmented_quota_slider' ||
+        visualType === 'comparison_bars' ||
         visualType === 'gauge' ||
         visualType === 'github_repo_star_rocket' ||
         visualType === 'retro_crt_1995_parallel' ||
@@ -389,14 +423,15 @@ export function findSemanticWordTimestamps(params: {
         ? 'impact-boom'
         : 'pop',
       numHit.start,
-      0.38,
+      0.36,
       `number-${numHit.word}`
     );
   } else if (actHit) {
-    pushUnique('tap', actHit.start, 0.34, `action-${actHit.word}`);
+    pushUnique('tap', actHit.start, 0.33, `action-${actHit.word}`);
   } else if (fallbackSfxKind && cues.length === 0) {
-    pushUnique(fallbackSfxKind, beatFrom + 0.14, 0.34, 'beat-entry');
+    pushUnique(fallbackSfxKind, beatFrom + 0.14, 0.32, 'beat-entry');
   }
 
   return cues;
 }
+

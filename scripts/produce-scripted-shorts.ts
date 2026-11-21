@@ -2,9 +2,10 @@
 /**
  * Rend des Shorts 1080x1920 à partir de scripts écrits à la main.
  *
- * Contrairement au lot /api/batch/start, aucun appel Gemini n'est fait : le
- * fichier JSON d'entrée contient déjà les 8 beats, le studio ne s'occupe que de
- * la voix, du timing, de la musique et du rendu MP4.
+ * Utilise le pipeline complet de production :
+ *  - Synthèse vocale beat-par-beat à 1.10x avec normaliseur oral FR + mesure ffprobe
+ *  - Sélection sémantique sur la base de 190+ visuels bas plein cadre (+ cache visualQuery)
+ *  - Timeline exacte (0.00s de dérive), SFX sémantiques, mixage broadcast + rendu Chromium CDP
  *
  * Usage :
  *   npx tsx scripts/produce-scripted-shorts.ts <scripts.json> [--port 3000]
@@ -15,9 +16,12 @@ import 'dotenv/config';
 import type { BatchBeatSpec } from '../src/types/batch';
 import { LOOK_PRESETS, type LookId } from '../src/data/shortSpec';
 import {
-  assignBeatTimingsAndTranscript,
+  buildTimedProjectFromBeatAudios,
+  resolveBeatLayout,
   sanitizeScriptText,
 } from '../src/engine/batchShortBuilder';
+import { selectBottomMediaForShort } from '../src/engine/brollKeys';
+import { auditShortQuality } from '../src/engine/shortQualityChecklist';
 import { normalizeSlug } from '../src/engine/topicCsv';
 import type { ShortProject } from '../src/types/studio';
 import {
@@ -26,8 +30,9 @@ import {
   initStorage,
   saveProject,
 } from '../src/server/storageManager';
-import { synthesizeVoiceoverUnified } from '../src/server/voiceEngineService';
+import { synthesizeVoiceoverByBeats } from '../src/server/voiceEngineService';
 import { renderDynamicProjectToMp4 } from '../src/server/batchRenderer';
+import { resolveAndCacheVisualQuery } from '../src/server/brollResolverService';
 
 interface ScriptedShort {
   topicId?: string;
@@ -68,28 +73,74 @@ function uniqueIds(baseTitle: string): { id: string; slug: string } {
   return { id: `proj-${slug}`, slug };
 }
 
-async function produceOne(short: ScriptedShort, cfg: Required<Pick<InputFile, 'lookId' | 'musicTrack' | 'speed'>>, port: number) {
+async function produceOne(
+  short: ScriptedShort,
+  cfg: Required<Pick<InputFile, 'lookId' | 'musicTrack' | 'speed'>>,
+  port: number,
+  batchCooldownIds: Set<string>
+) {
   const lookPreset = LOOK_PRESETS[cfg.lookId] || LOOK_PRESETS.papier;
-  const beats = short.beats.map((b, i) => ({
+  const rawBeats = short.beats.map((b, i) => ({
     ...b,
     id: b.id || `beat-${i + 1}`,
     spokenLine: sanitizeScriptText(b.spokenLine),
   }));
-  const fullSpokenText = beats.map((b) => b.spokenLine).join(' ');
+
+  const fullSpokenText = rawBeats.map((b) => b.spokenLine).join(' ');
   const { id: projectId, slug } = uniqueIds(short.theme);
   const projectDir = path.join(PROJECTS_DIR, projectId);
   fs.mkdirSync(projectDir, { recursive: true });
 
-  console.log(`\n=== ${short.theme}\n    ${beats.length} beats · ${fullSpokenText.split(/\s+/).length} mots`);
-  console.log('    1/3 voix...');
-  const voice = await synthesizeVoiceoverUnified({
+  console.log(`\n=== ${short.theme}\n    ${rawBeats.length} beats · ${fullSpokenText.split(/\s+/).length} mots`);
+  console.log('    1/4 voix FR beat par beat (1.10x + normaliseur + ffprobe)...');
+  const voice = await synthesizeVoiceoverByBeats({
     projectDir,
-    fullText: fullSpokenText,
+    beats: rawBeats.map((b) => ({ id: b.id, spokenLine: b.spokenLine })),
     speed: cfg.speed,
   });
-  console.log(`        voix=${voice.providerUsed} durée=${voice.durationSec.toFixed(2)}s`);
+  console.log(`        voix=${voice.providerUsed} (${voice.voiceUsed}) durée=${voice.durationSec.toFixed(2)}s`);
 
-  const timed = assignBeatTimingsAndTranscript(beats, voice.words, voice.durationSec);
+  console.log('    2/4 sélection B-roll plein cadre (pool 190+ & cache visualQuery)...');
+  const mediaPicks = selectBottomMediaForShort({
+    beats: rawBeats,
+    category: short.category,
+    theme: short.theme,
+    batchCooldownIds,
+    estimatedDurationSec: voice.durationSec,
+  });
+
+  const usedQueryHashes = new Set<string>();
+  const cachedUrlsPerBeat = await Promise.all(
+    rawBeats.map(async (b, bIdx) => {
+      const layout = resolveBeatLayout(b, bIdx, rawBeats.length);
+      if (layout === 'fullscreen' || !b.visualQuery || bIdx === rawBeats.length - 1) {
+        return undefined;
+      }
+      const cached = await resolveAndCacheVisualQuery(b.visualQuery, usedQueryHashes).catch(() => null);
+      return cached ? [cached] : undefined;
+    })
+  );
+
+  const enrichedBeats: BatchBeatSpec[] = rawBeats.map((b, bIdx) => {
+    const pick = mediaPicks[bIdx];
+    if (!pick) return b;
+    pick.subBrollKeys.forEach((id) => batchCooldownIds.add(id));
+    return {
+      ...b,
+      brollKey: pick.primaryId,
+      subBrollKeys: pick.subBrollKeys,
+      subBrollUrls: cachedUrlsPerBeat[bIdx],
+      brollCaption: pick.caption,
+    };
+  });
+
+  const timed = buildTimedProjectFromBeatAudios({
+    beatsSpec: enrichedBeats,
+    beatWindows: voice.beatWindows,
+    words: voice.words,
+    totalDurationSec: voice.durationSec,
+  });
+
   const project: ShortProject = {
     id: projectId,
     slug,
@@ -113,7 +164,7 @@ async function produceOne(short: ScriptedShort, cfg: Required<Pick<InputFile, 'l
         status: 'rendering',
         duration: timed.durationSec,
         fps: 25,
-        notes: `Script écrit main · Look ${lookPreset.label}`,
+        notes: `Melvynx Universel · Look ${lookPreset.label}`,
         audioTrackUrl: voice.audioTrackUrl,
       },
     ],
@@ -150,9 +201,12 @@ async function produceOne(short: ScriptedShort, cfg: Required<Pick<InputFile, 'l
       visualBeatsTarget: timed.beats.length,
     },
   };
+
+  const qa = auditShortQuality(project);
+  console.log(`    3/4 audit qualité : ${qa.score}/${qa.maxScore}${qa.issues.length ? ` (${qa.issues.join(' | ')})` : ''}`);
   saveProject(project);
 
-  console.log('    2/3 rendu MP4 1080x1920...');
+  console.log('    4/4 rendu MP4 1080x1920...');
   const rendered = await renderDynamicProjectToMp4({
     project,
     version: 'v1',
@@ -174,7 +228,7 @@ async function produceOne(short: ScriptedShort, cfg: Required<Pick<InputFile, 'l
     contactSheetUrl: rendered.contactSheetUrl,
   };
   saveProject(project);
-  console.log(`    3/3 prêt : ${rendered.outputMp4Url}`);
+  console.log(`    PRÊT : ${rendered.outputMp4Path} (${rendered.duration.toFixed(2)}s · ${rendered.sizeMb} Mo)`);
   return { project, rendered };
 }
 
@@ -195,9 +249,10 @@ async function main() {
   };
   const port = readPort();
   initStorage();
+  const batchCooldownIds = new Set<string>();
 
   for (const short of input.shorts) {
-    await produceOne(short, cfg, port);
+    await produceOne(short, cfg, port, batchCooldownIds);
   }
   console.log('\nTerminé.');
 }

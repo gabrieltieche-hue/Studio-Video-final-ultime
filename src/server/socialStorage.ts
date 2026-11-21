@@ -329,14 +329,14 @@ export function resolvePublicMediaDir(token: string): string | null {
 
 export function getDefaultBrandingKit(): ChannelBrandingKit {
   return {
-    brandName: 'Alex Décode',
-    handle: '@alex.decode',
-    tagline: 'Tech, IA & Décryptages · 1 Short clair par jour',
+    brandName: 'Décryptage FR',
+    handle: '@decryptage.fr',
+    tagline: 'Analyses & Décryptages · 1 Short clair par jour',
     youtubeDescription:
-      'Décryptages Tech, IA, lois numériques et écrans en moins de 60 secondes.\n\nChaque semaine, un sujet d’actualité décortiqué avec chiffres sourcés et visuels clairs — sans jargon ni sensationnalisme.\n\nAbonne-toi et active la cloche pour ne rater aucun épisode.\nChaîne sœur : @alex.decode',
+      'Décryptages Économie, Société, Tech & Droit en moins de 60 secondes.\n\nChaque épisode décortique un sujet concret avec des chiffres sourcés et des visuels clairs — sans jargon ni remplissage.\n\nAbonne-toi et active la cloche pour recevoir les prochains décryptages.',
     instagramBio:
-      'Décryptages Tech, IA & Société en 60s ⚡\nCe que les algorithmes ne te montrent pas.\n👇 Dernier épisode',
-    tiktokBio: 'Tech, IA & Décryptages en 60s ⚡ Le numérique sans jargon.',
+      'Décryptages Éco, Tech & Société en 60s ⚡\nChiffres réels & mécanismes cachés.\n👇 Dernier épisode',
+    tiktokBio: 'Éco, Tech & Décryptages en 60s ⚡ Chiffres réels sans jargon.',
     avatarUrl: '/brand/avatar-alex-decode.jpg',
     bannerUrl: '/brand/banner-youtube-alex-decode.jpg',
     updatedAt: new Date().toISOString(),

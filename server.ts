@@ -19,6 +19,7 @@ import {
   hydrateSavedProjectsFromRepo,
   initStorage,
 } from './src/server/storageManager';
+import { BROLL_CACHE_DIR } from './src/server/brollResolverService';
 import { seedFlagshipProjectIfMissing } from './src/server/seedFlagshipProject';
 import { createStudioRouter } from './src/server/studioRouter';
 import { createSocialRouter } from './src/server/socialRouter';
@@ -87,6 +88,8 @@ async function startServer() {
   app.use('/takes', express.static(TAKES_DIR));
   app.use('/renders', express.static(RENDERS_DIR));
   app.use('/storage', express.static(STORAGE_DIR));
+  app.use('/broll-cache', express.static(BROLL_CACHE_DIR));
+  app.use('/broll-pool', express.static(path.resolve(__dirname, 'public/broll-pool')));
 
   app.get('/api/health', (_req, res) => {
     res.json({
@@ -257,6 +260,7 @@ async function startServer() {
     app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
     app.use('/video', express.static(path.resolve(__dirname, 'public/video')));
     app.use('/audio', express.static(path.resolve(__dirname, 'public/audio')));
+    app.use('/broll-pool', express.static(path.resolve(__dirname, 'public/broll-pool')));
     app.use(express.static(distDir, { index: false }));
     app.get('*', (_req, res) => {
       res.setHeader('Cache-Control', 'no-store');

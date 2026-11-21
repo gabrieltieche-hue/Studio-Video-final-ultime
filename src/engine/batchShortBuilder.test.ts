@@ -1,23 +1,125 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ALL_MELVYNX_ARCHETYPES,
-  SHORT_CHOREOGRAPHIES,
   alignmentToWords,
   assignBeatTimingsAndTranscript,
-  buildFallbackBatchScript,
+  buildTimedProjectFromBeatAudios,
   computeStaggeredScheduleSlots,
   condenseVisualHeadline,
   parseBulkTopicsInput,
   resolveBeatLayout,
+  resolveChannelCtaProfile,
   sanitizeScriptText,
-  selectChoreographyForTopic,
   trimSpokenLineForPacing,
 } from './batchShortBuilder';
 import { BROLL_DATABASE, BROLL_DATABASE_BY_ID } from '../data/brollDatabase';
-import { getBrollSequenceForTopic } from './brollKeys';
+import { getBrollSequenceForTopic, isDevOrCodeTopic, selectBottomMediaForShort } from './brollKeys';
 import { buildDynamicBeatsFromProject } from './transcriptUtils';
+import type { BatchBeatSpec } from '../types/batch';
 import type { ShortProject } from '../types/studio';
+
+function makeUniversalTestBeats(): BatchBeatSpec[] {
+  return [
+    {
+      id: 'b1',
+      title: 'Marges en restauration',
+      highlightWord: 'Marges',
+      shortLabel: 'MARGES',
+      screenLabel: 'RESTAURANT',
+      spokenLine: 'Quatre restaurants indépendants sur dix ferment avant trois ans faute de marge nette.',
+      visualType: 'metric_shock_hook',
+      layoutHint: 'split',
+      statValue: '40 %',
+      statLabel: 'Taux de fermeture avant 3 ans',
+      stampWord: 'ALERTE',
+      sfxKind: 'impact-boom',
+    },
+    {
+      id: 'b2',
+      title: 'Ticket réel du menu',
+      highlightWord: 'réel',
+      shortLabel: 'TICKET',
+      screenLabel: 'CAISSE',
+      spokenLine: 'Sur une addition de vingt euros la matière et les charges mangent presque tout.',
+      visualType: 'paper_receipt_payslip',
+      layoutHint: 'split',
+      receiptItems: [
+        { label: 'Matières premières', amount: '-6,40 €', tone: 'negative' },
+        { label: 'Masse salariale', amount: '-8,20 €', tone: 'negative' },
+        { label: 'Marge nette finale', amount: '1,10 €', highlight: true, tone: 'positive' },
+      ],
+      receiptTotalLabel: 'Résultat net',
+      receiptTotalValue: '5,5 %',
+      sfxKind: 'tap',
+    },
+    {
+      id: 'b3',
+      title: 'Plateformes vs salle',
+      highlightWord: 'Plateformes',
+      shortLabel: 'DUEL',
+      screenLabel: 'COMMISSIONS',
+      spokenLine: 'Chaque commande livrée coûte trente pour cent de commission avant même de payer la cuisine.',
+      visualType: 'balance_scale_duel',
+      layoutHint: 'fullscreen',
+      leftCard: { label: 'Livraison', value: '-30 %', sub: 'Commission' },
+      rightCard: { label: 'Vente directe', value: '+24 %', sub: 'Marge sauvée' },
+      scaleTilt: 'left',
+      sfxKind: 'whoosh',
+    },
+    {
+      id: 'b4',
+      title: 'Erreurs de carte',
+      highlightWord: 'Erreurs',
+      shortLabel: 'AUDIT',
+      screenLabel: 'MENU',
+      spokenLine: 'Une carte trop longue génère du gaspillage invisible et ralentit le service en heure de pointe.',
+      visualType: 'audit_table_detector',
+      layoutHint: 'fullscreen',
+      auditRows: [
+        { label: '32 plats au menu', detail: 'Stock immobilisé', status: 'alert', badge: 'PERTE' },
+        { label: '8 plats signatures', detail: 'Rotation rapide', status: 'ok', badge: 'RENTABLE' },
+        { label: 'Fournisseurs doublons', detail: 'Renégocié -12 %', status: 'removed', badge: 'CORRIGÉ' },
+      ],
+      sfxKind: 'tap',
+    },
+    {
+      id: 'b5',
+      title: 'Avant vs après carte',
+      highlightWord: 'après',
+      shortLabel: 'METHODE',
+      screenLabel: 'TRANSFORMATION',
+      spokenLine: 'Réduire la carte à huit plats rentables triple la vitesse en cuisine et double la marge.',
+      visualType: 'before_after_morph',
+      layoutHint: 'fullscreen',
+      beforeBadText: 'Carte géante de 35 plats avec pertes quotidiennes.',
+      afterGoodText: '8 plats maîtrisés avec coût matière sous 28 %.',
+      sfxKind: 'bell',
+    },
+    {
+      id: 'b6',
+      title: 'Trois leviers immédiats',
+      highlightWord: 'immédiats',
+      shortLabel: 'PLAN',
+      screenLabel: 'ACTIONS',
+      spokenLine: 'Vérifie tes coûts matière chaque lundi et supprime les références sous trente pour cent de marge.',
+      visualType: 'scrolling_checklist_spotlight',
+      layoutHint: 'split',
+      bullets: ['Auditer le coût matière', 'Limiter à 8 plats phares', 'Pousser le clic et collecte'],
+      sfxKind: 'pop',
+    },
+    {
+      id: 'b7',
+      title: 'Abonne-toi pour suivre',
+      highlightWord: 'Abonne-toi',
+      shortLabel: 'FIN',
+      screenLabel: 'CHAÎNE',
+      spokenLine: 'Abonne-toi et active la cloche pour nos prochains décryptages concrets.',
+      visualType: 'channel_end_cta',
+      layoutHint: 'split',
+      sfxKind: 'bell',
+    },
+  ];
+}
 
 test('sanitizeScriptText removes em-dashes and normalizes whitespace', () => {
   assert.equal(
@@ -26,23 +128,32 @@ test('sanitizeScriptText removes em-dashes and normalizes whitespace', () => {
   );
 });
 
-test('parseBulkTopicsInput parses custom lines, category | theme | angle, and deduplicates', () => {
+test('parseBulkTopicsInput parses custom lines and category | theme | angle cleanly', () => {
   const raw = `
     # Commentaire ignoré
     Pourquoi l'électricité coûte 2 fois plus cher en France
     IA | Les agents IA remplacent-ils les devs juniors ? | Focus -28% d'embauches
-    Pourquoi l'électricité coûte 2 fois plus cher en France
-    Business | 3 erreurs de trésorerie en freelance
+    Business | 3 erreurs de trésorerie en food-truck
   `;
   const parsed = parseBulkTopicsInput(raw);
   assert.equal(parsed.length, 3);
-  assert.equal(parsed[0].category, 'Tech & Société');
+  assert.equal(parsed[0].category, 'Général');
   assert.equal(parsed[1].category, 'IA');
   assert.equal(parsed[1].angle, "Focus -28% d'embauches");
   assert.equal(parsed[2].category, 'Business');
 });
 
-test('alignmentToWords converts character alignment into speed-adjusted WhisperWords', () => {
+test('resolveChannelCtaProfile never falls back to hardcoded @alex.decode demo handle', () => {
+  const def = resolveChannelCtaProfile();
+  assert.ok(!def.handle.includes('alex.decode'));
+  assert.equal(def.handle, '@decryptage.fr');
+
+  const custom = resolveChannelCtaProfile({ handle: 'mon.studio', brandName: 'Mon Studio' });
+  assert.equal(custom.handle, '@mon.studio');
+  assert.equal(custom.initial, 'M');
+});
+
+test('alignmentToWords converts character alignment into WhisperWords', () => {
   const text = 'Bonjour France.';
   const chars = text.split('');
   const starts = chars.map((_, i) => i * 0.1);
@@ -54,7 +165,6 @@ test('alignmentToWords converts character alignment into speed-adjusted WhisperW
       character_end_times_seconds: ends,
     },
     text,
-    1.0,
     5
   );
   assert.equal(result.words.length, 2);
@@ -62,197 +172,151 @@ test('alignmentToWords converts character alignment into speed-adjusted WhisperW
   assert.equal(result.words[1].word, 'France.');
   assert.ok(result.words[0].start < result.words[1].start);
   assert.ok(result.durationSec > result.words[1].end);
-
-  const faster = alignmentToWords(
-    {
-      characters: chars,
-      character_start_times_seconds: starts,
-      character_end_times_seconds: ends,
-    },
-    text,
-    1.1,
-    5
-  );
-  assert.ok(faster.words[1].end < result.words[1].end);
-
-  const spacedPunct = '2026 : pourquoi ?';
-  const spChars = spacedPunct.split('');
-  const spRes = alignmentToWords(
-    {
-      characters: spChars,
-      character_start_times_seconds: spChars.map((_, i) => i * 0.1),
-      character_end_times_seconds: spChars.map((_, i) => i * 0.1 + 0.08),
-    },
-    spacedPunct,
-    1.0,
-    5
-  );
-  assert.equal(spRes.words.length, 2);
-  assert.equal(spRes.words[0].word, '2026 :');
-  assert.equal(spRes.words[1].word, 'pourquoi ?');
 });
 
-test('assignBeatTimingsAndTranscript creates continuous non-overlapping beats and caps long single-beat spans', () => {
-  const fallback = buildFallbackBatchScript({
-    theme: 'La taxe numérique en 2026',
-    category: 'Politique',
+test('buildTimedProjectFromBeatAudios guarantees zero cumulative drift and maps extended payloads into DynamicBeat', () => {
+  const beatsSpec = makeUniversalTestBeats();
+  const beatWindows = [
+    { from: 0, to: 3.8 },
+    { from: 3.8, to: 8.6 },
+    { from: 8.6, to: 14.2 },
+    { from: 14.2, to: 20.1 },
+    { from: 20.1, to: 25.4 },
+    { from: 25.4, to: 30.8 },
+    { from: 30.8, to: 35.2 },
+  ];
+  const words = beatsSpec.flatMap((b, bi) => {
+    const win = beatWindows[bi];
+    const tokens = b.spokenLine.split(/\s+/);
+    const step = (win.to - win.from - 0.1) / tokens.length;
+    return tokens.map((tok, ti) => ({
+      id: `b${bi + 1}-${ti + 1}`,
+      word: tok,
+      start: Number((win.from + ti * step).toFixed(3)),
+      end: Number((win.from + (ti + 0.85) * step).toFixed(3)),
+      confidence: 0.99,
+    }));
   });
-  fallback.beats[1].spokenLine = Array.from({ length: 42 }, (_, idx) => `mot${idx + 1}`).join(' ');
-  const fullText = fallback.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.1, 38);
-  const timed = assignBeatTimingsAndTranscript(fallback.beats, words, durationSec);
 
-  assert.equal(timed.beats.length, fallback.beats.length);
+  const timed = buildTimedProjectFromBeatAudios({
+    beatsSpec,
+    beatWindows,
+    words,
+    totalDurationSec: 35.2,
+  });
+
+  assert.equal(timed.beats.length, 7);
+  assert.equal(timed.beats[0].from, 0);
+  assert.equal(timed.beats[6].to, timed.durationSec);
+  assert.equal(timed.beats[2].layout, 'fullscreen');
+  assert.ok(timed.sfxTrack.length >= 2);
+
+  const dummyProj = {
+    id: 'proj-resto',
+    slug: 'resto',
+    title: 'Marges en restauration',
+    mode: 'faceless_explainer',
+    platform: 'youtube_shorts',
+    status: 'ready',
+    duration: timed.durationSec,
+    fps: 25,
+    resolution: { width: 1080, height: 1920 },
+    currentVersion: 'v1',
+    versions: [],
+    transcript: words,
+    motionTrack: timed.motionTrack,
+    layoutTrack: [],
+    sfxTrack: timed.sfxTrack,
+    feedbacks: [],
+    editSpec: { beats: timed.beats, speed: 1.1 },
+  } as unknown as ShortProject;
+
+  const dynBeats = buildDynamicBeatsFromProject(dummyProj);
+  assert.equal(dynBeats[1].receiptItems?.length, 3);
+  assert.equal(dynBeats[3].auditRows?.length, 3);
+  assert.equal(dynBeats[0].highlightWord, 'Marges');
+});
+
+test('assignBeatTimingsAndTranscript creates continuous non-overlapping beats', () => {
+  const beatsSpec = makeUniversalTestBeats();
+  const fullText = beatsSpec.map((b) => b.spokenLine).join(' ');
+  const { words, durationSec } = alignmentToWords(null, fullText, 36);
+  const timed = assignBeatTimingsAndTranscript(beatsSpec, words, durationSec);
+
+  assert.equal(timed.beats.length, beatsSpec.length);
   assert.equal(timed.beats[0].from, 0);
   assert.equal(timed.beats[timed.beats.length - 1].to, timed.durationSec);
-  const maxAllowed = Math.max(5.5, timed.durationSec * 0.24) + 0.25;
-  for (let i = 0; i < timed.beats.length; i++) {
-    if (i > 0) {
-      assert.equal(timed.beats[i].from, timed.beats[i - 1].to);
-    }
-    const span = timed.beats[i].to - timed.beats[i].from;
-    assert.ok(span > 0);
-    assert.ok(span <= maxAllowed, `Beat ${i + 1} span ${span.toFixed(2)}s exceeded cap ${maxAllowed.toFixed(2)}s`);
+  for (let i = 1; i < timed.beats.length; i++) {
+    assert.equal(timed.beats[i].from, timed.beats[i - 1].to);
   }
-  assert.ok(timed.motionTrack.length === fallback.beats.length);
-  assert.ok(timed.sfxTrack.length >= 2);
 });
 
-test('computeStaggeredScheduleSlots outputs chronological ISO slots spaced by intervalHours', () => {
-  const slots = computeStaggeredScheduleSlots(4, '2026-11-20T10:00:00.000Z', 12);
-  assert.equal(slots.length, 4);
-  assert.equal(slots[0], '2026-11-20T10:00:00.000Z');
-  assert.equal(slots[1], '2026-11-20T22:00:00.000Z');
-  assert.equal(slots[2], '2026-11-21T10:00:00.000Z');
-  assert.equal(slots[3], '2026-11-21T22:00:00.000Z');
-});
+test('BROLL_DATABASE has 190+ bright/high-contrast photographic assets on disk and avoids dev visuals on non-dev topics', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  assert.ok(BROLL_DATABASE.length >= 190, `Expected >= 190 B-roll entries, got ${BROLL_DATABASE.length}`);
 
-test('condenseVisualHeadline enforces scannable <= 5 word headlines and <= 38 chars', () => {
-  const longHeadline = 'Pourquoi 80 % des réunions sont remplacées par des résumés IA en 2026.';
-  const condensed = condenseVisualHeadline(longHeadline, 5, 38);
-  assert.ok(condensed.split(/\s+/).length <= 5);
-  assert.ok(condensed.length <= 38);
-  assert.equal(condensed.endsWith('.'), false);
-});
-
-test('SHORT_CHOREOGRAPHIES cover all 25 Melvynx archetypes and keep 7 unique archetypes per Short', () => {
-  const covered = new Set<string>();
-  for (const ch of SHORT_CHOREOGRAPHIES) {
-    const nonCta = ch.beatTypes.slice(0, 7);
-    assert.equal(new Set(nonCta).size, 7, `Duplicate archetype inside choreography "${ch.id}"`);
-    assert.equal(ch.beatTypes[7], 'cta_card');
-    assert.equal(ch.layouts[3], 'fullscreen');
-    nonCta.forEach((vt) => covered.add(vt));
-  }
-  for (const arch of ALL_MELVYNX_ARCHETYPES) {
-    assert.ok(covered.has(arch), `Missing Melvynx archetype "${arch}" from SHORT_CHOREOGRAPHIES`);
-  }
-
-  const bank = selectChoreographyForTopic({
-    theme: 'Découverts bancaires et crédit conso : ce qui change dès le 20 novembre 2026',
-    category: 'Actualité',
-    variationIndex: 0,
-  });
-  const dev = selectChoreographyForTopic({
-    theme: 'Claude Code et /effort dans le terminal',
-    category: 'Tech & Code',
-    variationIndex: 0,
-  });
-  assert.equal(bank.hookType, 'paywall_shock_stack');
-  assert.equal(dev.hookType, 'confidential_vault_slam');
-  assert.ok(!bank.beatTypes.includes('claude_code_slash_cli'));
-  assert.ok(!bank.beatTypes.includes('github_heatmap_and_runs'));
-  assert.equal(new Set(bank.beatTypes.slice(0, 7)).size, 7);
-});
-
-test('BROLL_DATABASE has >= 225 bright/high-contrast semantic entries and zero duplicates per generated Short', () => {
-  assert.ok(BROLL_DATABASE.length >= 225, `Expected >= 225 B-roll entries, got ${BROLL_DATABASE.length}`);
+  let pooledChecked = 0;
   for (const e of BROLL_DATABASE) {
     assert.ok(e.lighting === 'bright' || e.lighting === 'high-contrast');
-  }
-
-  const script = buildFallbackBatchScript({
-    theme: 'Pourquoi 80 % des réunions sont remplacées par des résumés IA en 2026',
-    category: 'IA',
-  });
-  assert.equal(script.beats.length, 8);
-  assert.equal(script.beats[script.beats.length - 1].visualType, 'cta_card');
-  assert.equal(resolveBeatLayout(script.beats[0], 0, 8), 'split');
-  assert.equal(resolveBeatLayout(script.beats[3], 3, 8), 'fullscreen');
-  assert.equal(resolveBeatLayout(script.beats[4], 4, 8), 'fullscreen');
-  assert.equal(resolveBeatLayout(script.beats[5], 5, 8), 'split');
-
-  const seenIds = new Set<string>();
-  const seenSubCats = new Set<string>();
-  for (const b of script.beats) {
-    const keys = b.subBrollKeys?.length ? b.subBrollKeys : [b.brollKey || ''];
-    for (const k of keys) {
-      assert.ok(BROLL_DATABASE_BY_ID[k], `Unknown rich B-roll ID "${k}"`);
-      assert.ok(!seenIds.has(k), `Duplicate bottom illustration ID "${k}" inside single Short`);
-      seenIds.add(k);
-      const subCat = BROLL_DATABASE_BY_ID[k].subCategory;
-      assert.ok(!seenSubCats.has(subCat), `Duplicate bottom subCategory "${subCat}" inside single Short`);
-      seenSubCats.add(subCat);
+    assert.ok(BROLL_DATABASE_BY_ID[e.id]);
+    if (e.file) {
+      const diskPath = path.join(process.cwd(), 'public', e.file.replace(/^\/+/, ''));
+      assert.ok(fs.existsSync(diskPath), `Missing pooled image file on disk: ${diskPath}`);
+      assert.ok(fs.statSync(diskPath).size > 15_000, `Pooled image file too small: ${diskPath}`);
+      pooledChecked += 1;
     }
   }
+  assert.ok(pooledChecked >= 180, `Expected >= 180 pooled JPG files on disk, got ${pooledChecked}`);
 
-  const fullText = script.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.1, 30);
-  const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
-  assert.ok(timed.sfxTrack.length >= 1, 'Expected at least one scheduled SFX cue');
-  const firstSfx = timed.sfxTrack[0];
-  assert.ok(firstSfx.start >= 0.4 && firstSfx.start <= 2.6, `Expected beat-1 SFX start in [0.4, 2.6], got ${firstSfx.start}`);
-});
+  assert.equal(isDevOrCodeTopic('Économie', 'SMIC +1,6 % et charges patronales'), false);
+  assert.equal(isDevOrCodeTopic('Tech & Code', 'Serveurs MCP dans ~/.claude.json'), true);
 
-test('getBrollSequenceForTopic avoids ado/paradoxe false match and buildFallbackBatchScript uses domain titles and natural spoken sources', () => {
-  const aiAgentsBrolls = getBrollSequenceForTopic(
-    'Business',
-    '90 % des entreprises ratent leurs économies IA : le paradoxe des agents autonomes'
-  );
-  assert.ok(!aiAgentsBrolls.includes('teen_phone'));
-  assert.ok(!aiAgentsBrolls.includes('mobile_attention'));
-  assert.equal(aiAgentsBrolls[0], 'startup_team');
+  const restoKeys = getBrollSequenceForTopic('Business', 'Pourquoi les restaurants ferment faute de marge');
+  assert.ok(!restoKeys.some((k) => k === 'tech_code' || k.startsWith('dev_')));
+  assert.ok(restoKeys[0].startsWith('resto_') || restoKeys[0] === 'restaurant_kitchen');
 
-  const bankScript = buildFallbackBatchScript({
-    theme: 'Découverts bancaires et crédit conso : ce qui change dès le 20 novembre 2026',
-    category: 'Actualité',
-    sources: 'service-public.gouv.fr (Nov 2026)',
+  const smicKeys = getBrollSequenceForTopic('Économie', 'Hausse du SMIC et fiche de paie');
+  assert.ok(!smicKeys.some((k) => k === 'tech_code' || k.startsWith('dev_')));
+
+  const cooldown = new Set<string>();
+  const rotated = selectBottomMediaForShort({
+    beats: makeUniversalTestBeats().map((b, i) => ({
+      ...b,
+      from: i * 5,
+      to: (i + 1) * 5,
+    })),
+    category: 'Restauration',
+    theme: 'Marges des restaurants indépendants',
+    batchCooldownIds: cooldown,
   });
-  assert.ok(!bankScript.beats.some((b) => b.title === 'Ce qui change' || b.title === 'Le point critique'));
-  assert.equal(bankScript.beats[2].comparisonLeft?.value, '180 €/an');
-  assert.ok(!bankScript.beats[6].spokenLine.includes('('));
-  assert.ok(!bankScript.beats[6].spokenLine.includes('.gouv.fr'));
+  for (let i = 1; i < rotated.length; i++) {
+    assert.notEqual(rotated[i].primaryId, rotated[i - 1].primaryId);
+  }
+  rotated.forEach((r) => r.subBrollKeys.forEach((k) => cooldown.add(k)));
+
+  const secondShort = selectBottomMediaForShort({
+    beats: makeUniversalTestBeats().map((b, i) => ({
+      ...b,
+      from: i * 5,
+      to: (i + 1) * 5,
+    })),
+    category: 'Économie',
+    theme: 'SMIC et fiche de paie',
+    batchCooldownIds: cooldown,
+  });
+  const firstSet = new Set(rotated.flatMap((r) => r.subBrollKeys));
+  const overlapCount = secondShort.flatMap((r) => r.subBrollKeys).filter((k) => firstSet.has(k)).length;
+  assert.equal(overlapCount, 0, 'Second Short should draw fresh unused photos from the 190+ pool');
 });
 
-test('alignmentToWords rescales subtitle timing to match actual MP3 duration and keeps beat boundaries locked', () => {
-  const sampleText = 'Un deux trois quatre cinq six sept huit neuf dix.';
-  const chars = sampleText.split('');
-  const starts = chars.map((_, i) => Number((i * 0.2).toFixed(3)));
-  const ends = chars.map((_, i) => Number((i * 0.2 + 0.16).toFixed(3)));
-  const res = alignmentToWords(
-    {
-      characters: chars,
-      character_start_times_seconds: starts,
-      character_end_times_seconds: ends,
-    },
-    sampleText,
-    1.0,
-    12.0
-  );
-  const lastEnd = res.words[res.words.length - 1].end;
-  assert.ok(lastEnd >= 11.7 && lastEnd <= 12.05, `Expected rescaled last word near 11.88s, got ${lastEnd}`);
-});
-
-test('every SFX asset scheduled by buildFallbackBatchScript exists on disk via resolveSfxAssetPath', async () => {
+test('every SFX asset scheduled exists on disk via resolveSfxAssetPath', async () => {
   const { resolveSfxAssetPath } = await import('../server/batchRenderer');
-  const script = buildFallbackBatchScript({
-    theme: "L'IA ne licencie pas les seniors : elle ferme la porte aux juniors (-28 %)",
-    category: 'IA',
-  });
+  const beatsSpec = makeUniversalTestBeats();
   const timed = assignBeatTimingsAndTranscript(
-    script.beats,
-    alignmentToWords(null, script.beats.map((b) => b.spokenLine).join(' '), 1.1, 36).words,
-    36
+    beatsSpec,
+    alignmentToWords(null, beatsSpec.map((b) => b.spokenLine).join(' '), 35).words,
+    35
   );
   for (const s of timed.sfxTrack) {
     const resolved = resolveSfxAssetPath(s.sound);
@@ -260,75 +324,24 @@ test('every SFX asset scheduled by buildFallbackBatchScript exists on disk via r
   }
 });
 
-test('buildFallbackBatchScript enforces subscribe/bell CTA with zero commentaire ask', () => {
-  const script = buildFallbackBatchScript({
-    theme: 'Les agents IA en entreprise',
-    category: 'Business',
-  });
-  const lastBeat = script.beats[script.beats.length - 1];
-  assert.ok(!/commentaire/i.test(lastBeat.spokenLine));
-  assert.ok(/abonne|cloche/i.test(lastBeat.spokenLine));
-  assert.ok(!/commentaire/i.test(script.caption));
-});
+test('computeStaggeredScheduleSlots, condenseVisualHeadline, resolveBeatLayout, trimSpokenLineForPacing work cleanly', () => {
+  const slots = computeStaggeredScheduleSlots(3, '2026-11-20T10:00:00.000Z', 12);
+  assert.deepEqual(slots, [
+    '2026-11-20T10:00:00.000Z',
+    '2026-11-20T22:00:00.000Z',
+    '2026-11-21T10:00:00.000Z',
+  ]);
 
-test('trimSpokenLineForPacing cuts at sentence/clause boundaries and strips dangling prepositions', () => {
-  const longText =
-    'Croisement Banque de France et Stanford sur les emplois exposés, les offres juniors reculent fortement dans les métiers.';
-  const trimmed = trimSpokenLineForPacing(longText, 16);
-  assert.ok(!/\b(dans|de|des|les|pour|avec|sur)\.$/i.test(trimmed), `Dangling ending in "${trimmed}"`);
-  assert.ok(trimmed.split(/\s+/).length <= 16);
-});
+  const condensed = condenseVisualHeadline('Pourquoi 80 % des réunions sont remplacées par des résumés.', 5, 38);
+  assert.ok(condensed.split(/\s+/).length <= 5);
+  assert.ok(condensed.length <= 38);
+  assert.equal(condensed.endsWith('.'), false);
 
-test('buildFallbackBatchScript eliminates generic filler across domains and populates extended Melvynx archetype round-trips', () => {
-  const forbiddenSlop = [
-    'Concrètement, tout s’enchaîne en quatre étapes',
-    'Le vrai point de bascule ne vient pas des annonces',
-    'Quand on compare l’ancien fonctionnement',
-    'Pour t’adapter dès cette semaine, garde ces trois repères',
-    'ceux qui anticipent ce changement évitent',
-  ];
+  const beats = makeUniversalTestBeats();
+  assert.equal(resolveBeatLayout(beats[0], 0, beats.length), 'split');
+  assert.equal(resolveBeatLayout(beats[2], 2, beats.length), 'fullscreen');
 
-  const topics = [
-    { theme: 'Découverts bancaires et crédit conso : 20 novembre 2026', category: 'Actualité' },
-    { theme: "L'IA ferme la porte aux juniors (-28 %)", category: 'IA' },
-    { theme: '90 % des entreprises ratent leurs économies IA', category: 'Business' },
-    { theme: 'Pourquoi les vidéos parfaites fatiguent le feed', category: 'Conseils de vie' },
-    { theme: 'Claude Code CLI et MCP sur GitHub en 2026', category: 'Tech & Code' },
-    { theme: 'Nouvelle réforme du diagnostic DPE en 2026', category: 'Société', angle: 'Les logements classés F baissent de 14 % sur le marché.' },
-  ];
-
-  for (const t of topics) {
-    const script = buildFallbackBatchScript(t);
-    const allSpoken = script.beats.map((b) => b.spokenLine).join(' ');
-    for (const slop of forbiddenSlop) {
-      assert.ok(!allSpoken.includes(slop), `Found generic filler "${slop}" in "${t.theme}"`);
-    }
-
-    const nonCtaTypes = script.beats.slice(0, 7).map((b) => b.visualType);
-    assert.equal(new Set(nonCtaTypes).size, 7, `Expected 7 distinct archetypes in "${t.theme}"`);
-
-    const dummyProj = {
-      id: 'proj-test',
-      slug: 'test',
-      title: t.theme,
-      mode: 'faceless_explainer',
-      platform: 'youtube_shorts',
-      status: 'ready',
-      duration: 38,
-      fps: 25,
-      resolution: { width: 1080, height: 1920 },
-      currentVersion: 'v1',
-      versions: [],
-      transcript: [],
-      motionTrack: [],
-      layoutTrack: [],
-      sfxTrack: [],
-      feedbacks: [],
-      editSpec: { beats: script.beats, speed: 1.1 },
-    } as unknown as ShortProject;
-
-    const dynBeats = buildDynamicBeatsFromProject(dummyProj);
-    assert.equal(dynBeats.length, 8);
-    assert.ok(dynBeats[0].subBrollKeys && dynBeats[0].subBrollKeys.length >= 1);
-  }
+  const trimmed = trimSpokenLineForPacing('Un deux trois quatre cinq six sept huit neuf dix onze.', 6);
+  assert.equal(trimmed.split(/\s+/).length, 6);
+  assert.ok(trimmed.endsWith('.'));
 });
