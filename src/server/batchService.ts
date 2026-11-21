@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { LOOK_PRESETS } from '../data/shortSpec';
 import {
+  ALL_MELVYNX_ARCHETYPES,
   alignmentToWords,
   assignBeatTimingsAndTranscript,
   buildFallbackBatchScript,
@@ -13,9 +14,14 @@ import {
   sanitizeScriptText,
   selectChoreographyForTopic,
   trimSpokenLineForPacing,
-  type ElevenLabsCharAlignment,
 } from '../engine/batchShortBuilder';
-import { getBrollSequenceForTopic, isDevOrCodeTopic } from '../engine/brollKeys';
+import {
+  getBrollSequenceForTopic,
+  isDevOrCodeTopic,
+  selectBottomIllustrationsForShort,
+} from '../engine/brollKeys';
+import { humanizeFrenchScript, pickBestHookVariant } from '../engine/outliersMath';
+import { auditShortQuality } from '../engine/shortQualityChecklist';
 import {
   appendSessionToCsv,
   computeCompositeViralScore,
@@ -33,6 +39,7 @@ import type {
   BatchBeatSpec,
   BatchJobItem,
   BatchJobRecord,
+  BrandLogoId,
   DynamicIconKind,
   DynamicVisualType,
   StartBatchRequest,
@@ -263,6 +270,7 @@ async function generateBatchTopicsWithGemini(
 export async function generateScriptForBatchItem(
   item: Pick<BatchJobItem, 'theme' | 'category' | 'angle' | 'hookHint' | 'sources'> & {
     variationIndex?: number;
+    batchCooldownIds?: Set<string>;
   }
 ): Promise<{
   hookText: string;
@@ -313,33 +321,44 @@ export async function generateScriptForBatchItem(
       item.hookHint ? `Piste de hook : ${item.hookHint}` : '',
       item.sources ? `Sources : ${item.sources}` : '',
       `Chorégraphie imposée (${blueprint.label}) : ${blueprint.narrativeGuide}`,
-      `Répartition visuelle des 8 séquences :\n${sequenceSpec}`,
+      `Répartition visuelle des 8 séquences (ne jamais répéter un visualType) :\n${sequenceSpec}`,
       ``,
-      `RÈGLES DE CHRONOLOGIE ET DE QUALITÉ (IMPÉRATIF) :`,
-      `1. Longueur équilibrée : 104 à 128 mots parlés au total. CHAQUE spokenLine doit être UNE phrase orale limpide (11 à 17 mots), écrite en français parlé naturel ("tu", zéro phrase administrative ou abstraite), compréhensible dès la première écoute.`,
-      `2. Progression narrative ultra-claire :`,
-      `   - Beat 1 (Hook < 2,5s) : fait ou chiffre choc immédiat + question ouverte en une phrase simple.`,
-      `   - Beat 2 (Preuve / Exemple réel) : l'exemple ou le texte exact qui prouve pourquoi c'est vrai.`,
-      `   - Beat 3 (Comment ça marche en pratique) : étape par étape très simple (jamais de blabla abstrait).`,
-      `   - Beat 4 (Courbe / Jauge plein écran) : chiffre visuel marquant qui relance l'attention à mi-vidéo.`,
-      `   - Beat 5 (Comparaison directe) : avant vs après en unités de la vie réelle (euros, minutes, postes).`,
-      `   - Beat 6 (Ce que tu dois faire) : 3 gestes simples que n'importe qui peut appliquer aujourd'hui.`,
-      `   - Beat 7 (Conclusion sourcée) : cite la source orale naturellement sans parenthèses ni URL et résume l'essentiel en une phrase.`,
-      `   - Beat 8 (CTA) : invite à s'abonner et activer la cloche (@alex.decode), sans JAMAIS demander de commentaire ni de mot-clé en commentaire.`,
-      `3. INTERDICTIONS : zéro tiret cadratin (—), zéro phrase creuse ou floue, zéro répétition entre beats.${!isDev ? ' N’utilise JAMAIS de jargon technique/code/bash sur ce sujet !' : ''}`,
-      `4. Chaque "title" écran doit faire 2 à 4 mots très simples (< 30 caractères).`,
-      `5. Champs visuels riches (en français, 100 % liés au sujet) :`,
-      `   - stampWord : mot tampon court (ex: "20 NOV", "FRACTURE", "PREUVE", "ENCADRÉ").`,
-      `   - statValue : chiffre ou badge court (<= 10 chars, ex: "-28 %", "180 €/an", "90 %").`,
-      `   - statLabel : sous-titre factuel du chiffre (<= 40 chars).`,
+      `RÈGLES DE CHRONOLOGIE ET DE QUALITÉ (IMPÉRATIF — STANDARD @MELVYNX.DEV) :`,
+      `1. GÉNÈRE D'ABORD "hookVariants" : exactement 3 variantes de hook parlé (< 15 mots chacune) avec formules distinctes (1: Paradoxe/contre-intuitif, 2: Chiffre choc daté, 3: Erreur silencieuse). Zéro salut/intro, zéro cliché IA.`,
+      `2. Longueur équilibrée : 104 à 128 mots parlés au total. CHAQUE spokenLine doit être UNE phrase orale limpide (10 à 16 mots), en français parlé naturel ("tu", zéro phrase administrative ou abstraite), compréhensible dès la première écoute.`,
+      `3. Progression narrative ultra-claire :`,
+      `   - Beat 1 (Hook 0–4,2s en 2 actes) : tension immédiate dès frame 0 + rupture visuelle + open loop clair.`,
+      `   - Beat 2 (Preuve chiffrée / Exemple réel) : l'exemple exact ou pourcentage réel qui prouve le hook.`,
+      `   - Beat 3 (Comment ça marche en pratique) : mécanisme cause -> effet concret en unités réelles.`,
+      `   - Beat 4 (Pivot plein écran obligatoire) : changement complet de géométrie plein écran avec chiffre/courbe/diff visuel marquant.`,
+      `   - Beat 5 (Comparaison ou Chronomètre) : avant vs après concret (euros, secondes, précision).`,
+      `   - Beat 6 (Ce que tu dois faire) : 3 gestes simples ou réglages concrets applicables aujourd'hui.`,
+      `   - Beat 7 (Verdict sourcé) : cite l'étude/source naturellement sans URL et boucle logiquement vers le hook.`,
+      `   - Beat 8 (CTA) : invite à s'abonner et activer la cloche (@alex.decode), sans JAMAIS demander de commentaire ni mot-clé.`,
+      `4. INTERDICTIONS : zéro tiret cadratin (—), zéro mots clichés ("révolutionnaire", "incontournable", "plongeons dans", "dans cette vidéo"), zéro répétition entre beats.${!isDev ? ' N’utilise JAMAIS de jargon technique/code/bash sur ce sujet !' : ''}`,
+      `5. Chaque "title" écran doit faire 2 à 4 mots très courts (< 28 caractères). ZÉRO texte générique de fallback.`,
+      `6. Champs visuels riches (en français, 100 % spécifiques au sujet et adaptés aux archétypes @melvynx.dev) :`,
+      `   - brandLogo : parmi "claude","openai","deepseek","github","instagram","tiktok","apple","google","youtube","x","ai".`,
+      `   - notoIcon : slug Noto SVG (ex: "brain","lock","shield","rocket","chart-increasing","clock","bulb","magnifying-glass-tilted-left","robot","bank").`,
+      `   - stampWord : mot tampon court (ex: "2026", "CONFIDENTIEL", "PREUVE", "ENCADRÉ").`,
+      `   - statValue : chiffre ou badge court (<= 10 chars, ex: "72 %", "2×", "-40 %").`,
+      `   - statLabel : sous-titre factuel court (<= 40 chars).`,
       `   - leftPair / rightPair : format "Label | Valeur | Détail".`,
-      `   - itemsPipe : 3 points distincts (ou 4 étapes pour timeline_steps) séparés par " | ".`,
-      `   - quoteText / quoteHighlight : court extrait sourcé (14-20 mots) + fragment clé exact de 3-6 mots à surligner (pour source_quote).`,
-      `   - uiUrl / uiActionLabel : URL crédible (sans https://) + libellé bouton court <= 18 chars (pour ui_window).`,
-      `   - chartUnit / chartPointsPipe : unité (ex: "%", " €", " h") + 4 ou 5 points format "2022:100|2024:86|2026:72" (pour chart_curve).`,
-      `   - gaugePct : entier 25..96 (pour jauge/impact).`,
+      `   - itemsPipe : 3 points distincts (ou 4 étapes) séparés par " | ".`,
+      `   - matrixHighlightPct / matrixCalloutLabel : entier 10..92 + légende loupe (<= 24 chars, ex: "TOI · 20 % restants").`,
+      `   - dialKnobsPipe : 3 cadrans "Label:85:%|Label2:40:%|Label3:95:%".`,
+      `   - diffBeforeLinesPipe / diffAfterLinesPipe / diffScore : 3 lignes courtes avant/après séparées par " | " + score 60..99.`,
+      `   - newsPublication / newsHeadline / newsHighlightPhrase / newsYearsPipe : média/auteur crédible + titre court + fragment à surligner + "2022|2026".`,
+      `   - neuralEquation : courte formule logique (ex: "Entrée × Filtre = Signal 94 %").`,
+      `   - quoteText / quoteHighlight : court extrait sourcé + fragment exact à surligner.`,
+      `   - uiUrl / uiActionLabel : URL crédible sans https:// + bouton court <= 18 chars.`,
+      `   - chartUnit / chartPointsPipe : unité + 4 ou 5 points "2022:100|2024:86|2026:72".`,
+      `   - gaugePct : entier 25..96.`,
+      `   - repoName / repoStars / authorName : nom dépôt ou compte crédible (ex: "anthropics/skills", "12.4k", "@simonw").`,
+      `   - cableAppLabel / crtYear / crtMetric : nom app/module (ex: "Notion MCP"), année rétro ("1995"), métrique rétro.`,
+      `   - beforeBadText / afterGoodText : phrase robotique/faible vs phrase percutante réécrite.`,
       ``,
-      `Réponds en JSON strict avec exactement 8 beats sur mesure.`,
+      `Réponds en JSON strict avec hookVariants (3 hooks) + 8 beats sur mesure.`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -349,10 +368,16 @@ export async function generateScriptForBatchItem(
       rightPair?: string;
       itemsPipe?: string;
       chartPointsPipe?: string;
+      dialKnobsPipe?: string;
+      diffBeforeLinesPipe?: string;
+      diffAfterLinesPipe?: string;
+      newsYearsPipe?: string;
+      neuralLayersPipe?: string;
     };
 
     let parsed: {
       hookText?: string;
+      hookVariants?: string[];
       youtubeTitle?: string;
       caption?: string;
       hashtags?: string[] | string;
@@ -368,6 +393,10 @@ export async function generateScriptForBatchItem(
           type: Type.OBJECT,
           properties: {
             hookText: { type: Type.STRING },
+            hookVariants: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+            },
             youtubeTitle: { type: Type.STRING },
             caption: { type: Type.STRING },
             hashtags: { type: Type.STRING },
@@ -383,6 +412,8 @@ export async function generateScriptForBatchItem(
                   visualType: { type: Type.STRING },
                   brollKey: { type: Type.STRING },
                   iconKind: { type: Type.STRING },
+                  brandLogo: { type: Type.STRING },
+                  notoIcon: { type: Type.STRING },
                   stampWord: { type: Type.STRING },
                   statValue: { type: Type.STRING },
                   statLabel: { type: Type.STRING },
@@ -396,6 +427,25 @@ export async function generateScriptForBatchItem(
                   chartUnit: { type: Type.STRING },
                   chartPointsPipe: { type: Type.STRING },
                   gaugePct: { type: Type.INTEGER },
+                  matrixHighlightPct: { type: Type.INTEGER },
+                  matrixCalloutLabel: { type: Type.STRING },
+                  dialKnobsPipe: { type: Type.STRING },
+                  diffBeforeLinesPipe: { type: Type.STRING },
+                  diffAfterLinesPipe: { type: Type.STRING },
+                  diffScore: { type: Type.INTEGER },
+                  newsPublication: { type: Type.STRING },
+                  newsHeadline: { type: Type.STRING },
+                  newsHighlightPhrase: { type: Type.STRING },
+                  newsYearsPipe: { type: Type.STRING },
+                  neuralEquation: { type: Type.STRING },
+                  repoName: { type: Type.STRING },
+                  repoStars: { type: Type.STRING },
+                  authorName: { type: Type.STRING },
+                  cableAppLabel: { type: Type.STRING },
+                  crtYear: { type: Type.STRING },
+                  crtMetric: { type: Type.STRING },
+                  beforeBadText: { type: Type.STRING },
+                  afterGoodText: { type: Type.STRING },
                 },
                 required: [
                   'title',
@@ -409,7 +459,7 @@ export async function generateScriptForBatchItem(
               },
             },
           },
-          required: ['hookText', 'youtubeTitle', 'caption', 'hashtags', 'beats'],
+          required: ['hookText', 'hookVariants', 'youtubeTitle', 'caption', 'hashtags', 'beats'],
         },
       },
     });
@@ -447,11 +497,19 @@ export async function generateScriptForBatchItem(
     }
 
     const validVisualTypes = new Set<DynamicVisualType>([
+      ...ALL_MELVYNX_ARCHETYPES,
       'hook_shatter',
       'hook_stat',
       'hook_alert',
       'hook_versus',
       'hook_question',
+      'dot_matrix_zoom',
+      'neural_scan',
+      'dual_stopwatch',
+      'rotary_console',
+      'pixel_diff',
+      'humanizer_belt',
+      'headline_news',
       'counter_flip',
       'comparison_bars',
       'chart_curve',
@@ -466,6 +524,20 @@ export async function generateScriptForBatchItem(
       'checklist_audit',
       'gauge',
       'cta_card',
+    ]);
+    const validBrandLogos = new Set<BrandLogoId>([
+      'claude',
+      'openai',
+      'deepseek',
+      'github',
+      'instagram',
+      'tiktok',
+      'apple',
+      'x',
+      'google',
+      'youtube',
+      'chrome',
+      'ai',
     ]);
     const validIcons = new Set<DynamicIconKind>([
       'ai',
@@ -499,7 +571,12 @@ export async function generateScriptForBatchItem(
       'ai_lab',
     ]);
 
+    const bestHookCandidate = Array.isArray(parsed.hookVariants) && parsed.hookVariants.length > 0
+      ? pickBestHookVariant([...parsed.hookVariants, parsed.hookText || ''])
+      : null;
+
     const rawBeats = parsed.beats.slice(0, 8);
+    const usedVisualTypes = new Set<DynamicVisualType>();
     const beats: BatchBeatSpec[] = rawBeats.map((b, idx) => {
       const fb = fallbackBase.beats[idx % fallbackBase.beats.length];
       let vt: DynamicVisualType =
@@ -511,16 +588,57 @@ export async function generateScriptForBatchItem(
               ? (b.visualType as DynamicVisualType)
               : blueprint.beatTypes[idx % blueprint.beatTypes.length];
 
-      if (vt === 'terminal_flow' && !isDev) {
-        vt = 'checklist_audit';
+      if ((vt === 'terminal_flow' || vt === 'claude_code_slash_cli' || vt === 'code_and_live_preview_split') && !isDev) {
+        vt = blueprint.beatTypes[idx % blueprint.beatTypes.length];
       }
+      if (idx > 0 && idx < rawBeats.length - 1 && usedVisualTypes.has(vt)) {
+        const replacement = ALL_MELVYNX_ARCHETYPES.find(
+          (cand) =>
+            !usedVisualTypes.has(cand) &&
+            (isDev || (cand !== 'claude_code_slash_cli' && cand !== 'code_and_live_preview_split'))
+        );
+        if (replacement) vt = replacement;
+      }
+      usedVisualTypes.add(vt);
 
       const sfxByVt: Partial<Record<DynamicVisualType, BatchBeatSpec['sfxKind']>> = {
+        massive_dot_matrix_zoom: 'impact-boom',
+        avatar_crowd_highlight: 'pop',
+        confidential_vault_slam: 'thud',
+        paywall_shock_stack: 'glass-shatter',
+        chat_prompt_refusal_cascade: 'tap',
+        neural_shield_abliteration: 'zhhh',
+        night_shift_multi_agent_laptop: 'tap',
+        claude_code_slash_cli: 'pop',
+        rotary_mixing_knobs: 'tap',
+        code_and_live_preview_split: 'pop',
+        github_repo_star_rocket: 'riser',
+        article_highlighter_zoom: 'pop',
+        pixel_diff_clone_loop: 'pop',
+        github_heatmap_and_runs: 'tap',
+        social_feed_waterfall: 'zhhh',
+        conveyor_belt_cleaner: 'pop',
+        red_strike_live_rewrite: 'tap',
+        ugly_to_apple_ui_morph: 'bell',
+        retro_crt_1995_parallel: 'thud',
+        physical_cable_app_plug: 'pop',
+        metallic_toolbox_explode: 'thud',
+        card_fan_explosion_10x: 'riser',
+        ab_hook_leaderboard: 'pop',
+        cloud_vs_offline_shield: 'thud',
+        voice_shortcut_waveform: 'pop',
         hook_shatter: 'glass-shatter',
         hook_alert: 'impact-boom',
         hook_versus: 'zhhh',
         hook_stat: 'impact-boom',
         hook_question: 'glass-shatter',
+        dot_matrix_zoom: 'pop',
+        neural_scan: 'thud',
+        dual_stopwatch: 'tap',
+        rotary_console: 'tap',
+        pixel_diff: 'pop',
+        humanizer_belt: 'pop',
+        headline_news: 'thud',
         counter_flip: 'thud',
         alert_rule: 'thud',
         myth_vs_fact: 'pop',
@@ -537,7 +655,11 @@ export async function generateScriptForBatchItem(
         cta_card: 'pop-back',
       };
 
-      const rawSpoken = sanitizeScriptText(b.spokenLine || fb.spokenLine);
+      const candidateHookLine =
+        idx === 0 && bestHookCandidate && bestHookCandidate.score >= 6
+          ? bestHookCandidate.hook
+          : b.spokenLine || fb.spokenLine;
+      const rawSpoken = humanizeFrenchScript(sanitizeScriptText(candidateHookLine)).cleaned;
       const safeSpoken =
         idx === rawBeats.length - 1 && /commentaire/i.test(rawSpoken)
           ? fb.spokenLine
@@ -548,6 +670,14 @@ export async function generateScriptForBatchItem(
         ? (b.iconKind as DynamicIconKind)
         : fb.iconKind;
 
+      const brandLogo = validBrandLogos.has(b.brandLogo as BrandLogoId)
+        ? (b.brandLogo as BrandLogoId)
+        : fb.brandLogo;
+
+      const notoIcon = typeof b.notoIcon === 'string' && b.notoIcon.trim()
+        ? b.notoIcon.trim().replace(/[^a-z0-9-]/gi, '').toLowerCase()
+        : fb.notoIcon;
+
       const brollKey =
         idx === rawBeats.length - 1
           ? 'studio'
@@ -556,9 +686,23 @@ export async function generateScriptForBatchItem(
             : fb.brollKey;
 
       const layoutHint =
-        vt === 'gauge' || vt === 'comparison_bars' || vt === 'chart_curve'
-          ? 'fullscreen'
-          : blueprint.layouts[idx] || (b.layoutHint === 'fullscreen' ? 'fullscreen' : 'split');
+        idx === 0
+          ? 'split'
+          : idx === 3 ||
+              vt === 'gauge' ||
+              vt === 'comparison_bars' ||
+              vt === 'chart_curve' ||
+              vt === 'pixel_diff' ||
+              vt === 'humanizer_belt' ||
+              vt === 'neural_scan' ||
+              vt === 'pixel_diff_clone_loop' ||
+              vt === 'conveyor_belt_cleaner' ||
+              vt === 'neural_shield_abliteration' ||
+              vt === 'night_shift_multi_agent_laptop' ||
+              vt === 'metallic_toolbox_explode' ||
+              vt === 'card_fan_explosion_10x'
+            ? 'fullscreen'
+            : blueprint.layouts[idx] || (b.layoutHint === 'fullscreen' ? 'fullscreen' : 'split');
 
       const parsePairTriplet = (
         raw: string | undefined,
@@ -687,7 +831,7 @@ export async function generateScriptForBatchItem(
 
       return {
         id: `beat-${idx + 1}`,
-        title: condenseVisualHeadline(b.title || fb.title, 5, 36),
+        title: condenseVisualHeadline(humanizeFrenchScript(b.title || fb.title).cleaned, 5, 36),
         shortLabel: sanitizeScriptText(b.shortLabel || fb.shortLabel).slice(0, 22),
         screenLabel: sanitizeScriptText(b.screenLabel || fb.screenLabel).toUpperCase().slice(0, 32),
         spokenLine,
@@ -696,6 +840,8 @@ export async function generateScriptForBatchItem(
         brollKey,
         brollCaption: sanitizeScriptText(b.brollCaption || fb.brollCaption || '').slice(0, 36) || undefined,
         iconKind,
+        brandLogo,
+        notoIcon,
         stampWord: b.stampWord ? sanitizeScriptText(b.stampWord).toUpperCase().slice(0, 14) : fb.stampWord,
         statValue: b.statValue ? sanitizeScriptText(b.statValue).slice(0, 16) : fb.statValue,
         statLabel: b.statLabel ? sanitizeScriptText(b.statLabel).slice(0, 44) : fb.statLabel,
@@ -746,7 +892,107 @@ export async function generateScriptForBatchItem(
           typeof b.gaugePct === 'number'
             ? Math.max(20, Math.min(98, Math.round(b.gaugePct)))
             : fb.gaugePct,
+        matrixHighlightPct:
+          typeof b.matrixHighlightPct === 'number'
+            ? Math.max(5, Math.min(95, Math.round(b.matrixHighlightPct)))
+            : fb.matrixHighlightPct,
+        matrixTotalDots: fb.matrixTotalDots,
+        matrixCalloutLabel: b.matrixCalloutLabel
+          ? sanitizeScriptText(b.matrixCalloutLabel).slice(0, 28)
+          : fb.matrixCalloutLabel,
+        dialKnobs: (() => {
+          if (typeof b.dialKnobsPipe === 'string' && b.dialKnobsPipe.includes(':')) {
+            const parsedKnobs = b.dialKnobsPipe
+              .split('|')
+              .map((kStr, kIdx) => {
+                const [lbl, val, unit] = kStr.split(':').map((s) => s.trim());
+                return {
+                  label: sanitizeScriptText(lbl || `Axe ${kIdx + 1}`).slice(0, 14),
+                  value: Math.max(5, Math.min(100, Number(val) || 75)),
+                  unit: (unit || '%').slice(0, 4),
+                  active: kIdx !== 1,
+                };
+              })
+              .slice(0, 3);
+            if (parsedKnobs.length >= 2) return parsedKnobs;
+          }
+          return fb.dialKnobs;
+        })(),
+        diffBeforeLines:
+          typeof b.diffBeforeLinesPipe === 'string' && b.diffBeforeLinesPipe.trim()
+            ? b.diffBeforeLinesPipe.split('|').map((s) => sanitizeScriptText(s).slice(0, 34)).filter(Boolean).slice(0, 3)
+            : fb.diffBeforeLines,
+        diffAfterLines:
+          typeof b.diffAfterLinesPipe === 'string' && b.diffAfterLinesPipe.trim()
+            ? b.diffAfterLinesPipe.split('|').map((s) => sanitizeScriptText(s).slice(0, 34)).filter(Boolean).slice(0, 3)
+            : fb.diffAfterLines,
+        diffScore:
+          typeof b.diffScore === 'number' ? Math.max(50, Math.min(99, Math.round(b.diffScore))) : fb.diffScore,
+        newsPublication: b.newsPublication
+          ? sanitizeScriptText(b.newsPublication).slice(0, 28)
+          : fb.newsPublication,
+        newsHeadline: b.newsHeadline
+          ? sanitizeScriptText(b.newsHeadline).slice(0, 88)
+          : fb.newsHeadline,
+        newsHighlightPhrase: b.newsHighlightPhrase
+          ? sanitizeScriptText(b.newsHighlightPhrase).slice(0, 36)
+          : fb.newsHighlightPhrase,
+        newsYears:
+          typeof b.newsYearsPipe === 'string' && b.newsYearsPipe.includes('|')
+            ? (() => {
+                const yrs = b.newsYearsPipe.split('|').map((s) => s.trim().slice(0, 6)).filter(Boolean);
+                return yrs.length >= 2 ? [yrs[0], yrs[1]] as [string, string] : fb.newsYears;
+              })()
+            : fb.newsYears,
+        neuralLayers: fb.neuralLayers,
+        neuralEquation: b.neuralEquation
+          ? sanitizeScriptText(b.neuralEquation).slice(0, 44)
+          : fb.neuralEquation,
+        repoName: b.repoName ? sanitizeScriptText(b.repoName).slice(0, 32) : fb.repoName,
+        repoStars: b.repoStars ? sanitizeScriptText(b.repoStars).slice(0, 12) : fb.repoStars,
+        authorName: b.authorName ? sanitizeScriptText(b.authorName).slice(0, 26) : fb.authorName,
+        slashCommands: fb.slashCommands,
+        codeLines: fb.codeLines,
+        toolboxTools: fb.toolboxTools,
+        cableAppLabel: b.cableAppLabel
+          ? sanitizeScriptText(b.cableAppLabel).slice(0, 22)
+          : fb.cableAppLabel,
+        crtYear: b.crtYear ? sanitizeScriptText(b.crtYear).slice(0, 6) : fb.crtYear,
+        crtMetric: b.crtMetric ? sanitizeScriptText(b.crtMetric).slice(0, 22) : fb.crtMetric,
+        beforeBadText: b.beforeBadText
+          ? sanitizeScriptText(b.beforeBadText).slice(0, 60)
+          : fb.beforeBadText,
+        afterGoodText: b.afterGoodText
+          ? sanitizeScriptText(b.afterGoodText).slice(0, 60)
+          : fb.afterGoodText,
+        hookVariantsList:
+          Array.isArray(parsed.hookVariants) && parsed.hookVariants.length > 0
+            ? parsed.hookVariants.slice(0, 3).map((v, hIdx) => ({
+                hook: sanitizeScriptText(v).slice(0, 56),
+                retention: hIdx === 1 ? '94 %' : hIdx === 2 ? '76 %' : '62 %',
+              }))
+            : fb.hookVariantsList,
+        fanCards: fb.fanCards,
+        heatCells: fb.heatCells,
         sfxKind: sfxByVt[vt] || 'tap',
+      };
+    });
+
+    const bottomPicks = selectBottomIllustrationsForShort({
+      beats,
+      theme: item.theme,
+      category: item.category,
+      batchCooldownIds: item.batchCooldownIds,
+    });
+    const enrichedBeats: BatchBeatSpec[] = beats.map((b, bIdx) => {
+      const pick = bottomPicks[bIdx];
+      if (!pick) return b;
+      pick.subBrollKeys.forEach((id) => item.batchCooldownIds?.add(id));
+      return {
+        ...b,
+        brollKey: pick.primaryId,
+        subBrollKeys: pick.subBrollKeys,
+        brollCaption: b.brollCaption || pick.caption,
       };
     });
 
@@ -765,19 +1011,41 @@ export async function generateScriptForBatchItem(
             .slice(0, 5)
         : [];
 
+    const finalHookText = humanizeFrenchScript(
+      sanitizeScriptText(beats[0]?.spokenLine || bestHookCandidate?.hook || parsed.hookText || '')
+    ).cleaned;
+
     return {
-      hookText: sanitizeScriptText(parsed.hookText || beats[0].spokenLine),
-      youtubeTitle: sanitizeScriptText(parsed.youtubeTitle || item.theme).slice(0, 58),
-      caption: sanitizeScriptText(parsed.caption || fallbackBase.caption),
+      hookText: finalHookText,
+      youtubeTitle: humanizeFrenchScript(sanitizeScriptText(parsed.youtubeTitle || item.theme)).cleaned.slice(0, 58),
+      caption: humanizeFrenchScript(sanitizeScriptText(parsed.caption || fallbackBase.caption)).cleaned,
       hashtags: normalizedHashtags.length > 0 ? normalizedHashtags : fallbackBase.hashtags,
       archetypeLabel: blueprint.label,
       generatedBy: 'gemini',
-      beats,
+      beats: enrichedBeats,
     };
   } catch (err) {
     console.warn('Gemini batch script fallback:', err);
+    const fbPicks = selectBottomIllustrationsForShort({
+      beats: fallbackBase.beats,
+      theme: item.theme,
+      category: item.category,
+      batchCooldownIds: item.batchCooldownIds,
+    });
+    const fbBeats: BatchBeatSpec[] = fallbackBase.beats.map((b, bIdx) => {
+      const pick = fbPicks[bIdx];
+      if (!pick) return b;
+      pick.subBrollKeys.forEach((id) => item.batchCooldownIds?.add(id));
+      return {
+        ...b,
+        brollKey: pick.primaryId,
+        subBrollKeys: pick.subBrollKeys,
+        brollCaption: b.brollCaption || pick.caption,
+      };
+    });
     return {
       ...fallbackBase,
+      beats: fbBeats,
       archetypeLabel: blueprint.label,
       generatedBy: 'fallback',
     };
@@ -834,6 +1102,7 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
       : [];
 
   const lookPreset = LOOK_PRESETS[req.lookId] || LOOK_PRESETS.papier;
+  const batchCooldownIds = new Set<string>();
 
   for (let i = 0; i < job.items.length; i++) {
     if (activeCancelledBatchIds.has(batchId)) {
@@ -866,12 +1135,13 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
       const script = await generateScriptForBatchItem({
         ...job.items[i],
         variationIndex: i,
+        batchCooldownIds,
       });
       const fullSpokenText = script.beats.map((b) => b.spokenLine).join(' ');
 
       if (activeCancelledBatchIds.has(batchId)) continue;
 
-      // 2. Voiceover ElevenLabs
+      // 2. Voiceover ElevenLabs / Edge Neural
       job.items[i] = {
         ...job.items[i],
         step: 'voiceover',
@@ -885,7 +1155,7 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
       const projectDir = path.join(PROJECTS_DIR, projectId);
       fs.mkdirSync(projectDir, { recursive: true });
 
-      const clampedSpeed = Math.min(1.06, Math.max(0.95, Number(req.speed) || 1.05));
+      const clampedSpeed = Math.min(1.25, Math.max(0.95, Number(req.speed) || 1.10));
       const voice = await synthesizeVoiceoverForProject({
         projectDir,
         fullText: fullSpokenText,
@@ -965,6 +1235,10 @@ async function runBatchPipeline(batchId: string, req: StartBatchRequest, port: n
         },
       };
 
+      const qualityAudit = auditShortQuality(project);
+      if (!qualityAudit.passed) {
+        console.warn(`[quality-gate] ${project.slug}: ${qualityAudit.issues.join(' | ')}`);
+      }
       saveProject(project);
 
       if (item.topicId) {
@@ -1181,7 +1455,7 @@ export async function startBatchJob(
     progress: 0,
   }));
 
-  const clampedSpeed = Math.min(1.06, Math.max(0.95, Number(req.speed) || 1.05));
+  const clampedSpeed = Math.min(1.25, Math.max(0.95, Number(req.speed) || 1.10));
   const job = saveBatchJob({
     id: batchId,
     status: 'running',

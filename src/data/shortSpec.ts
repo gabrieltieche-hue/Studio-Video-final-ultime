@@ -109,8 +109,8 @@ export interface BeatMeta {
   sfxNotes: string[];
 }
 
-// Calibrated to ElevenLabs Brian baritone FR voiceover (55.775s speech + 1.225s hold = 57.0s source, ~53.77s at natural 1.06x)
-export const DEFAULT_PLAYBACK_SPEED = 1.06;
+// Calibrated to natural high-retention 1.10x pace (~51.8s effective from 57.0s source)
+export const DEFAULT_PLAYBACK_SPEED = 1.10;
 export const SHORT_DURATION = 57.0;
 
 export const LAYOUT_KEYS: Array<[number, number]> = [

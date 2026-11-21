@@ -45,7 +45,7 @@ export const StudioPlaybackControls: React.FC<StudioPlaybackControlsProps> = ({
   videoOpen = true,
   onToggleVideo,
 }) => {
-  const speeds = [0.5, 1.0, 1.06, 1.25, 1.5];
+  const speeds = [0.5, 1.0, 1.1, 1.25, 1.5];
 
   return (
     <div className="h-11 bg-[#FCFBF8] border-t border-[#E3DED3] px-3 sm:px-4 flex items-center justify-between gap-2 select-none shrink-0">

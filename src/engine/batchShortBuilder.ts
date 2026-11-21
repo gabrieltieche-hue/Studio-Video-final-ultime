@@ -1,11 +1,48 @@
 import type {
   BatchBeatSpec,
+  BrandLogoId,
   DynamicIconKind,
   DynamicVisualType,
+  MelvynxArchetypeType,
   ParsedCustomTopic,
 } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
-import { getBrollSequenceForTopic, isDevOrCodeTopic } from './brollKeys';
+import {
+  isDevOrCodeTopic,
+  selectBottomIllustrationsForShort,
+} from './brollKeys';
+import {
+  findSemanticWordTimestamps,
+  humanizeFrenchScript,
+} from './outliersMath';
+
+export const ALL_MELVYNX_ARCHETYPES: MelvynxArchetypeType[] = [
+  'massive_dot_matrix_zoom',
+  'avatar_crowd_highlight',
+  'confidential_vault_slam',
+  'paywall_shock_stack',
+  'chat_prompt_refusal_cascade',
+  'neural_shield_abliteration',
+  'night_shift_multi_agent_laptop',
+  'claude_code_slash_cli',
+  'rotary_mixing_knobs',
+  'code_and_live_preview_split',
+  'github_repo_star_rocket',
+  'article_highlighter_zoom',
+  'pixel_diff_clone_loop',
+  'github_heatmap_and_runs',
+  'social_feed_waterfall',
+  'conveyor_belt_cleaner',
+  'red_strike_live_rewrite',
+  'ugly_to_apple_ui_morph',
+  'retro_crt_1995_parallel',
+  'physical_cable_app_plug',
+  'metallic_toolbox_explode',
+  'card_fan_explosion_10x',
+  'ab_hook_leaderboard',
+  'cloud_vs_offline_shield',
+  'voice_shortcut_waveform',
+];
 
 export interface ElevenLabsCharAlignment {
   characters: string[];
@@ -15,15 +52,20 @@ export interface ElevenLabsCharAlignment {
 
 export interface ChoreographyBlueprint {
   id:
-    | 'tech_breakdown'
-    | 'breaking_alert'
-    | 'paradox_buster'
-    | 'shock_stat_investigation'
-    | 'myth_question';
+    | 'melvynx_dot_matrix'
+    | 'melvynx_neural_cli'
+    | 'melvynx_crowd_agents'
+    | 'melvynx_paywall_alert'
+    | 'melvynx_paradox_duel'
+    | 'melvynx_social_attention'
+    | 'melvynx_product_stack';
   label: string;
   hookType: Extract<
-    DynamicVisualType,
-    'hook_shatter' | 'hook_stat' | 'hook_alert' | 'hook_versus' | 'hook_question'
+    MelvynxArchetypeType,
+    | 'massive_dot_matrix_zoom'
+    | 'avatar_crowd_highlight'
+    | 'confidential_vault_slam'
+    | 'paywall_shock_stack'
   >;
   beatTypes: [
     DynamicVisualType,
@@ -50,95 +92,159 @@ export interface ChoreographyBlueprint {
 
 export const SHORT_CHOREOGRAPHIES: ChoreographyBlueprint[] = [
   {
-    id: 'tech_breakdown',
-    label: 'Rupture Tech & Mécanisme',
-    hookType: 'hook_shatter',
+    id: 'melvynx_dot_matrix',
+    label: 'Matrice Population & Zoom',
+    hookType: 'massive_dot_matrix_zoom',
     beatTypes: [
-      'hook_shatter',
-      'source_quote',
-      'ui_window',
-      'chart_curve',
-      'comparison_bars',
-      'toggles_switch',
-      'terminal_flow',
+      'massive_dot_matrix_zoom',
+      'article_highlighter_zoom',
+      'ugly_to_apple_ui_morph',
+      'retro_crt_1995_parallel',
+      'pixel_diff_clone_loop',
+      'conveyor_belt_cleaner',
+      'ab_hook_leaderboard',
       'cta_card',
     ],
     layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
     narrativeGuide:
-      'Arc Rupture : 1) Choc visuel & open loop 2) Extrait source surligné 3) Interface concrète avec clic 4) Courbe d’évolution plein écran 5) Avant vs Après chiffré 6) 3 bascules concrètes 7) Preuve terrain 8) Subscribe + cloche.',
+      'Arc @melvynxdev Signature : 1) Matrice à points + loupe zoom 2) Article presse surligné 3) UI brute transformée en carte Apple 4) Parallèle CRT 1995 vs 2026 plein écran 5) Diff pixel avant/après 6) Tapis nettoyeur anti-bruit 7) Podium A/B chiffré 8) CTA.',
   },
   {
-    id: 'breaking_alert',
-    label: 'Alerte Règle & Échéance',
-    hookType: 'hook_alert',
+    id: 'melvynx_neural_cli',
+    label: 'Coffre Neural & CLI',
+    hookType: 'confidential_vault_slam',
     beatTypes: [
-      'hook_alert',
-      'source_quote',
-      'alert_rule',
-      'chart_curve',
-      'comparison_bars',
-      'ui_window',
-      'gauge',
+      'confidential_vault_slam',
+      'chat_prompt_refusal_cascade',
+      'claude_code_slash_cli',
+      'neural_shield_abliteration',
+      'rotary_mixing_knobs',
+      'code_and_live_preview_split',
+      'github_repo_star_rocket',
       'cta_card',
     ],
-    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'fullscreen', 'split'],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
     narrativeGuide:
-      'Arc Alerte Officielle : 1) Date & règle choc 2) Texte officiel surligné 3) 3 changements immédiats 4) Courbe d’impact plein écran 5) Comparatif chiffré avant/après 6) Démarche pratique en interface 7) Jauge d’exposition 8) Subscribe + cloche.',
+      'Arc IA & Code : 1) Coffre-fort claqué 2) Cascade prompts bloqués 3) Commandes slash CLI 4) Ablitération couche neurale plein écran 5) Console rotative 3 réglages 6) Split code + rendu live 7) Fusée stars GitHub 8) CTA.',
   },
   {
-    id: 'paradox_buster',
-    label: 'Paradoxe & Duel Brut',
-    hookType: 'hook_versus',
+    id: 'melvynx_crowd_agents',
+    label: 'Foule & Agents 24/7',
+    hookType: 'avatar_crowd_highlight',
     beatTypes: [
-      'hook_versus',
-      'myth_vs_fact',
-      'chart_curve',
-      'comparison_bars',
-      'source_quote',
-      'checklist_audit',
-      'gauge',
+      'avatar_crowd_highlight',
+      'night_shift_multi_agent_laptop',
+      'physical_cable_app_plug',
+      'github_heatmap_and_runs',
+      'card_fan_explosion_10x',
+      'metallic_toolbox_explode',
+      'cloud_vs_offline_shield',
       'cta_card',
     ],
-    layouts: ['split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
     narrativeGuide:
-      'Arc Duel / Paradoxe : 1) Opposition frontale A vs B 2) Idée reçue barrée vs fait 3) Courbe de fracture plein écran 4) Écart chiffré avant/après 5) Extrait source surligné 6) 3 preuves à activer 7) Jauge finale 8) Subscribe + cloche.',
+      'Arc Équipe & Système : 1) Foule d’avatars avec focus central 2) Laptop nuit multi-agents 3) Câble physique connecté à l’app 4) Heatmap verte + CI plein écran 5) Éventail 10× 6) Boîte à outils éclatée 7) Cloud vs Local sécurisé 8) CTA.',
   },
   {
-    id: 'shock_stat_investigation',
-    label: 'Enquête Chiffre Choc',
-    hookType: 'hook_stat',
+    id: 'melvynx_paywall_alert',
+    label: 'Alerte Règle & Paywall',
+    hookType: 'paywall_shock_stack',
     beatTypes: [
-      'hook_stat',
-      'source_quote',
-      'timeline_steps',
-      'chart_curve',
-      'myth_vs_fact',
-      'toggles_switch',
-      'comparison_bars',
+      'paywall_shock_stack',
+      'article_highlighter_zoom',
+      'red_strike_live_rewrite',
+      'cloud_vs_offline_shield',
+      'retro_crt_1995_parallel',
+      'conveyor_belt_cleaner',
+      'voice_shortcut_waveform',
       'cta_card',
     ],
-    layouts: ['split', 'split', 'split', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
     narrativeGuide:
-      'Arc Enquête Chiffrée : 1) Compteur choc qui défile 2) Rapport source surligné 3) Effet domino en 4 étapes 4) Courbe pluriannuelle plein écran 5) Mythe démonté 6) 3 bascules pratiques 7) Bilan chiffré 8) Subscribe + cloche.',
+      'Arc Alerte Officielle : 1) Pile de paywalls choc 2) Surligneur article presse 3) Rature rouge + réécriture propre 4) Bouclier local vs risque cloud plein écran 5) Comparatif 1995 vs 2026 6) Tapis tri rapide 7) Onde vocale live 8) CTA.',
   },
   {
-    id: 'myth_question',
-    label: 'Question Piège & Déclic',
-    hookType: 'hook_question',
+    id: 'melvynx_paradox_duel',
+    label: 'Paradoxe & Réécriture',
+    hookType: 'avatar_crowd_highlight',
     beatTypes: [
-      'hook_question',
-      'myth_vs_fact',
-      'ui_window',
-      'chart_curve',
-      'source_quote',
-      'checklist_audit',
-      'gauge',
+      'avatar_crowd_highlight',
+      'red_strike_live_rewrite',
+      'ugly_to_apple_ui_morph',
+      'card_fan_explosion_10x',
+      'social_feed_waterfall',
+      'metallic_toolbox_explode',
+      'ab_hook_leaderboard',
       'cta_card',
     ],
-    layouts: ['split', 'split', 'split', 'fullscreen', 'split', 'split', 'fullscreen', 'split'],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
     narrativeGuide:
-      'Arc Question Piège : 1) Question contre-intuitive barrée 2) Vraie mécanique chiffrée 3) Démonstration interface & clic 4) Courbe de rétention plein écran 5) Preuve sourcée 6) 3 réflexes immédiats 7) Score d’efficacité 8) Subscribe + cloche.',
+      'Arc Paradoxe : 1) Isolement dans la foule 2) Erreur barrée + correction directe 3) Interface archaïque -> Apple UI 4) Explosion éventail 10× plein écran 5) Cascade feed social 6) Boîte outils dépliée 7) Classement A/B 8) CTA.',
   },
+  {
+    id: 'melvynx_social_attention',
+    label: 'Saturation Feed & Focus',
+    hookType: 'massive_dot_matrix_zoom',
+    beatTypes: [
+      'massive_dot_matrix_zoom',
+      'social_feed_waterfall',
+      'voice_shortcut_waveform',
+      'pixel_diff_clone_loop',
+      'conveyor_belt_cleaner',
+      'ab_hook_leaderboard',
+      'ugly_to_apple_ui_morph',
+      'cta_card',
+    ],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
+    narrativeGuide:
+      'Arc Attention : 1) Matrice 160 points zoomée 2) Cascade posts viraux 3) Onde micro rapide 4) Comparateur diff visuel plein écran 5) Tapis tri 6) Leaderboard hooks 7) Carte Apple épurée 8) CTA.',
+  },
+  {
+    id: 'melvynx_product_stack',
+    label: 'Pile Produit & Levier',
+    hookType: 'confidential_vault_slam',
+    beatTypes: [
+      'confidential_vault_slam',
+      'github_repo_star_rocket',
+      'physical_cable_app_plug',
+      'code_and_live_preview_split',
+      'github_heatmap_and_runs',
+      'rotary_mixing_knobs',
+      'night_shift_multi_agent_laptop',
+      'cta_card',
+    ],
+    layouts: ['split', 'split', 'split', 'fullscreen', 'fullscreen', 'split', 'split', 'split'],
+    narrativeGuide:
+      'Arc Build Produit : 1) Révélation confidentielle 2) Repo star rocket 3) Connecteur API physique 4) Code + preview plein écran 5) Heatmap verte 6) Console rotative 7) Agents nocturnes 8) CTA.',
+  },
+];
+
+const DEV_ONLY_ARCHETYPES = new Set<DynamicVisualType>([
+  'claude_code_slash_cli',
+  'code_and_live_preview_split',
+  'github_repo_star_rocket',
+  'github_heatmap_and_runs',
+  'neural_shield_abliteration',
+  'chat_prompt_refusal_cascade',
+  'terminal_flow',
+  'neural_scan',
+]);
+
+const UNIVERSAL_MELVYNX_POOL: MelvynxArchetypeType[] = [
+  'article_highlighter_zoom',
+  'ab_hook_leaderboard',
+  'conveyor_belt_cleaner',
+  'red_strike_live_rewrite',
+  'ugly_to_apple_ui_morph',
+  'cloud_vs_offline_shield',
+  'voice_shortcut_waveform',
+  'card_fan_explosion_10x',
+  'retro_crt_1995_parallel',
+  'metallic_toolbox_explode',
+  'rotary_mixing_knobs',
+  'pixel_diff_clone_loop',
+  'social_feed_waterfall',
+  'physical_cable_app_plug',
 ];
 
 export function selectChoreographyForTopic(input: {
@@ -153,36 +259,42 @@ export function selectChoreographyForTopic(input: {
   let base: ChoreographyBlueprint;
 
   if (
-    /(novembre|janvier|1er|dès le|loi|décret|bancaire|découvert|smic|réforme|interdit|impôt|censure|amende)/.test(
+    /(novembre|janvier|1er|dès le|loi|décret|bancaire|découvert|smic|réforme|interdit|impôt|censure|amende|paywall|facture|abonnement)/.test(
       hay
     )
   ) {
-    base = SHORT_CHOREOGRAPHIES[1]; // breaking_alert
-  } else if (/(paradoxe|vs|contre|ne .* pas|mais|pourtant|pendant que|juniors|seniors)/.test(hay)) {
-    base = SHORT_CHOREOGRAPHIES[2]; // paradox_buster
-  } else if (
-    /(pourquoi|comment|piège|mythe|erreur|secret|règle des|fatiguent|mental|conseil)/.test(hay) &&
-    !/(réunion|meeting)/.test(hay)
-  ) {
-    base = SHORT_CHOREOGRAPHIES[4]; // myth_question
+    base = SHORT_CHOREOGRAPHIES[3]; // melvynx_paywall_alert
+  } else if (/(claude|cli|terminal|mcp|neural|abliteration|prompt|deepseek)/.test(hay)) {
+    base = SHORT_CHOREOGRAPHIES[1]; // melvynx_neural_cli
+  } else if (/(github|repo|open source|star|heatmap|produit|stack|api|sdk)/.test(hay)) {
+    base = SHORT_CHOREOGRAPHIES[6]; // melvynx_product_stack
+  } else if (/(feed|vidéo|tiktok|instagram|scroll|attention|fatigue|5 minutes)/.test(hay)) {
+    base = SHORT_CHOREOGRAPHIES[5]; // melvynx_social_attention
+  } else if (/(paradoxe|vs|contre|ne .* pas|mais|pourtant|juniors|seniors|freelance)/.test(hay)) {
+    base = SHORT_CHOREOGRAPHIES[4]; // melvynx_paradox_duel
   } else if (/\d+\s*%/.test(hay) && !/(réunion|meeting)/.test(hay)) {
-    base = SHORT_CHOREOGRAPHIES[3]; // shock_stat_investigation
+    base = SHORT_CHOREOGRAPHIES[0]; // melvynx_dot_matrix
   } else {
-    base = SHORT_CHOREOGRAPHIES[0]; // tech_breakdown
+    base = SHORT_CHOREOGRAPHIES[2]; // melvynx_crowd_agents
   }
 
-  // Rotate inside a batch so consecutive Shorts NEVER share the exact same hook!
+  // Rotate inside a batch so consecutive Shorts NEVER share the exact same hook or choreography
   if (v > 0) {
     const startIdx = SHORT_CHOREOGRAPHIES.findIndex((c) => c.id === base.id);
     base = SHORT_CHOREOGRAPHIES[(startIdx + v) % SHORT_CHOREOGRAPHIES.length];
   }
 
-  // Never put terminal_flow on non-dev / non-tech topics!
+  // Keep non-dev Shorts free of terminal/code/GitHub archetypes while preserving 7 unique archetypes
   const beatTypes = [...base.beatTypes] as ChoreographyBlueprint['beatTypes'];
   if (!isDev) {
+    const used = new Set<DynamicVisualType>(beatTypes);
     for (let i = 0; i < beatTypes.length; i++) {
-      if (beatTypes[i] === 'terminal_flow') {
-        beatTypes[i] = i % 2 === 0 ? 'myth_vs_fact' : 'checklist_audit';
+      if (DEV_ONLY_ARCHETYPES.has(beatTypes[i])) {
+        const replacement =
+          UNIVERSAL_MELVYNX_POOL.find((cand) => !used.has(cand)) || 'ab_hook_leaderboard';
+        used.delete(beatTypes[i]);
+        beatTypes[i] = replacement;
+        used.add(replacement);
       }
     }
   }
@@ -194,11 +306,7 @@ export function selectChoreographyForTopic(input: {
 }
 
 export function sanitizeScriptText(text: string): string {
-  return String(text || '')
-    .replace(/\s*\u2014\s*/g, ', ')
-    .replace(/\s*--\s*/g, ', ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return humanizeFrenchScript(text).cleaned;
 }
 
 /**
@@ -450,7 +558,15 @@ export function resolveBeatLayout(spec: BatchBeatSpec, index: number, total: num
   if (
     spec.visualType === 'gauge' ||
     spec.visualType === 'comparison_bars' ||
-    spec.visualType === 'chart_curve'
+    spec.visualType === 'chart_curve' ||
+    spec.visualType === 'neural_shield_abliteration' ||
+    spec.visualType === 'pixel_diff_clone_loop' ||
+    spec.visualType === 'github_heatmap_and_runs' ||
+    spec.visualType === 'card_fan_explosion_10x' ||
+    spec.visualType === 'retro_crt_1995_parallel' ||
+    spec.visualType === 'code_and_live_preview_split' ||
+    spec.visualType === 'cloud_vs_offline_shield' ||
+    spec.visualType === 'conveyor_belt_cleaner'
   ) {
     return 'fullscreen';
   }
@@ -538,11 +654,43 @@ export function assignBeatTimingsAndTranscript(
   });
 
   const typeMap: Record<DynamicVisualType, ShortProject['motionTrack'][number]['type']> = {
+    massive_dot_matrix_zoom: 'counter',
+    avatar_crowd_highlight: 'card',
+    confidential_vault_slam: 'typography',
+    paywall_shock_stack: 'card',
+    chat_prompt_refusal_cascade: 'card',
+    neural_shield_abliteration: 'card',
+    night_shift_multi_agent_laptop: 'card',
+    claude_code_slash_cli: 'card',
+    rotary_mixing_knobs: 'card',
+    code_and_live_preview_split: 'card',
+    github_repo_star_rocket: 'rocket',
+    article_highlighter_zoom: 'card',
+    pixel_diff_clone_loop: 'card',
+    github_heatmap_and_runs: 'chart',
+    social_feed_waterfall: 'card',
+    conveyor_belt_cleaner: 'card',
+    red_strike_live_rewrite: 'typography',
+    ugly_to_apple_ui_morph: 'card',
+    retro_crt_1995_parallel: 'card',
+    physical_cable_app_plug: 'card',
+    metallic_toolbox_explode: 'card',
+    card_fan_explosion_10x: 'counter',
+    ab_hook_leaderboard: 'chart',
+    cloud_vs_offline_shield: 'card',
+    voice_shortcut_waveform: 'card',
     hook_shatter: 'typography',
     hook_stat: 'counter',
     hook_alert: 'typography',
     hook_versus: 'typography',
     hook_question: 'typography',
+    dot_matrix_zoom: 'counter',
+    neural_scan: 'card',
+    dual_stopwatch: 'counter',
+    rotary_console: 'card',
+    pixel_diff: 'card',
+    humanizer_belt: 'card',
+    headline_news: 'card',
     counter_flip: 'counter',
     comparison_bars: 'chart',
     chart_curve: 'chart',
@@ -571,70 +719,32 @@ export function assignBeatTimingsAndTranscript(
 
   const sfxTrack: ShortProject['sfxTrack'] = [];
   beats.forEach((b, idx) => {
-    if (idx === 0) {
-      const act2At = Number(Math.max(1.4, Math.min(2.6, (b.to - b.from) * 0.48)).toFixed(2));
-      const primarySfx =
-        b.visualType === 'hook_alert'
-          ? 'impact-boom'
-          : b.visualType === 'hook_versus'
-            ? 'zhhh'
-            : b.visualType === 'hook_stat'
-              ? 'impact-boom'
-              : 'glass-shatter';
-      const secondarySfx =
-        b.visualType === 'hook_versus'
-          ? 'thud'
-          : b.visualType === 'hook_alert'
-            ? 'riser'
-            : b.visualType === 'hook_stat'
-              ? 'pop'
-              : 'impact-boom';
-
+    const prevLayout = idx > 0 ? beats[idx - 1].layout : undefined;
+    const semanticCues = findSemanticWordTimestamps({
+      words,
+      beatFrom: b.from,
+      beatTo: b.to,
+      visualType: b.visualType,
+      beatIndex: idx,
+      isLastBeat: idx === beats.length - 1,
+      previousLayout: prevLayout,
+      currentLayout: b.layout,
+      totalDurationSec: safeDuration,
+      fallbackSfxKind: b.sfxKind,
+    });
+    semanticCues.forEach((cue, cIdx) => {
+      if (sfxTrack.some((existing) => Math.abs(existing.start - cue.start) < 0.22)) return;
+      const stableId =
+        idx === 0 && cIdx === 0 && cue.sound === 'glass-shatter'
+          ? 'sfx-hook-shatter'
+          : `sfx-${idx + 1}-${cIdx + 1}-${cue.reason}`;
       sfxTrack.push({
-        id: 'sfx-hook-shatter',
-        sound: primarySfx,
-        start: act2At,
-        volume: 0.46,
+        id: stableId,
+        sound: cue.sound,
+        start: cue.start,
+        volume: cue.volume,
       });
-      sfxTrack.push({
-        id: 'sfx-hook-boom',
-        sound: secondarySfx,
-        start: act2At,
-        volume: 0.38,
-      });
-      return;
-    }
-
-    const sound =
-      b.sfxKind ||
-      (b.layout === 'fullscreen' && beats[idx - 1]?.layout === 'split'
-        ? 'zhhh'
-        : idx === beats.length - 1
-          ? 'pop-back'
-          : undefined);
-    if (!sound) return;
-
-    const at =
-      idx === beats.length - 1
-        ? Number(Math.min(safeDuration - 0.3, b.from + 0.7).toFixed(2))
-        : Number(Math.max(0.1, b.from + 0.12).toFixed(2));
-    if (at < safeDuration - 0.2) {
-      sfxTrack.push({
-        id: `sfx-${idx + 1}`,
-        sound,
-        start: at,
-        volume: sound === 'riser' ? 0.26 : 0.34,
-      });
-    }
-    if (idx === beats.length - 1) {
-      const bellAt = Number(Math.min(safeDuration - 0.2, at + 0.12).toFixed(2));
-      sfxTrack.push({
-        id: `sfx-${idx + 1}-bell`,
-        sound: 'bell',
-        start: bellAt,
-        volume: 0.3,
-      });
-    }
+    });
   });
 
   return {
@@ -1140,6 +1250,7 @@ export function buildFallbackBatchScript(input: {
   hookHint?: string;
   sources?: string;
   variationIndex?: number;
+  batchCooldownIds?: Set<string>;
 }): {
   hookText: string;
   youtubeTitle: string;
@@ -1154,7 +1265,6 @@ export function buildFallbackBatchScript(input: {
   const dateBadge = extractTopicDateBadge(`${cleanTheme} ${cleanAngle}`);
   const iconKind = pickTopicIcon(input.category, cleanTheme);
   const blueprint = selectChoreographyForTopic(input);
-  const brollSeq = getBrollSequenceForTopic(input.category, cleanTheme);
   const sourceClean = sanitizeScriptText(input.sources || 'les données officielles 2026').slice(0, 48);
   const sourceSpoken = formatSourceForSpeech(input.sources);
   const preset = buildDomainPreset(input.category, cleanTheme, statVal, cleanAngle, sourceSpoken);
@@ -1168,38 +1278,94 @@ export function buildFallbackBatchScript(input: {
     19
   );
 
+  const detectTopicBrand = (): BrandLogoId => {
+    const h = `${input.category} ${cleanTheme}`.toLowerCase();
+    if (/claude|anthropic/.test(h)) return 'claude';
+    if (/openai|chatgpt|gpt/.test(h)) return 'openai';
+    if (/deepseek/.test(h)) return 'deepseek';
+    if (/github|repo|open source/.test(h)) return 'github';
+    if (/instagram|reel/.test(h)) return 'instagram';
+    if (/tiktok/.test(h)) return 'tiktok';
+    if (/apple|ios|iphone/.test(h)) return 'apple';
+    if (/google|youtube/.test(h)) return 'google';
+    return 'ai';
+  };
+  const brandLogo = detectTopicBrand();
+  const numericPctMatch = preset.statValue.match(/\d+(?:[.,]\d+)?/);
+  const numericPct = numericPctMatch ? Math.min(99, Math.max(1, Number(numericPctMatch[0].replace(',', '.')))) : 72;
+
+  const repoSlug = shortTopic
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 22) || 'audit-fr-2026';
+
+  const topicTools: string[] = [
+    condenseVisualHeadline(preset.actionBullets[0] || preset.bullets[0], 2, 16),
+    condenseVisualHeadline(preset.actionBullets[1] || preset.bullets[1], 2, 16),
+    condenseVisualHeadline(preset.actionBullets[2] || preset.bullets[2], 2, 16),
+    condenseVisualHeadline(preset.steps[0] || 'Audit', 2, 16),
+    condenseVisualHeadline(preset.steps[1] || 'Filtre', 2, 16),
+    condenseVisualHeadline(preset.steps[3] || 'Preuve', 2, 16),
+  ];
+
   const beatContents: Record<number, Omit<BatchBeatSpec, 'id' | 'visualType' | 'layoutHint'>> = {
     0: {
       title: shortTopic,
       shortLabel: 'Hook',
       screenLabel: `${input.category.toUpperCase()} · ALERTE`,
       spokenLine: hookLine,
-      brollKey: brollSeq[0],
-      brollCaption: condenseVisualHeadline(shortTopic, 3, 28),
       iconKind,
+      brandLogo,
+      notoIcon: iconKind === 'law' ? 'balance-scale' : iconKind === 'bank' ? 'bank' : 'bolt',
       stampWord: preset.stampWord,
       statValue: preset.statValue,
       statLabel: preset.statLabel,
       dateBadge,
+      matrixHighlightPct: Math.min(25, Math.max(1, Math.round(100 - numericPct) || 6)),
+      matrixTotalDots: 160,
+      matrixCalloutLabel: preset.statLabel || `IMPACT · ${preset.statValue}`,
       leftCard: preset.leftCard,
       rightCard: preset.rightCard,
       subStats: [
         { value: preset.statValue, label: preset.leftCard.label },
         { value: preset.multiplier, label: 'Écart net' },
       ],
+      beforeBadText: `${preset.leftCard.label} : ${preset.leftCard.value}`,
+      afterGoodText: `${preset.rightCard.label} : ${preset.rightCard.value}`,
     },
     1: {
       title: preset.beatTitles[0],
       shortLabel: 'Preuve source',
       screenLabel: 'SOURCE VÉRIFIÉE',
       spokenLine: angleLine,
-      brollKey: brollSeq[1],
-      brollCaption: 'Document vérifié',
       iconKind,
+      brandLogo,
+      notoIcon: 'search',
       dateBadge,
       sourceLabel: sourceClean,
+      authorName: sourceClean.split('·')[0]?.trim() || 'Observatoire FR',
       quoteText: preset.quoteText,
       quoteHighlight: preset.quoteHighlight,
+      newsPublication: sourceClean.split('·')[0]?.trim() || 'Observatoire FR',
+      newsHeadline: preset.quoteText,
+      newsHighlightPhrase: preset.quoteHighlight,
+      newsYears: ['2022', '2026'],
+      neuralLayers: ['Entrée', 'Filtre', 'Sortie'],
+      neuralEquation: `${preset.leftCard.value} -> ${preset.rightCard.value}`,
+      repoName: `fr/${repoSlug}`,
+      repoStars: '14 820 ★',
+      codeLines: [
+        `const cible = "${shortTopic}";`,
+        `const avant = "${preset.compLeft.value}";`,
+        `const apres = "${preset.compRight.value}";`,
+      ],
+      slashCommands: ['/audit --reel', '/filtre --cout', '/verdict --2026'],
+      matrixHighlightPct: numericPct,
+      matrixTotalDots: 160,
+      matrixCalloutLabel: preset.leftCard.label,
       stampWord: preset.stampWord,
       statValue: preset.statValue,
       statLabel: preset.statLabel,
@@ -1208,20 +1374,31 @@ export function buildFallbackBatchScript(input: {
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
       bullets: preset.bullets,
+      beforeBadText: preset.leftCard.label,
+      afterGoodText: preset.rightCard.label,
     },
     2: {
       title: preset.beatTitles[1],
       shortLabel: 'Mécanisme',
       screenLabel: 'EN DIRECT',
       spokenLine: trimSpokenLineForPacing(preset.spokenBeats[2], 24),
-      brollKey: brollSeq[2],
-      brollCaption: 'Mécanisme en action',
       iconKind,
+      brandLogo,
+      notoIcon: 'gear',
       sourceLabel: sourceClean,
       uiUrl: preset.uiUrl,
       uiActionLabel: preset.uiActionLabel,
       bullets: preset.uiRows,
       steps: preset.steps,
+      slashCommands: ['/effort max', `/scan "${shortTopic.slice(0, 14)}"`, '/export --net'],
+      cableAppLabel: shortTopic,
+      beforeBadText: preset.compLeft.label,
+      afterGoodText: preset.compRight.label,
+      dialKnobs: [
+        { label: 'Vitesse', value: 88, unit: '%', active: true },
+        { label: 'Précision', value: 94, unit: '%', active: true },
+        { label: 'Coût net', value: 18, unit: '%', active: false },
+      ],
       chartUnit: preset.chartUnit,
       chartPoints: preset.chartPoints,
       stampWord: 'MESURÉ',
@@ -1234,11 +1411,12 @@ export function buildFallbackBatchScript(input: {
     },
     3: {
       title: preset.beatTitles[2],
-      shortLabel: 'Courbe',
+      shortLabel: 'Pivot',
       screenLabel: 'PLEIN ÉCRAN',
       spokenLine: trimSpokenLineForPacing(preset.spokenBeats[3], 24),
-      brollKey: brollSeq[3],
       iconKind,
+      brandLogo,
+      notoIcon: 'chart-increasing',
       chartUnit: preset.chartUnit,
       chartPoints: preset.chartPoints,
       gaugePct: preset.gaugePct,
@@ -1246,40 +1424,111 @@ export function buildFallbackBatchScript(input: {
       statLabel: preset.statLabel,
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
+      leftCard: preset.leftCard,
+      rightCard: preset.rightCard,
       multiplierBadge: preset.multiplier,
       bullets: preset.bullets,
+      crtYear: '1995',
+      crtMetric: preset.compLeft.value,
+      heatCells: [1, 2, 3, 4, 2, 3, 4, 4, 2, 3, 4, 4, 3, 4, 4, 4, 2, 3, 4, 4, 4],
+      fanCards: [
+        { tag: 'BASE', metric: preset.compLeft.value, label: preset.compLeft.label },
+        { tag: 'LEVIER', metric: preset.multiplier, label: shortTopic },
+        { tag: 'GAIN NET', metric: preset.compRight.value, label: preset.compRight.label },
+      ],
+      codeLines: [
+        `const seuil = "${preset.statValue}";`,
+        `const delta = "${preset.multiplier}";`,
+        `return verifier(${preset.gaugePct});`,
+      ],
+      diffBeforeLines: [preset.leftCard.label, preset.leftCard.value, preset.leftCard.sub],
+      diffAfterLines: [preset.rightCard.label, preset.rightCard.value, preset.rightCard.sub],
+      diffScore: preset.gaugePct,
+      neuralLayers: ['Données brutes', 'Filtre vérifié', 'Signal net'],
+      neuralEquation: `${preset.compLeft.value} -> ${preset.compRight.value}`,
     },
     4: {
       title: preset.beatTitles[3],
       shortLabel: 'Écart chiffré',
       screenLabel: 'COMPARAISON',
       spokenLine: trimSpokenLineForPacing(preset.spokenBeats[4], 24),
-      brollKey: brollSeq[4],
       iconKind,
+      brandLogo,
+      notoIcon: 'balance-scale',
       sourceLabel: sourceClean,
       quoteText: preset.quoteText,
       quoteHighlight: preset.quoteHighlight,
+      newsPublication: sourceClean.split('·')[0]?.trim() || 'Archive Presse',
+      newsHeadline: preset.quoteText,
+      newsHighlightPhrase: preset.quoteHighlight,
+      newsYears: ['AVANT', '2026'],
+      crtYear: '1995',
+      crtMetric: preset.compLeft.value,
+      diffBeforeLines: [preset.leftCard.label, preset.leftCard.value, preset.leftCard.sub],
+      diffAfterLines: [preset.rightCard.label, preset.rightCard.value, preset.rightCard.sub],
+      diffScore: preset.gaugePct,
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
+      leftCard: preset.leftCard,
+      rightCard: preset.rightCard,
       multiplierBadge: preset.multiplier,
       statValue: preset.compRight.value,
       statLabel: preset.statLabel,
       dateBadge,
       bullets: preset.bullets,
       steps: preset.steps,
+      heatCells: [1, 2, 2, 3, 4, 3, 4, 4, 2, 4, 4, 3, 4, 4, 3, 4, 4, 4, 3, 4, 4],
+      fanCards: [
+        { tag: 'AVANT', metric: preset.compLeft.value, label: preset.leftCard.label },
+        { tag: 'BASCULE', metric: preset.statValue, label: preset.statLabel },
+        { tag: 'APRÈS', metric: preset.compRight.value, label: preset.rightCard.label },
+      ],
+      dialKnobs: [
+        { label: 'Signal', value: 92, unit: '%', active: true },
+        { label: 'Bruit', value: 12, unit: '%', active: false },
+        { label: 'Impact', value: preset.gaugePct, unit: '%', active: true },
+      ],
     },
     5: {
       title: preset.beatTitles[4],
       shortLabel: 'Actions',
       screenLabel: 'PLAN CONCRET',
       spokenLine: trimSpokenLineForPacing(preset.spokenBeats[5], 24),
-      brollKey: brollSeq[0],
-      brollCaption: 'Plan d’action immédiat',
       iconKind,
+      brandLogo,
+      notoIcon: 'check',
       uiUrl: preset.uiUrl,
       uiActionLabel: preset.uiActionLabel,
       toggles: preset.toggles,
       bullets: preset.actionBullets,
+      toolboxTools: topicTools,
+      codeLines: [
+        `check("${preset.actionBullets[0]}");`,
+        `apply("${preset.actionBullets[1]}");`,
+        `ship("${preset.actionBullets[2]}");`,
+      ],
+      diffBeforeLines: [
+        preset.toggles[0]?.label || preset.leftCard.label,
+        preset.compLeft.label,
+        'Sans règle mesurée',
+      ],
+      diffAfterLines: preset.actionBullets,
+      diffScore: 96,
+      hookVariantsList: [
+        { hook: preset.actionBullets[0], retention: '84 %' },
+        { hook: preset.actionBullets[1], retention: '91 %' },
+        { hook: preset.actionBullets[2], retention: '96 %' },
+      ],
+      dialKnobs: [
+        { label: 'Clarté', value: 95, unit: '%', active: true },
+        { label: 'Vitesse', value: 89, unit: '%', active: true },
+        { label: 'Friction', value: 14, unit: '%', active: false },
+      ],
+      fanCards: [
+        { tag: '01', metric: '#1 PRIORITÉ', label: preset.actionBullets[0] },
+        { tag: '02', metric: preset.multiplier, label: preset.actionBullets[1] },
+        { tag: '03', metric: preset.compRight.value, label: preset.actionBullets[2] },
+      ],
       sourceLabel: sourceClean,
       statValue: '3/3 ACTIFS',
       statLabel: 'Réflexes immédiats',
@@ -1289,15 +1538,34 @@ export function buildFallbackBatchScript(input: {
       shortLabel: 'Verdict',
       screenLabel: 'BILAN SOURCÉ',
       spokenLine: trimSpokenLineForPacing(preset.spokenBeats[6], 25),
-      brollKey: brollSeq[1],
-      brollCaption: 'Bilan sourcé',
       iconKind,
+      brandLogo,
+      notoIcon: 'bullseye',
       sourceLabel: sourceClean,
       bullets: preset.actionBullets,
+      repoName: `fr/${repoSlug}`,
+      repoStars: '18 400 ★',
+      leftCard: preset.leftCard,
+      rightCard: preset.rightCard,
+      beforeBadText: preset.leftCard.label,
+      afterGoodText: preset.rightCard.label,
+      hookVariantsList: [
+        { hook: preset.leftCard.label, retention: '32 %' },
+        { hook: preset.bullets[0], retention: '68 %' },
+        { hook: preset.rightCard.label, retention: '92 %' },
+      ],
+      diffBeforeLines: [preset.compLeft.label, preset.compLeft.value, preset.leftCard.sub],
+      diffAfterLines: [preset.compRight.label, preset.compRight.value, preset.rightCard.sub],
+      diffScore: preset.gaugePct,
       gaugePct: preset.gaugePct,
       comparisonLeft: preset.compLeft,
       comparisonRight: preset.compRight,
       multiplierBadge: preset.multiplier,
+      fanCards: [
+        { tag: 'AVANT', metric: preset.compLeft.value, label: preset.leftCard.label },
+        { tag: 'LEVIER', metric: preset.multiplier, label: preset.statLabel },
+        { tag: 'VERDICT', metric: preset.compRight.value, label: preset.rightCard.label },
+      ],
       statValue: preset.statValue,
       statLabel: preset.statLabel,
       terminalCmd: isDevOrCodeTopic(input.category, cleanTheme)
@@ -1312,22 +1580,67 @@ export function buildFallbackBatchScript(input: {
       shortLabel: 'CTA',
       screenLabel: 'SUITE EN DIRECT',
       spokenLine: trimSpokenLineForPacing(preset.spokenBeats[7], 18),
-      brollKey: 'studio',
-      brollCaption: 'Décryptage · @alex.decode',
       iconKind: 'rocket',
+      brandLogo,
+      notoIcon: 'bell',
       statValue: '@alex.decode',
       statLabel: preset.ctaTagline,
     },
   };
 
+  const rawBeatInputs = blueprint.beatTypes.map((_, idx) => ({
+    spokenLine: beatContents[idx].spokenLine,
+    title: beatContents[idx].title,
+  }));
+  const semanticBrolls = selectBottomIllustrationsForShort({
+    beats: rawBeatInputs,
+    category: input.category,
+    theme: cleanTheme,
+    batchCooldownIds: input.batchCooldownIds,
+    estimatedDurationSec: 46,
+  });
+
   const beats: BatchBeatSpec[] = blueprint.beatTypes.map((vt, idx) => {
     const content = beatContents[idx];
+    const brollPick = semanticBrolls[idx];
     const sfxByVt: Partial<Record<DynamicVisualType, BatchBeatSpec['sfxKind']>> = {
+      massive_dot_matrix_zoom: 'pop',
+      avatar_crowd_highlight: 'zhhh',
+      confidential_vault_slam: 'impact-boom',
+      paywall_shock_stack: 'glass-shatter',
+      chat_prompt_refusal_cascade: 'thud',
+      neural_shield_abliteration: 'thud',
+      night_shift_multi_agent_laptop: 'pop',
+      claude_code_slash_cli: 'tap',
+      rotary_mixing_knobs: 'tap',
+      code_and_live_preview_split: 'zhhh',
+      github_repo_star_rocket: 'pop',
+      article_highlighter_zoom: 'pop',
+      pixel_diff_clone_loop: 'pop',
+      github_heatmap_and_runs: 'zhhh',
+      social_feed_waterfall: 'tap',
+      conveyor_belt_cleaner: 'pop',
+      red_strike_live_rewrite: 'thud',
+      ugly_to_apple_ui_morph: 'pop',
+      retro_crt_1995_parallel: 'impact-boom',
+      physical_cable_app_plug: 'pop',
+      metallic_toolbox_explode: 'pop',
+      card_fan_explosion_10x: 'riser',
+      ab_hook_leaderboard: 'pop',
+      cloud_vs_offline_shield: 'thud',
+      voice_shortcut_waveform: 'tap',
       hook_shatter: 'glass-shatter',
       hook_alert: 'impact-boom',
       hook_versus: 'zhhh',
       hook_stat: 'impact-boom',
       hook_question: 'glass-shatter',
+      dot_matrix_zoom: 'pop',
+      neural_scan: 'thud',
+      dual_stopwatch: 'tap',
+      rotary_console: 'tap',
+      pixel_diff: 'pop',
+      humanizer_belt: 'tap',
+      headline_news: 'pop',
       counter_flip: 'thud',
       alert_rule: 'thud',
       myth_vs_fact: 'pop',
@@ -1349,6 +1662,9 @@ export function buildFallbackBatchScript(input: {
       visualType: vt,
       layoutHint: blueprint.layouts[idx],
       sfxKind: sfxByVt[vt] || 'tap',
+      brollKey: brollPick?.primaryId || 'biz_saas_mrr_rocket',
+      subBrollKeys: brollPick?.subBrollKeys || [brollPick?.primaryId || 'biz_saas_mrr_rocket'],
+      brollCaption: brollPick?.caption || condenseVisualHeadline(content.title, 3, 28),
       ...content,
     };
   });

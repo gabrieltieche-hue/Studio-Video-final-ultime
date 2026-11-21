@@ -1,0 +1,62 @@
+{
+  "updatedAt": "2026-11-18",
+  "mode": "hybrid_web_and_creator_watchlist",
+  "tregStatus": "not_authenticated",
+  "platformsTracked": ["tiktok", "instagram", "youtube_shorts"],
+  "creators": [
+    {
+      "handle": "@melvynxdev",
+      "platform": "youtube",
+      "niche": "Tech, IA & Développement (FR)",
+      "signatureFormat": "Split-screen UI + rythme rapide, ruptures visuelles toutes les 4-6s, preuve code/interface directe"
+    },
+    {
+      "handle": "@underscore_talk",
+      "platform": "youtube",
+      "niche": "Cybersécurité, Tech & Enquêtes (FR)",
+      "signatureFormat": "Open loop dès la 1ère seconde, démonstration technique sourcée, tension narrative"
+    },
+    {
+      "handle": "@estherium",
+      "platform": "instagram",
+      "niche": "Tech, Société & Régulation (FR)",
+      "signatureFormat": "Paradoxe sociétal chiffré, ton direct face caméra ou visuels éditoriaux nets"
+    },
+    {
+      "handle": "@romainlanery",
+      "platform": "tiktok",
+      "niche": "Tech, Nouveautés & Usages concrets (FR)",
+      "signatureFormat": "Alerte fonctionnalité ou règle immédiate, bénéfice pratique dès les 3 premières secondes"
+    },
+    {
+      "handle": "@justinemorin",
+      "platform": "tiktok",
+      "niche": "Business, Freelance & Économie pratique (FR)",
+      "signatureFormat": "Seuil chiffré officiel, impact direct sur le compte en banque, fort taux d'enregistrement"
+    },
+    {
+      "handle": "@jeanviet",
+      "platform": "youtube",
+      "niche": "Productivité, IA & Astuces concrètes (FR)",
+      "signatureFormat": "Démonstration interface pas à pas, comparatif avant/après chiffré"
+    },
+    {
+      "handle": "@rileybrown.ai",
+      "platform": "tiktok",
+      "niche": "AI Workflows & Agents (EN)",
+      "signatureFormat": "You're using [Tool] wrong / démonstration terminal + bascule instantanée"
+    },
+    {
+      "handle": "@gregisenberg",
+      "platform": "youtube",
+      "niche": "Business & Produits IA (EN)",
+      "signatureFormat": "Paradoxe ROI ou niche chiffrée, schéma simple en 3 leviers actionnables"
+    },
+    {
+      "handle": "@levelsio",
+      "platform": "instagram",
+      "niche": "Indie Hacking & Coûts réels (EN)",
+      "signatureFormat": "Chiffre choc coûts vs revenus, anti-hype brut, preuves vérifiables"
+    }
+  ]
+}

@@ -330,6 +330,16 @@ export async function synthesizeWithVoiceStudio(params: {
   }
 }
 
+export function sanitizeTextForEdgeSsml(text: string): string {
+  return String(text || '')
+    .replace(/&/g, ' et ')
+    .replace(/[<>]/g, ' ')
+    .replace(/["`]/g, "'")
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export async function synthesizeWithEdgeNeural(params: {
   projectDir: string;
   fullText: string;
@@ -339,71 +349,59 @@ export async function synthesizeWithEdgeNeural(params: {
 }): Promise<UnifiedVoiceResult | null> {
   const selectedVoice = params.edgeVoice || 'fr-FR-RemyMultilingualNeural';
   const tts = new MsEdgeTTS();
+  const ssmlSafeText = sanitizeTextForEdgeSsml(params.fullText);
 
   try {
-    const safeSsmlText = params.fullText
-      .replace(/&/g, ' et ')
-      .replace(/[<>]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
     await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, {
       wordBoundaryEnabled: true,
     });
 
-    const { audioStream, metadataStream } = tts.toStream(safeSsmlText);
+    const { audioStream, metadataStream } = tts.toStream(ssmlSafeText);
 
     const audioChunks: Buffer[] = [];
     const metaChunks: Buffer[] = [];
 
     await new Promise<void>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        reject(new Error('Edge Neural TTS stream timeout (25s)'));
-      }, 25_000);
+        reject(new Error('Edge Neural TTS stream timeout (90s)'));
+      }, 90_000);
 
       let audioEnded = false;
-      let metaClosed = !metadataStream;
-      let drainFallbackId: ReturnType<typeof setTimeout> | null = null;
+      let metaEnded = !metadataStream;
+      let postAudioGraceId: NodeJS.Timeout | undefined;
 
       const finishIfDone = () => {
-        if (audioEnded && metaClosed) {
+        if (audioEnded && metaEnded) {
           clearTimeout(timeoutId);
-          if (drainFallbackId) clearTimeout(drainFallbackId);
+          if (postAudioGraceId) clearTimeout(postAudioGraceId);
           resolve();
         }
+      };
+
+      const markMetaDone = () => {
+        metaEnded = true;
+        finishIfDone();
       };
 
       audioStream.on('data', (chunk: Buffer) => audioChunks.push(Buffer.from(chunk)));
       audioStream.once('end', () => {
         audioEnded = true;
-        if (metadataStream && !metaClosed) {
-          drainFallbackId = setTimeout(() => {
-            metaClosed = true;
-            finishIfDone();
-          }, 150);
-        }
         finishIfDone();
+        if (!metaEnded) {
+          postAudioGraceId = setTimeout(markMetaDone, 800);
+        }
       });
       audioStream.once('error', (err: Error) => {
         clearTimeout(timeoutId);
-        if (drainFallbackId) clearTimeout(drainFallbackId);
+        if (postAudioGraceId) clearTimeout(postAudioGraceId);
         reject(err);
       });
 
       if (metadataStream) {
         metadataStream.on('data', (chunk: Buffer) => metaChunks.push(Buffer.from(chunk)));
-        metadataStream.once('close', () => {
-          metaClosed = true;
-          finishIfDone();
-        });
-        metadataStream.once('end', () => {
-          metaClosed = true;
-          finishIfDone();
-        });
-        metadataStream.once('error', () => {
-          metaClosed = true;
-          finishIfDone();
-        });
+        metadataStream.once('end', markMetaDone);
+        metadataStream.once('close', markMetaDone);
+        metadataStream.once('error', markMetaDone);
       }
     });
 
@@ -423,7 +421,7 @@ export async function synthesizeWithEdgeNeural(params: {
     const metaText = Buffer.concat(metaChunks).toString('utf-8');
     const words = parseEdgeWordBoundariesToWords(
       metaText,
-      params.fullText,
+      ssmlSafeText,
       params.speed,
       actualDuration
     );
@@ -517,7 +515,7 @@ export async function synthesizeVoiceoverUnified(params: {
   const cfg = readVoiceConfig();
   const cleanText = sanitizeScriptText(params.fullText).slice(0, 1800);
   const voiceFilename = params.voiceFilename || 'voice_v1.mp3';
-  const clampedSpeed = Math.min(1.12, Math.max(0.92, params.speed || 1.03));
+  const clampedSpeed = Math.min(1.25, Math.max(0.95, params.speed || 1.10));
 
   if (cfg.engine === 'voicestudio' || cfg.engine === 'auto') {
     const probe = await probeVoiceStudio(cfg.voicestudioUrl);
@@ -592,7 +590,7 @@ export async function previewVoiceSample(sampleText?: string): Promise<{
     const res = await synthesizeVoiceoverUnified({
       projectDir: tmpDir,
       fullText: text,
-      speed: 1.03,
+      speed: 1.10,
       voiceFilename: 'preview.mp3',
     });
     if (!res.voiceMp3Path || !fs.existsSync(res.voiceMp3Path)) {

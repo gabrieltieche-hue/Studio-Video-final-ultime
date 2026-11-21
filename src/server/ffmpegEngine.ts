@@ -377,7 +377,7 @@ export function detectAndRemoveSilences(videoPath: string): SilenceAnalysisResul
 
   const detection = spawnSync(
     'ffmpeg',
-    ['-hide_banner', '-nostats', '-i', videoPath, '-af', 'silencedetect=noise=-35dB:d=0.40', '-f', 'null', '-'],
+    ['-hide_banner', '-nostats', '-i', videoPath, '-af', 'silencedetect=noise=-35dB:d=0.06', '-f', 'null', '-'],
     { encoding: 'utf-8', timeout: 30 * 60 * 1000, maxBuffer: 32 * 1024 * 1024 }
   );
 
@@ -399,7 +399,7 @@ export function detectAndRemoveSilences(videoPath: string): SilenceAnalysisResul
       const end = Math.min(duration, Number(endMatch[1]));
       const rawDuration = Number(endMatch[2]);
       const start = Math.max(0, openStart ?? end - rawDuration);
-      if (end > start && end - start >= 0.4) silences.push({ start, end, duration: end - start });
+      if (end > start && end - start >= 0.06) silences.push({ start, end, duration: end - start });
       openStart = null;
     }
   }
@@ -427,9 +427,9 @@ export function detectAndRemoveSilences(videoPath: string): SilenceAnalysisResul
   let cursor = 0;
   let removed = 0;
   for (const silence of silences) {
-    const cutStart = Math.min(duration, silence.start + 0.09);
-    const cutEnd = Math.max(cutStart, silence.end - 0.09);
-    if (cutStart > cursor + 0.05) speechSegments.push({ start: cursor, end: cutStart });
+    const cutStart = Math.min(duration, silence.start + 0.03);
+    const cutEnd = Math.max(cutStart, silence.end - 0.03);
+    if (cutStart > cursor + 0.04) speechSegments.push({ start: cursor, end: cutStart });
     removed += Math.max(0, cutEnd - Math.max(cursor, cutStart));
     cursor = Math.max(cursor, cutEnd);
   }

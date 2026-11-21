@@ -13,12 +13,52 @@ export type BatchItemStep =
   | 'error'
   | 'cancelled';
 
+export type MelvynxArchetypeType =
+  // Catégorie A — Hooks, Attention & Révélations
+  | 'massive_dot_matrix_zoom'
+  | 'avatar_crowd_highlight'
+  | 'confidential_vault_slam'
+  | 'paywall_shock_stack'
+  // Catégorie B — Terminal, Claude, IA & Code
+  | 'chat_prompt_refusal_cascade'
+  | 'neural_shield_abliteration'
+  | 'night_shift_multi_agent_laptop'
+  | 'claude_code_slash_cli'
+  | 'rotary_mixing_knobs'
+  | 'code_and_live_preview_split'
+  // Catégorie C — Preuve, Data, GitHub & Social
+  | 'github_repo_star_rocket'
+  | 'article_highlighter_zoom'
+  | 'pixel_diff_clone_loop'
+  | 'github_heatmap_and_runs'
+  | 'social_feed_waterfall'
+  // Catégorie D — Transformation, Comparaison & Hardware
+  | 'conveyor_belt_cleaner'
+  | 'red_strike_live_rewrite'
+  | 'ugly_to_apple_ui_morph'
+  | 'retro_crt_1995_parallel'
+  | 'physical_cable_app_plug'
+  | 'metallic_toolbox_explode'
+  // Catégorie E — Business, Stratégie & Audio
+  | 'card_fan_explosion_10x'
+  | 'ab_hook_leaderboard'
+  | 'cloud_vs_offline_shield'
+  | 'voice_shortcut_waveform';
+
 export type DynamicVisualType =
+  | MelvynxArchetypeType
   | 'hook_shatter'
   | 'hook_stat'
   | 'hook_alert'
   | 'hook_versus'
   | 'hook_question'
+  | 'dot_matrix_zoom'
+  | 'neural_scan'
+  | 'dual_stopwatch'
+  | 'rotary_console'
+  | 'pixel_diff'
+  | 'humanizer_belt'
+  | 'headline_news'
   | 'counter_flip'
   | 'comparison_bars'
   | 'chart_curve'
@@ -33,6 +73,20 @@ export type DynamicVisualType =
   | 'checklist_audit'
   | 'gauge'
   | 'cta_card';
+
+export type BrandLogoId =
+  | 'claude'
+  | 'openai'
+  | 'deepseek'
+  | 'github'
+  | 'instagram'
+  | 'tiktok'
+  | 'apple'
+  | 'x'
+  | 'google'
+  | 'youtube'
+  | 'chrome'
+  | 'ai';
 
 export type DynamicIconKind =
   | 'ai'
@@ -60,8 +114,11 @@ export interface BatchBeatSpec {
   visualType: DynamicVisualType;
   layoutHint?: 'split' | 'fullscreen';
   brollKey?: string;
+  subBrollKeys?: string[];
   brollCaption?: string;
   iconKind?: DynamicIconKind;
+  brandLogo?: BrandLogoId;
+  notoIcon?: string;
   stampWord?: string;
   statValue?: string;
   statLabel?: string;
@@ -85,6 +142,34 @@ export interface BatchBeatSpec {
   comparisonRight?: { label: string; value: string; ratio: number };
   multiplierBadge?: string;
   gaugePct?: number;
+  matrixHighlightPct?: number;
+  matrixTotalDots?: number;
+  matrixCalloutLabel?: string;
+  dialKnobs?: Array<{ label: string; value: number; unit?: string; active?: boolean }>;
+  diffBeforeLines?: string[];
+  diffAfterLines?: string[];
+  diffScore?: number;
+  newsPublication?: string;
+  newsHeadline?: string;
+  newsHighlightPhrase?: string;
+  newsYears?: [string, string];
+  neuralLayers?: string[];
+  neuralEquation?: string;
+  // Extended @melvynx.dev 25-archetype payload fields
+  codeLines?: string[];
+  repoName?: string;
+  repoStars?: string;
+  authorName?: string;
+  slashCommands?: string[];
+  heatCells?: number[];
+  hookVariantsList?: Array<{ hook: string; retention: string }>;
+  fanCards?: Array<{ tag: string; metric: string; label: string }>;
+  toolboxTools?: string[];
+  cableAppLabel?: string;
+  crtYear?: string;
+  crtMetric?: string;
+  beforeBadText?: string;
+  afterGoodText?: string;
   sfxKind?: 'glass-shatter' | 'impact-boom' | 'zhhh' | 'riser' | 'pop-back' | 'thud' | 'tap' | 'pop' | 'bell';
 }
 

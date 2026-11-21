@@ -44,7 +44,7 @@ export const ShortStage: React.FC<ShortStageProps> = ({ t, look, showSafeZones, 
     return () => obs.disconnect();
   }, [renderMode]);
 
-  const seam = getLayoutSeam(t, LAYOUT_KEYS, 0.34);
+  const seam = getLayoutSeam(t, LAYOUT_KEYS, 0.24);
   const camZoom = track(t, ZOOM_KEYS, 36);
 
   // Pick editorial backdrop matching Brian's exact narrative segments

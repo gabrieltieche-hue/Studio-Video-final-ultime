@@ -136,7 +136,7 @@ function buildTregHeaders(
   return headers;
 }
 
-async function tregFetch(
+export async function tregFetch(
   apiPath: string,
   options: {
     method?: string;

@@ -10,9 +10,14 @@ import techCodeImg from '../assets/images/broll_tech_code_1794753159977.jpg';
 import creatorStudioImg from '../assets/images/editorial_creator_studio_1794587431455.jpg';
 import parliamentLawImg from '../assets/images/editorial_parliament_law_1794587431774.jpg';
 import teenPhoneImg from '../assets/images/editorial_teen_phone_night_1794587431392.jpg';
-import { getBrollSequenceForTopic, type BrollKey } from '../engine/brollKeys';
+import {
+  getBrollSequenceForTopic,
+  resolveBrollDatabaseId,
+  type BrollKey,
+} from '../engine/brollKeys';
+import type { BrollDatabaseEntry } from './brollDatabase';
 
-export type { BrollKey };
+export type { BrollKey, BrollDatabaseEntry };
 
 export interface BrollAsset {
   key: BrollKey;
@@ -100,4 +105,13 @@ export function resolveBrollAsset(
   const seq = getBrollSequenceForTopic(category, theme);
   const picked = seq[(Math.max(0, beatIndex - 1)) % seq.length] || 'business';
   return BROLL_ASSETS[picked] || BROLL_ASSETS.business;
+}
+
+export function resolveRichBrollEntry(
+  brollIdOrKey?: string,
+  category?: string,
+  theme?: string,
+  beatIndex = 1
+): BrollDatabaseEntry {
+  return resolveBrollDatabaseId(brollIdOrKey, category, theme, beatIndex);
 }

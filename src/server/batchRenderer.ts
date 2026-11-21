@@ -96,15 +96,21 @@ export function probeAudioDurationSec(audioPath: string, fallback = 30): number 
 export function applyVoiceSpeedMp3(
   rawMp3Path: string,
   targetMp3Path: string,
-  speed = 1.0
+  speed = 1.10
 ): number {
-  const safeSpeed = Math.max(0.75, Math.min(1.5, speed || 1.0));
-  if (Math.abs(safeSpeed - 1.0) <= 0.01) {
-    if (rawMp3Path !== targetMp3Path) {
-      fs.copyFileSync(rawMp3Path, targetMp3Path);
-    }
-    return probeAudioDurationSec(targetMp3Path, 35);
-  }
+  const safeSpeed = Math.max(0.75, Math.min(1.5, speed || 1.10));
+  const silenceFilter =
+    'silenceremove=start_periods=1:start_silence=0.03:start_threshold=-40dB:stop_periods=-1:stop_duration=0.06:stop_threshold=-38dB';
+  const filterChain =
+    Math.abs(safeSpeed - 1.0) > 0.01
+      ? `${silenceFilter},atempo=${safeSpeed.toFixed(3)}`
+      : silenceFilter;
+
+  const tempOut =
+    rawMp3Path === targetMp3Path
+      ? `${targetMp3Path}.trimmed.mp3`
+      : targetMp3Path;
+
   execFileSync(
     'ffmpeg',
     [
@@ -112,15 +118,18 @@ export function applyVoiceSpeedMp3(
       '-i',
       rawMp3Path,
       '-filter:a',
-      `atempo=${safeSpeed.toFixed(3)}`,
+      filterChain,
       '-c:a',
       'libmp3lame',
       '-b:a',
       '192k',
-      targetMp3Path,
+      tempOut,
     ],
     { stdio: 'pipe', timeout: 60_000 }
   );
+  if (tempOut !== targetMp3Path && fs.existsSync(tempOut)) {
+    fs.renameSync(tempOut, targetMp3Path);
+  }
   return probeAudioDurationSec(targetMp3Path, 35);
 }
 
@@ -419,48 +428,54 @@ export async function renderDynamicProjectToMp4(params: {
 
     params.onProgress?.(90);
 
-    // Audio Mix: Compressed Voiceover + real Sidechain-ducked Music bed + SFX + Broadcast Loudnorm
+    // Audio Mix: Voiceover MP3 (if available) + Music bed + SFX + loudnorm
     const audioInputs: string[] = [];
     const filterParts: string[] = [];
     const mixLabels: string[] = [];
     let inputIdx = 0;
 
-    const hasVoice = Boolean(
-      params.voiceMp3Path &&
-        fs.existsSync(params.voiceMp3Path) &&
-        fs.statSync(params.voiceMp3Path).size >= 1024
-    );
+    const hasVoice = Boolean(params.voiceMp3Path && fs.existsSync(params.voiceMp3Path));
+    const musicPath = resolveMusicAssetPath(params.project.musicTrack?.trackName);
+
+    let voiceInputIdx = -1;
+    let musicInputIdx = -1;
+
     if (hasVoice && params.voiceMp3Path) {
       audioInputs.push('-i', params.voiceMp3Path);
-      filterParts.push(
-        `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,acompressor=threshold=-18dB:ratio=2.4:attack=12:release=140,volume=1.18,apad=whole_dur=${durationSec.toFixed(3)},asplit=2[vmain][vsc]`
-      );
-      mixLabels.push('[vmain]');
+      voiceInputIdx = inputIdx;
       inputIdx += 1;
     }
 
-    const musicPath = resolveMusicAssetPath(params.project.musicTrack?.trackName);
     if (musicPath) {
       audioInputs.push('-stream_loop', '-1', '-i', musicPath);
-      const musicVol = hasVoice ? 0.2 : 0.36;
-      const fadeOutStart = Math.max(0.5, durationSec - 1.2).toFixed(2);
-      if (hasVoice) {
-        filterParts.push(
-          `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[musicraw]`
-        );
-        filterParts.push(
-          `[musicraw][vsc]sidechaincompress=threshold=0.03:ratio=5:attack=25:release=220[music]`
-        );
-      } else {
-        filterParts.push(
-          `[${inputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=${musicVol}[music]`
-        );
-      }
-      mixLabels.push('[music]');
+      musicInputIdx = inputIdx;
       inputIdx += 1;
     }
 
-    if (mixLabels.length === 0) {
+    if (hasVoice && musicPath) {
+      const fadeOutStart = Math.max(0.5, durationSec - 1.2).toFixed(2);
+      filterParts.push(
+        `[${voiceInputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,acompressor=threshold=-16dB:ratio=3:attack=8:release=140,volume=1.18,apad=whole_dur=${durationSec.toFixed(3)},asplit=2[voice_mix][voice_sc]`
+      );
+      filterParts.push(
+        `[${musicInputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=0.22[music_raw]`
+      );
+      filterParts.push(
+        `[music_raw][voice_sc]sidechaincompress=threshold=0.025:ratio=7:attack=20:release=420[music_ducked]`
+      );
+      mixLabels.push('[voice_mix]', '[music_ducked]');
+    } else if (hasVoice) {
+      filterParts.push(
+        `[${voiceInputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,acompressor=threshold=-16dB:ratio=3:attack=8:release=140,volume=1.18,apad=whole_dur=${durationSec.toFixed(3)}[voice_mix]`
+      );
+      mixLabels.push('[voice_mix]');
+    } else if (musicPath) {
+      const fadeOutStart = Math.max(0.5, durationSec - 1.2).toFixed(2);
+      filterParts.push(
+        `[${musicInputIdx}:a]aformat=channel_layouts=stereo:sample_rates=44100,atrim=0:${durationSec.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${fadeOutStart}:d=1.2,volume=0.36[music_solo]`
+      );
+      mixLabels.push('[music_solo]');
+    } else {
       audioInputs.push('-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100');
       filterParts.push(`[${inputIdx}:a]atrim=0:${durationSec.toFixed(3)}[silence]`);
       mixLabels.push('[silence]');

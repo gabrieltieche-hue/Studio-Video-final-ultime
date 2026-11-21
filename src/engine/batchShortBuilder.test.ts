@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ALL_MELVYNX_ARCHETYPES,
+  SHORT_CHOREOGRAPHIES,
   alignmentToWords,
   assignBeatTimingsAndTranscript,
   buildFallbackBatchScript,
@@ -12,6 +14,7 @@ import {
   selectChoreographyForTopic,
   trimSpokenLineForPacing,
 } from './batchShortBuilder';
+import { BROLL_DATABASE, BROLL_DATABASE_BY_ID } from '../data/brollDatabase';
 import { getBrollSequenceForTopic } from './brollKeys';
 import { buildDynamicBeatsFromProject } from './transcriptUtils';
 import type { ShortProject } from '../types/studio';
@@ -94,10 +97,9 @@ test('assignBeatTimingsAndTranscript creates continuous non-overlapping beats an
     theme: 'La taxe numérique en 2026',
     category: 'Politique',
   });
-  // Intentionally bloat beat 2 spoken line to check pacing cap
   fallback.beats[1].spokenLine = Array.from({ length: 42 }, (_, idx) => `mot${idx + 1}`).join(' ');
   const fullText = fallback.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.0, 38);
+  const { words, durationSec } = alignmentToWords(null, fullText, 1.1, 38);
   const timed = assignBeatTimingsAndTranscript(fallback.beats, words, durationSec);
 
   assert.equal(timed.beats.length, fallback.beats.length);
@@ -133,64 +135,73 @@ test('condenseVisualHeadline enforces scannable <= 5 word headlines and <= 38 ch
   assert.equal(condensed.endsWith('.'), false);
 });
 
-test('selectChoreographyForTopic varies hooks across domains and batch rotations and omits terminal_flow on non-dev topics', () => {
+test('SHORT_CHOREOGRAPHIES cover all 25 Melvynx archetypes and keep 7 unique archetypes per Short', () => {
+  const covered = new Set<string>();
+  for (const ch of SHORT_CHOREOGRAPHIES) {
+    const nonCta = ch.beatTypes.slice(0, 7);
+    assert.equal(new Set(nonCta).size, 7, `Duplicate archetype inside choreography "${ch.id}"`);
+    assert.equal(ch.beatTypes[7], 'cta_card');
+    assert.equal(ch.layouts[3], 'fullscreen');
+    nonCta.forEach((vt) => covered.add(vt));
+  }
+  for (const arch of ALL_MELVYNX_ARCHETYPES) {
+    assert.ok(covered.has(arch), `Missing Melvynx archetype "${arch}" from SHORT_CHOREOGRAPHIES`);
+  }
+
   const bank = selectChoreographyForTopic({
     theme: 'Découverts bancaires et crédit conso : ce qui change dès le 20 novembre 2026',
     category: 'Actualité',
     variationIndex: 0,
   });
-  const paradox = selectChoreographyForTopic({
-    theme: "L'IA ne licencie pas les seniors : elle ferme la porte aux juniors (-28 %)",
-    category: 'IA',
-    variationIndex: 1,
-  });
-  const question = selectChoreographyForTopic({
-    theme: 'Pourquoi les vidéos parfaites fatiguent le feed',
-    category: 'Conseils de vie',
+  const dev = selectChoreographyForTopic({
+    theme: 'Claude Code et /effort dans le terminal',
+    category: 'Tech & Code',
     variationIndex: 0,
   });
-
-  assert.equal(bank.hookType, 'hook_alert');
-  assert.equal(question.hookType, 'hook_question');
-  assert.notEqual(bank.hookType, paradox.hookType);
-  assert.ok(!bank.beatTypes.includes('terminal_flow'));
-  assert.ok(!question.beatTypes.includes('terminal_flow'));
-
-  const rotatedHooks = new Set(
-    [0, 1, 2, 3, 4].map(
-      (i) =>
-        selectChoreographyForTopic({
-          theme: 'Sujet générique économie',
-          category: 'Business',
-          variationIndex: i,
-        }).hookType
-    )
-  );
-  assert.equal(rotatedHooks.size, 5);
+  assert.equal(bank.hookType, 'paywall_shock_stack');
+  assert.equal(dev.hookType, 'confidential_vault_slam');
+  assert.ok(!bank.beatTypes.includes('claude_code_slash_cli'));
+  assert.ok(!bank.beatTypes.includes('github_heatmap_and_runs'));
+  assert.equal(new Set(bank.beatTypes.slice(0, 7)).size, 7);
 });
 
-test('buildFallbackBatchScript generates 8 kinetic beats with split/fullscreen alternation and Beat 1 Act-2 shatter SFX', () => {
+test('BROLL_DATABASE has >= 225 bright/high-contrast semantic entries and zero duplicates per generated Short', () => {
+  assert.ok(BROLL_DATABASE.length >= 225, `Expected >= 225 B-roll entries, got ${BROLL_DATABASE.length}`);
+  for (const e of BROLL_DATABASE) {
+    assert.ok(e.lighting === 'bright' || e.lighting === 'high-contrast');
+  }
+
   const script = buildFallbackBatchScript({
     theme: 'Pourquoi 80 % des réunions sont remplacées par des résumés IA en 2026',
     category: 'IA',
   });
   assert.equal(script.beats.length, 8);
-  assert.equal(script.beats[0].visualType, 'hook_shatter');
   assert.equal(script.beats[script.beats.length - 1].visualType, 'cta_card');
-
   assert.equal(resolveBeatLayout(script.beats[0], 0, 8), 'split');
   assert.equal(resolveBeatLayout(script.beats[3], 3, 8), 'fullscreen');
   assert.equal(resolveBeatLayout(script.beats[4], 4, 8), 'fullscreen');
   assert.equal(resolveBeatLayout(script.beats[5], 5, 8), 'split');
 
-  const fullText = script.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.05, 30);
-  const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
+  const seenIds = new Set<string>();
+  const seenSubCats = new Set<string>();
+  for (const b of script.beats) {
+    const keys = b.subBrollKeys?.length ? b.subBrollKeys : [b.brollKey || ''];
+    for (const k of keys) {
+      assert.ok(BROLL_DATABASE_BY_ID[k], `Unknown rich B-roll ID "${k}"`);
+      assert.ok(!seenIds.has(k), `Duplicate bottom illustration ID "${k}" inside single Short`);
+      seenIds.add(k);
+      const subCat = BROLL_DATABASE_BY_ID[k].subCategory;
+      assert.ok(!seenSubCats.has(subCat), `Duplicate bottom subCategory "${subCat}" inside single Short`);
+      seenSubCats.add(subCat);
+    }
+  }
 
-  const shatterSfx = timed.sfxTrack.find((s) => s.id === 'sfx-hook-shatter');
-  assert.ok(shatterSfx);
-  assert.equal(shatterSfx.sound, 'glass-shatter');
-  assert.ok(shatterSfx.start >= 1.4 && shatterSfx.start <= 2.6);
+  const fullText = script.beats.map((b) => b.spokenLine).join(' ');
+  const { words, durationSec } = alignmentToWords(null, fullText, 1.1, 30);
+  const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
+  assert.ok(timed.sfxTrack.length >= 1, 'Expected at least one scheduled SFX cue');
+  const firstSfx = timed.sfxTrack[0];
+  assert.ok(firstSfx.start >= 0.4 && firstSfx.start <= 2.6, `Expected beat-1 SFX start in [0.4, 2.6], got ${firstSfx.start}`);
 });
 
 test('getBrollSequenceForTopic avoids ado/paradoxe false match and buildFallbackBatchScript uses domain titles and natural spoken sources', () => {
@@ -216,7 +227,6 @@ test('getBrollSequenceForTopic avoids ado/paradoxe false match and buildFallback
 test('alignmentToWords rescales subtitle timing to match actual MP3 duration and keeps beat boundaries locked', () => {
   const sampleText = 'Un deux trois quatre cinq six sept huit neuf dix.';
   const chars = sampleText.split('');
-  // Simulate raw ElevenLabs timestamps spanning 10s, while actual measured MP3 duration is 12.0s (>2.5% diff)
   const starts = chars.map((_, i) => Number((i * 0.2).toFixed(3)));
   const ends = chars.map((_, i) => Number((i * 0.2 + 0.16).toFixed(3)));
   const res = alignmentToWords(
@@ -241,7 +251,7 @@ test('every SFX asset scheduled by buildFallbackBatchScript exists on disk via r
   });
   const timed = assignBeatTimingsAndTranscript(
     script.beats,
-    alignmentToWords(null, script.beats.map((b) => b.spokenLine).join(' '), 1.05, 36).words,
+    alignmentToWords(null, script.beats.map((b) => b.spokenLine).join(' '), 1.1, 36).words,
     36
   );
   for (const s of timed.sfxTrack) {
@@ -269,7 +279,7 @@ test('trimSpokenLineForPacing cuts at sentence/clause boundaries and strips dang
   assert.ok(trimmed.split(/\s+/).length <= 16);
 });
 
-test('buildFallbackBatchScript eliminates generic filler across domains and populates source_quote, chart_curve, ui_window metadata', () => {
+test('buildFallbackBatchScript eliminates generic filler across domains and populates extended Melvynx archetype round-trips', () => {
   const forbiddenSlop = [
     'Concrètement, tout s’enchaîne en quatre étapes',
     'Le vrai point de bascule ne vient pas des annonces',
@@ -283,6 +293,7 @@ test('buildFallbackBatchScript eliminates generic filler across domains and popu
     { theme: "L'IA ferme la porte aux juniors (-28 %)", category: 'IA' },
     { theme: '90 % des entreprises ratent leurs économies IA', category: 'Business' },
     { theme: 'Pourquoi les vidéos parfaites fatiguent le feed', category: 'Conseils de vie' },
+    { theme: 'Claude Code CLI et MCP sur GitHub en 2026', category: 'Tech & Code' },
     { theme: 'Nouvelle réforme du diagnostic DPE en 2026', category: 'Société', angle: 'Les logements classés F baissent de 14 % sur le marché.' },
   ];
 
@@ -293,16 +304,9 @@ test('buildFallbackBatchScript eliminates generic filler across domains and popu
       assert.ok(!allSpoken.includes(slop), `Found generic filler "${slop}" in "${t.theme}"`);
     }
 
-    const quoteBeat = script.beats.find((b) => b.visualType === 'source_quote');
-    assert.ok(quoteBeat, `Expected source_quote beat in "${t.theme}"`);
-    assert.ok(quoteBeat.quoteText && quoteBeat.quoteText.length > 10);
-    assert.ok(quoteBeat.quoteHighlight && quoteBeat.quoteHighlight.length > 3);
+    const nonCtaTypes = script.beats.slice(0, 7).map((b) => b.visualType);
+    assert.equal(new Set(nonCtaTypes).size, 7, `Expected 7 distinct archetypes in "${t.theme}"`);
 
-    const curveBeat = script.beats.find((b) => b.visualType === 'chart_curve');
-    assert.ok(curveBeat, `Expected chart_curve beat in "${t.theme}"`);
-    assert.ok(curveBeat.chartPoints && curveBeat.chartPoints.length >= 4);
-
-    // Check round-trip extraction via buildDynamicBeatsFromProject
     const dummyProj = {
       id: 'proj-test',
       slug: 'test',
@@ -320,13 +324,11 @@ test('buildFallbackBatchScript eliminates generic filler across domains and popu
       layoutTrack: [],
       sfxTrack: [],
       feedbacks: [],
-      editSpec: { beats: script.beats },
+      editSpec: { beats: script.beats, speed: 1.1 },
     } as unknown as ShortProject;
 
     const dynBeats = buildDynamicBeatsFromProject(dummyProj);
-    const dynQuote = dynBeats.find((b) => b.visualType === 'source_quote');
-    const dynCurve = dynBeats.find((b) => b.visualType === 'chart_curve');
-    assert.equal(dynQuote?.quoteText, quoteBeat.quoteText);
-    assert.equal(dynCurve?.chartPoints?.length, curveBeat.chartPoints?.length);
+    assert.equal(dynBeats.length, 8);
+    assert.ok(dynBeats[0].subBrollKeys && dynBeats[0].subBrollKeys.length >= 1);
   }
 });

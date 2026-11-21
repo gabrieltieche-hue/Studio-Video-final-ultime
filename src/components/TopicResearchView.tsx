@@ -6,6 +6,7 @@ import {
   Download,
   ExternalLink,
   Film,
+  Flame,
   Layers,
   Loader2,
   Search,
@@ -29,6 +30,34 @@ interface GroundingSource {
 interface ResearchBrief {
   pillar: string;
   summary: string;
+}
+
+interface OutlierEntry {
+  item: {
+    id: string;
+    creatorHandle: string;
+    platform: 'instagram' | 'tiktok' | 'youtube';
+    titleOrHook: string;
+    views: number;
+    likes?: number;
+    comments?: number;
+    url?: string;
+    niche?: string;
+    remakeAngle?: string;
+    suggestedHook?: string;
+  };
+  medianViews: number;
+  multiplier: number;
+  tier: 'viral' | 'hot' | 'above' | 'normal';
+}
+
+interface OutlierScanResult {
+  scannedAt: string;
+  mode: 'treg_live' | 'gemini_web_fallback';
+  tregLoggedIn: boolean;
+  creatorsScanned: number;
+  note: string;
+  outliers: OutlierEntry[];
 }
 
 const STATUS_BADGE: Record<TopicStatus, string> = {
@@ -60,6 +89,10 @@ export const TopicResearchView: React.FC<TopicResearchViewProps> = ({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [creatingProjectId, setCreatingProjectId] = useState<string | null>(null);
   const [openSpotlight, setOpenSpotlight] = useState(true);
+  const [openOutliers, setOpenOutliers] = useState(true);
+  const [scanningOutliers, setScanningOutliers] = useState(false);
+  const [outlierResult, setOutlierResult] = useState<OutlierScanResult | null>(null);
+  const [outlierHandleInput, setOutlierHandleInput] = useState('');
   const [openBriefs, setOpenBriefs] = useState(true);
   const [openTable, setOpenTable] = useState(true);
 
@@ -130,6 +163,63 @@ export const TopicResearchView: React.FC<TopicResearchViewProps> = ({
     } finally {
       setResearching(false);
     }
+  };
+
+  const handleScanOutliers = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (scanningOutliers) return;
+    setScanningOutliers(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/outliers/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          handle: outlierHandleInput.trim() || undefined,
+          focus: focusInput.trim() || undefined,
+        }),
+      });
+      const data = (await res.json()) as OutlierScanResult & { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || 'Échec du scan Outliers.');
+      }
+      setOutlierResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur scan Outliers.');
+    } finally {
+      setScanningOutliers(false);
+    }
+  };
+
+  const handleRemakeOutlier = async (entry: OutlierEntry) => {
+    if (!onCreateProjectFromTopic || creatingProjectId) return;
+    const pseudoRow: TopicCsvRow = {
+      id: `OUT-${entry.item.id.slice(0, 12)}`,
+      demande_session: 'OUTLIERS-SCAN',
+      date_creation: new Date().toISOString().slice(0, 10),
+      categorie: entry.item.niche?.toLowerCase().includes('business')
+        ? 'Business'
+        : entry.item.niche?.toLowerCase().includes('ia')
+          ? 'IA'
+          : 'Tech & Société',
+      theme: entry.item.titleOrHook,
+      angle_viral_fr:
+        entry.item.remakeAngle ||
+        `Remake structuré d'un outlier ×${entry.multiplier} repéré chez ${entry.item.creatorHandle}`,
+      hook_propose: entry.item.suggestedHook || entry.item.titleOrHook,
+      hook_ecran: `×${entry.multiplier} · ${entry.item.creatorHandle}`,
+      score_viral_fr: Math.min(99, Math.round(74 + entry.multiplier * 5)),
+      score_actualite: 88,
+      score_save_share: 91,
+      tension_emotion: 'Preuve chiffrée & curiosité',
+      plateformes_cibles: 'TikTok · Reels · YT Shorts',
+      sources: `Veille Outliers ${entry.item.creatorHandle}`,
+      statut: 'Retenu (Choix IA)',
+      slug_short: entry.item.id.replace(/[^a-z0-9-]/gi, '-').toLowerCase().slice(0, 32),
+      raison_selection: `Outlier détecté (${entry.item.views.toLocaleString('fr-FR')} vues · ×${entry.multiplier} la médiane)`,
+    };
+    await handleLaunchShort(pseudoRow);
   };
 
   const handleStatusChange = async (id: string, nextStatus: TopicStatus) => {
@@ -483,6 +573,131 @@ export const TopicResearchView: React.FC<TopicResearchViewProps> = ({
           )}
         </div>
       )}
+
+      {/* Treg + Watchlist Outliers Scanner */}
+      <div className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <button
+            type="button"
+            data-testid="toggle-outliers-section"
+            onClick={() => setOpenOutliers((o) => !o)}
+            aria-expanded={openOutliers}
+            className="flex items-center gap-2 text-left cursor-pointer"
+          >
+            <span className="w-7 h-7 rounded-lg border border-[#E3DED3] bg-white hover:bg-[#EAE7DF] flex items-center justify-center text-[#14161B] shrink-0">
+              {openOutliers ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </span>
+            <Flame className="w-4 h-4 text-[#258EFF]" aria-hidden="true" />
+            <div>
+              <h2
+                className="text-lg font-bold text-[#14161B]"
+                style={{ fontFamily: '"Bricolage Grotesque", sans-serif' }}
+              >
+                Scanner Outliers · Watchlist &amp; Treg (×3 médiane)
+              </h2>
+              <p className="text-xs text-[#5C5F68]">
+                Repère les formats qui explosent chez @melvynxdev, @underscore_talk et la watchlist puis lance un remake FR.
+              </p>
+            </div>
+          </button>
+
+          <form onSubmit={handleScanOutliers} className="flex items-center gap-2 shrink-0">
+            <label htmlFor="outlier-handle-input" className="sr-only">
+              Compte créateur optionnel (@handle)
+            </label>
+            <input
+              id="outlier-handle-input"
+              type="text"
+              value={outlierHandleInput}
+              onChange={(e) => setOutlierHandleInput(e.target.value)}
+              placeholder="@handle optionnel (ou toute la watchlist)"
+              className="h-9 px-3 rounded-lg border border-[#E3DED3] bg-white text-xs text-[#14161B] w-52 focus:outline-2 focus:outline-[#258EFF]"
+            />
+            <button
+              type="submit"
+              data-testid="scan-outliers-btn"
+              disabled={scanningOutliers}
+              className="h-9 px-3.5 rounded-lg bg-[#14161B] hover:bg-[#258EFF] disabled:opacity-65 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              {scanningOutliers ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                  Scan en cours…
+                </>
+              ) : (
+                <>
+                  <Flame className="w-3.5 h-3.5" aria-hidden="true" />
+                  Scanner Outliers
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {openOutliers && outlierResult && (
+          <div className="space-y-3 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5C5F68] bg-[#F6F5F1] border border-[#E3DED3] rounded-xl px-3.5 py-2">
+              <span>{outlierResult.note}</span>
+              <span className="font-mono font-semibold text-[#14161B]">
+                {outlierResult.creatorsScanned} comptes · {outlierResult.outliers.length} résultats
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {outlierResult.outliers.slice(0, 6).map((entry) => (
+                <div
+                  key={entry.item.id}
+                  className="bg-white border border-[#E3DED3] rounded-xl p-4 flex flex-col justify-between gap-3"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-mono font-bold text-[#14161B]">
+                        {entry.item.creatorHandle} · {entry.item.platform}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-extrabold ${
+                          entry.tier === 'viral'
+                            ? 'bg-[#258EFF] text-white'
+                            : entry.tier === 'hot'
+                              ? 'bg-[#14161B] text-white'
+                              : 'bg-[#F1EEE6] text-[#14161B]'
+                        }`}
+                      >
+                        ×{entry.multiplier} médiane
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-[#14161B] leading-snug">
+                      {entry.item.titleOrHook}
+                    </div>
+                    {entry.item.remakeAngle && (
+                      <p className="text-xs text-[#5C5F68] leading-relaxed">
+                        {entry.item.remakeAngle}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#E3DED3] text-xs">
+                    <span className="font-mono text-[#5C5F68] tabular-nums">
+                      {entry.item.views.toLocaleString('fr-FR')} vues (méd. {entry.medianViews.toLocaleString('fr-FR')})
+                    </span>
+                    {onCreateProjectFromTopic && (
+                      <button
+                        type="button"
+                        disabled={Boolean(creatingProjectId)}
+                        onClick={() => void handleRemakeOutlier(entry)}
+                        className="px-3 py-1.5 rounded-lg bg-[#258EFF] hover:opacity-90 disabled:opacity-60 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Film className="w-3.5 h-3.5" aria-hidden="true" />
+                        Remake ce concept
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* CSV Table Section */}
       <div className="bg-[#FCFBF8] border border-[#E3DED3] rounded-2xl p-5 space-y-4 shadow-sm">

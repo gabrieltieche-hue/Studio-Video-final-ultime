@@ -505,7 +505,7 @@ export async function buildStructuredShortAssets(params: {
   }
 
   const fullText = script.beats.map((b) => b.spokenLine).join(' ');
-  const { words, durationSec } = alignmentToWords(null, fullText, 1.05, targetDuration);
+  const { words, durationSec } = alignmentToWords(null, fullText, 1.10, targetDuration);
   const timed = assignBeatTimingsAndTranscript(script.beats, words, durationSec);
 
   const forcedMode: 'split' | null =
@@ -1183,7 +1183,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
           const voice = await synthesizeVoiceoverForProject({
             projectDir,
             fullText: spokenText,
-            speed: 1.04,
+            speed: 1.10,
             voiceFilename: 'voice_v1.mp3',
           });
           voiceProvider = voice.providerUsed;
@@ -1246,7 +1246,7 @@ body { margin:0; background:transparent; font-family:system-ui,sans-serif; displ
         editSpec: {
           sourceTopicId: topicRow?.id || topicId || null,
           sources: topicRow?.sources || args.sources || null,
-          speed: 1.04,
+          speed: 1.10,
           beats: finalBeats,
         },
         transcript: finalTranscript,
@@ -1858,7 +1858,7 @@ export function createStudioRouter(): express.Router {
           .filter(Boolean)
           .join(' ');
         if (spokenText) {
-          const speed = Math.min(1.06, Math.max(0.95, Number(proj.editSpec?.speed) || 1.04));
+          const speed = Math.min(1.25, Math.max(0.95, Number(proj.editSpec?.speed) || 1.10));
           const voice = await synthesizeVoiceoverForProject({
             projectDir,
             fullText: spokenText,
@@ -2023,7 +2023,7 @@ export function createStudioRouter(): express.Router {
         throw new Error('Aucun texte parlé disponible pour générer la voix off.');
       }
 
-      const speed = Math.min(1.06, Math.max(0.95, Number(proj.editSpec?.speed) || 1.04));
+      const speed = Math.min(1.25, Math.max(0.95, Number(proj.editSpec?.speed) || 1.10));
       const voice = await synthesizeVoiceoverForProject({
         projectDir,
         fullText: spokenText,

@@ -72,7 +72,7 @@ export const BatchCreateView: React.FC<BatchCreateViewProps> = ({
 
   const [lookId, setLookId] = useState<LookId>('papier');
   const [musicTrack, setMusicTrack] = useState<MusicBedId>('upbeat');
-  const [speed, setSpeed] = useState<number>(1.04);
+  const [speed, setSpeed] = useState<number>(1.10);
   const [renderMp4, setRenderMp4] = useState<boolean>(true);
 
   const [autoScheduleEnabled, setAutoScheduleEnabled] = useState<boolean>(false);
@@ -355,8 +355,8 @@ export const BatchCreateView: React.FC<BatchCreateViewProps> = ({
           </h1>
           <p className="text-sm text-[#5C5F68] max-w-2xl leading-relaxed">
             Générez plusieurs Shorts variés en un clic : hooks et arcs narratifs adaptés à chaque
-            sujet, motion design illustré (B-Rolls contextuels), voix FR naturelle (VoiceStudio /
-            Rémy Neural ≤ 1.06×), rendu MP4 1080×1920 et planification échelonnée.
+            sujet, motion design dynamique (25 archétypes &amp; 225 illustrations), voix FR (1.10×),
+            rendu MP4 1080×1920 et planification échelonnée.
           </p>
         </div>
 
@@ -718,8 +718,9 @@ export const BatchCreateView: React.FC<BatchCreateViewProps> = ({
                   className="w-full h-9 px-2.5 rounded-lg border border-[#E3DED3] bg-white text-xs font-mono font-semibold text-[#14161B] cursor-pointer"
                 >
                   <option value={1.0}>1.00× (Posé)</option>
-                  <option value={1.04}>1.04× (Recommandé · Rémy / VoiceStudio)</option>
-                  <option value={1.06}>1.06× (Max studio)</option>
+                  <option value={1.05}>1.05× (Naturel)</option>
+                  <option value={1.1}>1.10× (Recommandé)</option>
+                  <option value={1.15}>1.15× (Nerveux)</option>
                 </select>
               </div>
             </div>
@@ -736,7 +737,7 @@ export const BatchCreateView: React.FC<BatchCreateViewProps> = ({
                   Exporter chaque vidéo en MP4 1080×1920
                 </div>
                 <div className="text-[11px] text-[#5C5F68]">
-                  Rendu animé + voix VoiceStudio / Rémy Neural FR + musique sidechain (-14 LUFS)
+                  Rendu vidéo animé + voix VoiceStudio / Rémy Neural FR + musique sidechain (-14 LUFS)
                 </div>
               </div>
             </label>

@@ -191,7 +191,7 @@ async function main() {
   const cfg = {
     lookId: (input.lookId || 'papier') as LookId,
     musicTrack: input.musicTrack || 'upbeat',
-    speed: Number(input.speed) || 1.06,
+    speed: Number(input.speed) || 1.10,
   };
   const port = readPort();
   initStorage();

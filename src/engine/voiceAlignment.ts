@@ -26,7 +26,7 @@ export interface EdgeBoundaryEvent {
 export function parseEdgeWordBoundariesToWords(
   rawMetadataText: string,
   fallbackText: string,
-  speed = 1.0,
+  speed = 1.10,
   actualDurationSec?: number
 ): WhisperWord[] {
   const events: EdgeBoundaryEvent[] = [];
@@ -61,7 +61,7 @@ export function parseEdgeWordBoundariesToWords(
     }
   }
 
-  const speedFactor = Math.max(0.75, Math.min(1.35, speed || 1.0));
+  const speedFactor = Math.max(0.75, Math.min(1.35, speed || 1.10));
   const rawWords: WhisperWord[] = [];
 
   if (events.length > 0) {
@@ -104,10 +104,10 @@ export function parseEdgeWordBoundariesToWords(
   // Fallback proportional timeline if metadata was absent
   if (rawWords.length === 0) {
     const tokens = fallbackText.trim().split(/\s+/).filter(Boolean);
-    const totalDur = Math.max(2, actualDurationSec || tokens.length * 0.36);
+    const totalDur = Math.max(2, actualDurationSec || tokens.length * 0.32);
     const totalWeight = tokens.reduce((s, t) => s + Math.max(2, t.length), 0) || 1;
-    let cursor = 0.08;
-    const usable = Math.max(1.5, totalDur - 0.25);
+    let cursor = 0.06;
+    const usable = Math.max(1.5, totalDur - 0.18);
     for (const tok of tokens) {
       const dur = (Math.max(2, tok.length) / totalWeight) * usable;
       rawWords.push({
@@ -121,20 +121,20 @@ export function parseEdgeWordBoundariesToWords(
     }
   }
 
-  // Ensure monotonic timestamps and rescale gently to measured audio duration if provided
+  // Ensure monotonic timestamps and rescale tightly to measured silence-trimmed audio duration
   for (let i = 1; i < rawWords.length; i++) {
     if (rawWords[i].start < rawWords[i - 1].start) {
       rawWords[i].start = rawWords[i - 1].end;
     }
     if (rawWords[i].end <= rawWords[i].start) {
-      rawWords[i].end = Number((rawWords[i].start + 0.08).toFixed(3));
+      rawWords[i].end = Number((rawWords[i].start + 0.07).toFixed(3));
     }
   }
 
   if (actualDurationSec && actualDurationSec > 2 && rawWords.length > 0) {
     const lastEnd = rawWords[rawWords.length - 1].end;
-    const expectedEnd = Math.max(1.5, actualDurationSec - 0.08);
-    if (lastEnd > 0.5 && Math.abs(lastEnd - expectedEnd) / lastEnd > 0.035) {
+    const expectedEnd = Math.max(1.5, actualDurationSec - 0.06);
+    if (lastEnd > 0.5 && Math.abs(lastEnd - expectedEnd) / lastEnd > 0.015) {
       const scale = expectedEnd / lastEnd;
       for (const w of rawWords) {
         w.start = Number((w.start * scale).toFixed(3));
@@ -164,7 +164,7 @@ export function parseVerboseWordsToWhisperWords(
     .filter((w) => w.text.length > 0 && Number.isFinite(w.start));
 
   if (valid.length === 0) {
-    return parseEdgeWordBoundariesToWords('', fallbackText, 1.0, actualDurationSec);
+    return parseEdgeWordBoundariesToWords('', fallbackText, 1.10, actualDurationSec);
   }
 
   const out: WhisperWord[] = valid.map((w, idx) => ({
@@ -177,8 +177,8 @@ export function parseVerboseWordsToWhisperWords(
 
   if (actualDurationSec && actualDurationSec > 2 && out.length > 0) {
     const lastEnd = out[out.length - 1].end;
-    if (lastEnd > 0.5 && Math.abs(lastEnd - (actualDurationSec - 0.08)) / lastEnd > 0.04) {
-      const scale = Math.max(0.5, actualDurationSec - 0.08) / lastEnd;
+    if (lastEnd > 0.5 && Math.abs(lastEnd - (actualDurationSec - 0.06)) / lastEnd > 0.02) {
+      const scale = Math.max(0.5, actualDurationSec - 0.06) / lastEnd;
       for (const w of out) {
         w.start = Number((w.start * scale).toFixed(3));
         w.end = Number(Math.max(w.start + 0.05, w.end * scale).toFixed(3));

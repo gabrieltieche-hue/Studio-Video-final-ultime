@@ -50,7 +50,7 @@ export function createBatchRouter(port: number): express.Router {
           focus: typeof body.focus === 'string' ? body.focus : undefined,
           lookId,
           musicTrack,
-          speed: Number(body.speed) || 1.06,
+          speed: Number(body.speed) || 1.10,
           renderMp4: body.renderMp4 !== false,
           autoSchedule: body.autoSchedule,
         },

@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { resolveBrollAsset } from '../../data/brollLibrary';
 import { CREATOR_PROFILE, type LookPreset } from '../../data/shortSpec';
 import {
-  buildCaptionChunks,
+  buildSemanticCaptionChunks,
   clamp,
   getActiveCaptionChunk,
   getLayoutSeam,
@@ -14,6 +13,9 @@ import {
 import { buildDynamicBeatsFromProject, type DynamicBeat } from '../../engine/transcriptUtils';
 import type { DynamicIconKind } from '../../types/batch';
 import type { ShortProject } from '../../types/studio';
+import { BottomIllustrationStage } from './BottomIllustrationStage';
+import { BrandLogoBadge, NotoSvgIcon } from './BrandAndNotoIcons';
+import { isMelvynxArchetype, renderMelvynxArchetype } from './MelvynxArchetypes';
 
 interface DynamicShortStageProps {
   project: ShortProject;
@@ -204,15 +206,11 @@ function CursorPointer({
   y,
   pressing = false,
   visible = true,
-  label,
-  badgeColor = '#258EFF',
 }: {
   x: number;
   y: number;
   pressing?: boolean;
   visible?: boolean;
-  label?: string;
-  badgeColor?: string;
 }) {
   if (!visible) return null;
   return (
@@ -234,14 +232,6 @@ function CursorPointer({
           strokeLinejoin="round"
         />
       </svg>
-      {label && (
-        <span
-          className="absolute left-[26px] top-[34px] px-[12px] py-[4px] rounded-full text-[20px] font-extrabold text-white whitespace-nowrap shadow-md"
-          style={{ backgroundColor: badgeColor }}
-        >
-          {label}
-        </span>
-      )}
     </div>
   );
 }
@@ -385,157 +375,17 @@ function MacWindowChrome({
   );
 }
 
-function IllustratedSubjectSvg({
-  kind = 'ai',
-  accent = '#258EFF',
-  ink = '#14161B',
-  size = 112,
-  localT = 0,
-}: {
-  kind?: DynamicIconKind;
-  accent?: string;
-  ink?: string;
-  size?: number;
-  localT?: number;
-}) {
-  const bob = Math.sin(localT * 3.2) * 3;
-  const pulse = 0.88 + 0.12 * Math.sin(localT * 4.5);
-
-  if (kind === 'euro' || kind === 'bank') {
-    return (
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <rect x="14" y="28" width="92" height="62" rx="14" fill={ink} />
-        <rect x="20" y="34" width="80" height="50" rx="10" fill="#1F2430" stroke="rgba(255,255,255,0.12)" />
-        <rect x="28" y="44" width="22" height="16" rx="4" fill="#FBBF24" />
-        <circle cx="84" cy="48" r="14" fill={accent} opacity={pulse.toFixed(2)} />
-        <text x="84" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="18" fontWeight="900" fontFamily="monospace">€</text>
-        <rect x="28" y="68" width="44" height="6" rx="3" fill="rgba(255,255,255,0.35)" />
-        <g transform={`translate(0, ${bob.toFixed(1)})`}>
-          <circle cx="94" cy="84" r="18" fill="#059669" stroke="#FFFFFF" strokeWidth="3" />
-          <path d="M87 84l5 5 10-10" stroke="#FFFFFF" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
-        </g>
-      </svg>
-    );
-  }
-
-  if (kind === 'law' || kind === 'scale') {
-    const tilt = Math.sin(localT * 2.4) * 5;
-    return (
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <circle cx="60" cy="60" r="48" fill={`${accent}14`} />
-        <rect x="56" y="22" width="8" height="72" rx="4" fill={ink} />
-        <rect x="34" y="92" width="52" height="9" rx="4.5" fill={ink} />
-        <g transform={`rotate(${tilt.toFixed(1)} 60 32)`}>
-          <rect x="20" y="29" width="80" height="6" rx="3" fill={accent} />
-          <path d="M24 35L14 64H34L24 35Z" fill={`${accent}30`} stroke={accent} strokeWidth="2.5" />
-          <path d="M96 35L86 64H106L96 35Z" fill="#DC262630" stroke="#DC2626" strokeWidth="2.5" />
-        </g>
-        <circle cx="60" cy="32" r="7" fill="#FFFFFF" stroke={ink} strokeWidth="3" />
-      </svg>
-    );
-  }
-
-  if (kind === 'clock' || kind === 'calendar') {
-    const handDeg = (localT * 90) % 360;
-    return (
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <circle cx="60" cy="60" r="46" fill={ink} />
-        <circle cx="60" cy="60" r="38" fill="#FFFFFF" />
-        <circle cx="60" cy="60" r="34" stroke={accent} strokeWidth="4" strokeDasharray="160 60" />
-        <line x1="60" y1="60" x2="60" y2="38" stroke={ink} strokeWidth="4.5" strokeLinecap="round" />
-        <line
-          x1="60"
-          y1="60"
-          x2={60 + Math.cos((handDeg - 90) * (Math.PI / 180)) * 22}
-          y2={60 + Math.sin((handDeg - 90) * (Math.PI / 180)) * 22}
-          stroke="#DC2626"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
-        <circle cx="60" cy="60" r="5" fill={accent} />
-      </svg>
-    );
-  }
-
-  if (kind === 'chart' || kind === 'rocket') {
-    return (
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <rect x="14" y="18" width="92" height="84" rx="18" fill={ink} />
-        <rect x="26" y="66" width="14" height="22" rx="4" fill="rgba(255,255,255,0.22)" />
-        <rect x="46" y="52" width="14" height="36" rx="4" fill={accent} />
-        <rect x="66" y="42" width="14" height="46" rx="4" fill="#34D399" />
-        <path d="M24 58L48 44L68 48L94 26" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="94" cy="26" r={6 + 2 * pulse} fill="#34D399" />
-      </svg>
-    );
-  }
-
-  if (kind === 'shield' || kind === 'lock' || kind === 'alert') {
-    return (
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <path
-          d="M60 14L96 28V58C96 81 80 99 60 106C40 99 24 81 24 58V28L60 14Z"
-          fill={ink}
-          stroke={accent}
-          strokeWidth="4"
-        />
-        <path
-          d="M44 58L55 69L78 45"
-          stroke="#34D399"
-          strokeWidth="6.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-  }
-
-  // Default AI / Tech / Users / Terminal neural node illustration
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-      <rect x="22" y="22" width="76" height="76" rx="22" fill={ink} />
-      <circle cx="60" cy="60" r="22" fill={`${accent}28`} stroke={accent} strokeWidth="3.5" />
-      <circle cx="60" cy="60" r="9" fill="#FFFFFF" />
-      <line x1="60" y1="12" x2="60" y2="26" stroke={accent} strokeWidth="4" strokeLinecap="round" />
-      <line x1="60" y1="94" x2="60" y2="108" stroke={accent} strokeWidth="4" strokeLinecap="round" />
-      <line x1="12" y1="60" x2="26" y2="60" stroke={accent} strokeWidth="4" strokeLinecap="round" />
-      <line x1="94" y1="60" x2="108" y2="60" stroke={accent} strokeWidth="4" strokeLinecap="round" />
-      <circle cx={60 + Math.cos(localT * 2.5) * 28} cy={60 + Math.sin(localT * 2.5) * 28} r="5.5" fill="#34D399" />
-    </svg>
-  );
-}
-
-function MacDesktopBar({
-  appName = 'Studio App',
-  statusText = '⌘K · Live',
-}: {
-  appName?: string;
-  statusText?: string;
-}) {
-  return (
-    <div className="w-full rounded-[16px] px-[20px] py-[10px] mb-[12px] bg-[#14161B]/92 text-white flex items-center justify-between border border-white/10">
-      <div className="flex items-center gap-[14px] text-[20px] font-semibold">
-        <span className="font-black text-[#60A5FA]"></span>
-        <span className="font-extrabold">{appName}</span>
-        <span className="text-white/55">Fichier</span>
-        <span className="text-white/55">Édition</span>
-      </div>
-      <div className="flex items-center gap-[12px] text-[19px] font-mono text-[#34D399]">
-        <span>●</span>
-        <span>{statusText}</span>
-      </div>
-    </div>
-  );
-}
-
 function renderDynamicBeatScene(
   beat: DynamicBeat,
   localT: number,
   beatSpan: number,
   look: LookPreset
 ) {
-  const vType = beat.visualType || 'hook_shatter';
-  const enter = beat.index === 1 && localT < 0.05 ? 1 : clamp(spring(localT, 20) * 1.15, 0.18, 1);
+  const vType = beat.visualType || 'massive_dot_matrix_zoom';
+  if (isMelvynxArchetype(vType)) {
+    return renderMelvynxArchetype(beat, localT, beatSpan, look);
+  }
+  const enter = beat.index === 1 && localT < 0.05 ? 1 : clamp(spring(localT, 24) * 1.15, 0.18, 1);
   const exit = Math.max(0.18, leave(localT, beatSpan, 0.14));
   const iconKind: DynamicIconKind = beat.iconKind || 'ai';
 
@@ -566,14 +416,11 @@ function renderDynamicBeatScene(
           }}
         >
           <div className="flex items-center gap-[18px] min-w-0">
-            <div className="shrink-0">
-              <IllustratedSubjectSvg
-                kind={iconKind === 'ai' ? 'alert' : iconKind}
-                accent={flipped ? '#DC2626' : look.accent}
-                ink="#1E222B"
-                size={84}
-                localT={localT}
-              />
+            <div
+              className="w-[68px] h-[68px] rounded-[20px] flex items-center justify-center shrink-0"
+              style={{ backgroundColor: flipped ? '#DC2626' : look.accent }}
+            >
+              <BeatVectorIcon kind={iconKind === 'ai' ? 'alert' : iconKind} size={36} color="#FFFFFF" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-[10px]">
@@ -1243,6 +1090,761 @@ function renderDynamicBeatScene(
     );
   }
 
+  // 1F. DOT MATRIX ZOOM (@melvynxdev signature: hero % + 96-dot grid + blue subset + zooming magnifying loupe)
+  if (vType === 'dot_matrix_zoom') {
+    const targetPct = clamp(beat.matrixHighlightPct ?? 20, 2, 92);
+    const countP = seg(localT, 0.1, Math.min(1.5, beatSpan * 0.4));
+    const zoomP = spring(localT - Math.min(1.15, beatSpan * 0.32), 16);
+    const totalDots = 96; // 12 cols x 8 rows
+    const highlightDots = Math.max(2, Math.round((targetPct / 100) * totalDots));
+    const animStat = animateStatValue(beat.statValue || `${targetPct} %`, Math.max(0.18, countP));
+    const cols = 12;
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(18 * (1 - enter) - 16 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-end justify-between mb-[14px] gap-[16px]">
+          <div className="min-w-0">
+            <div className="flex items-center gap-[10px]">
+              {beat.brandLogo ? (
+                <BrandLogoBadge brand={beat.brandLogo} size={38} />
+              ) : beat.notoIcon ? (
+                <NotoSvgIcon name={beat.notoIcon} size={36} />
+              ) : (
+                <BeatVectorIcon kind={iconKind} size={32} color={look.accent} />
+              )}
+              <span className="text-[22px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+                {beat.screenLabel || 'DISTRIBUTION'}
+              </span>
+            </div>
+            <div className="text-[44px] font-extrabold leading-[1.06] mt-[4px] truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </div>
+          </div>
+          <div
+            className="text-[88px] font-extrabold leading-none tracking-[-0.05em] tabular-nums shrink-0"
+            style={{ color: look.ink, fontFamily: look.fontDisplay }}
+          >
+            {animStat}
+          </div>
+        </div>
+
+        {/* Dot Matrix Card + Magnifying Loupe (overflow-visible so handle never clips) */}
+        <div
+          className="relative w-full rounded-[32px] px-[34px] py-[30px] border-2"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: look.line,
+            boxShadow: '0 26px 52px -18px rgba(20,22,27,0.16)',
+          }}
+        >
+          <div
+            className="grid gap-[14px] justify-items-center"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: totalDots }).map((_, idx) => {
+              const rowIdx = Math.floor(idx / cols);
+              const colIdx = idx % cols;
+              const isBlue = idx >= totalDots - highlightDots;
+              const appearAt = (colIdx * 0.025 + rowIdx * 0.035) * 0.85;
+              const dotOn = localT >= appearAt;
+              return (
+                <div
+                  key={idx}
+                  className="w-[34px] h-[34px] rounded-full"
+                  style={{
+                    backgroundColor: !dotOn
+                      ? '#E5E7EB'
+                      : isBlue
+                        ? look.accent
+                        : '#374151',
+                    opacity: dotOn ? (isBlue ? 1 : 0.68) : 0.38,
+                    transform: `scale(${dotOn ? (isBlue ? 1.08 : 0.9) : 0.6})`,
+                    boxShadow: isBlue && dotOn ? '0 0 12px rgba(37,142,255,0.45)' : 'none',
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Magnifying Glass hovering cleanly over highlighted bottom-right cluster */}
+          <div
+            className="absolute right-[52px] bottom-[26px] w-[192px] h-[192px] rounded-full border-[7px] flex flex-col items-center justify-center pointer-events-none z-20"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              borderColor: '#14161B',
+              boxShadow: '0 22px 44px rgba(20,22,27,0.28)',
+              transform: `scale(${(0.76 + 0.24 * zoomP).toFixed(3)}) translate(${(-14 * (1 - zoomP)).toFixed(1)}px, ${(-12 * (1 - zoomP)).toFixed(1)}px)`,
+              opacity: clamp(zoomP * 2.2, 0, 1),
+            }}
+          >
+            <div className="grid grid-cols-3 gap-[10px] mb-[8px]">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span key={i} className="w-[22px] h-[22px] rounded-full" style={{ backgroundColor: look.accent }} />
+              ))}
+            </div>
+            <div className="px-[12px] py-[3px] rounded-[8px] bg-[#14161B] text-white text-[18px] font-mono font-bold">
+              {beat.matrixCalloutLabel || `${targetPct} % ciblés`}
+            </div>
+            {/* Magnifier Handle */}
+            <div
+              className="absolute -right-[26px] -bottom-[18px] w-[44px] h-[15px] rounded-full bg-[#14161B]"
+              style={{ transform: 'rotate(42deg)' }}
+            />
+          </div>
+        </div>
+
+        <div className="w-full mt-[16px] rounded-[22px] px-[26px] py-[16px] bg-[#14161B] text-white flex items-center justify-between gap-[16px]">
+          <span className="text-[24px] font-bold truncate">{beat.statLabel || 'Écart réel mesuré sur le panel'}</span>
+          <span className="text-[24px] font-mono font-extrabold text-[#38BDF8] shrink-0">{beat.stampWord || 'ZOOM'}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 1G. NEURAL SCAN (Dark SVG neural network graph + sweeping cyan laser + equation ticker)
+  if (vType === 'neural_scan') {
+    const scanX = (seg(localT, 0.12, Math.max(1.3, beatSpan * 0.64)) * 760) % 760;
+    const stepIdx = Math.min(2, Math.floor(seg(localT, 0.08, beatSpan * 0.65) * 3.1));
+    const cols = [
+      [78, 154, 230, 306],
+      [58, 126, 194, 262, 330],
+      [102, 194, 286],
+    ];
+    const colXs = [140, 420, 700];
+    const colLabels = beat.neuralLayers?.slice(0, 3) || ['ENTRÉE', 'FILTRE', 'SORTIE'];
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(22 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[16px]">
+          <div className="flex items-center gap-[14px] min-w-0">
+            {beat.brandLogo ? (
+              <BrandLogoBadge brand={beat.brandLogo} size={48} />
+            ) : (
+              <NotoSvgIcon name={beat.notoIcon || 'brain'} size={44} />
+            )}
+            <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </span>
+          </div>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#38BDF8] shrink-0">
+            {beat.screenLabel || 'ARCHITECTURE'}
+          </span>
+        </div>
+
+        {/* Dark Neural Graph Canvas */}
+        <div
+          className="relative w-full rounded-[32px] p-[28px] border border-white/10 overflow-hidden"
+          style={{ backgroundColor: '#14161B', boxShadow: '0 28px 56px -18px rgba(20,22,27,0.32)' }}
+        >
+          {/* 3 Stage Stepper Header */}
+          <div className="grid grid-cols-3 gap-[12px] mb-[20px]">
+            {(beat.steps?.slice(0, 3) || ['Entrée brute', 'Filtrage actif', 'Signal utile']).map((lbl, idx) => (
+              <div
+                key={idx}
+                className="rounded-[14px] px-[14px] py-[10px] border text-center"
+                style={{
+                  backgroundColor: stepIdx >= idx ? 'rgba(56,189,248,0.16)' : 'rgba(255,255,255,0.04)',
+                  borderColor: stepIdx >= idx ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                }}
+              >
+                <span className="text-[20px] font-mono font-bold" style={{ color: stepIdx >= idx ? '#38BDF8' : '#9CA3AF' }}>
+                  0{idx + 1} · {lbl}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="relative h-[400px] w-full">
+            <svg width="100%" height="400" viewBox="0 0 840 400">
+              <defs>
+                <linearGradient id="neural-laser-glow" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#38BDF8" stopOpacity="0" />
+                  <stop offset="50%" stopColor="#38BDF8" stopOpacity="0.34" />
+                  <stop offset="100%" stopColor="#38BDF8" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {/* Edges */}
+              {cols[0].map((y1, i) =>
+                cols[1].map((y2, j) => {
+                  const activeEdge = scanX >= colXs[0] + 40 && (i + j) % 2 === 0;
+                  return (
+                    <line
+                      key={`e1-${i}-${j}`}
+                      x1={colXs[0]}
+                      y1={y1}
+                      x2={colXs[1]}
+                      y2={y2}
+                      stroke={activeEdge ? '#38BDF8' : 'rgba(255,255,255,0.12)'}
+                      strokeWidth={activeEdge ? '3' : '1.5'}
+                      opacity={activeEdge ? 0.85 : 0.45}
+                    />
+                  );
+                })
+              )}
+              {cols[1].map((y1, i) =>
+                cols[2].map((y2, j) => {
+                  const activeEdge = scanX >= colXs[1] + 40 && j === 1;
+                  return (
+                    <line
+                      key={`e2-${i}-${j}`}
+                      x1={colXs[1]}
+                      y1={y1}
+                      x2={colXs[2]}
+                      y2={y2}
+                      stroke={activeEdge ? '#34D399' : 'rgba(255,255,255,0.12)'}
+                      strokeWidth={activeEdge ? '3.5' : '1.5'}
+                      opacity={activeEdge ? 0.92 : 0.45}
+                    />
+                  );
+                })
+              )}
+
+              {/* Nodes */}
+              {cols.map((ys, cIdx) =>
+                ys.map((y, nIdx) => {
+                  const passed = scanX >= colXs[cIdx] - 30;
+                  const isFinalFocus = cIdx === 2 && nIdx === 1;
+                  return (
+                    <g key={`n-${cIdx}-${nIdx}`}>
+                      <circle
+                        cx={colXs[cIdx]}
+                        cy={y}
+                        r={isFinalFocus ? 22 : 16}
+                        fill={isFinalFocus && passed ? '#34D399' : passed ? '#38BDF8' : '#1F2937'}
+                        stroke={passed ? '#FFFFFF' : 'rgba(255,255,255,0.28)'}
+                        strokeWidth="3"
+                      />
+                    </g>
+                  );
+                })
+              )}
+
+              {/* Column Layer Tags */}
+              {colXs.map((cx, cIdx) => (
+                <text
+                  key={`lbl-${cIdx}`}
+                  x={cx}
+                  y="380"
+                  textAnchor="middle"
+                  fill={scanX >= cx - 30 ? '#38BDF8' : '#9CA3AF'}
+                  fontSize="18"
+                  fontWeight="700"
+                  fontFamily="monospace"
+                >
+                  {(colLabels[cIdx] || '').toUpperCase()}
+                </text>
+              ))}
+
+              {/* Sweeping Cyan Laser + Glow */}
+              <rect x={36 + scanX} y="16" width="52" height="334" fill="url(#neural-laser-glow)" />
+              <line
+                x1={62 + scanX}
+                y1="16"
+                x2={62 + scanX}
+                y2="350"
+                stroke="#38BDF8"
+                strokeWidth="4"
+                opacity="0.95"
+              />
+            </svg>
+          </div>
+
+          <div className="mt-[14px] rounded-[18px] px-[22px] py-[14px] bg-white/6 border border-white/10 flex items-center justify-between gap-[14px]">
+            <span className="text-[22px] font-mono font-bold text-[#38BDF8] truncate">
+              {beat.neuralEquation || 'Entrée × Filtre → Signal 94 %'}
+            </span>
+            <span className="text-[26px] font-extrabold font-mono text-[#34D399] shrink-0">
+              {beat.statValue || '94 %'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 1H. DUAL STOPWATCH (Side-by-side animated analog chronometers showing real time ratio)
+  if (vType === 'dual_stopwatch') {
+    const leftAngle = (localT * 95) % 360;
+    const rightAngle = (localT * 245) % 360;
+    const leftC = beat.leftCard || { label: 'Méthode lente', value: '45 min', sub: 'Manuel' };
+    const rightC = beat.rightCard || { label: 'Méthode directe', value: '8 min', sub: 'Automatisé' };
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(20 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[18px]">
+          <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+            {beat.title}
+          </span>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#38BDF8] shrink-0">
+            {beat.multiplierBadge || beat.statValue || '×5 PLUS VITE'}
+          </span>
+        </div>
+
+        <div className="w-full grid grid-cols-2 gap-[22px]">
+          {[
+            { card: leftC, angle: leftAngle, dark: false, accent: '#DC2626' },
+            { card: rightC, angle: rightAngle, dark: true, accent: '#38BDF8' },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="rounded-[32px] p-[28px] border-2 flex flex-col items-center text-center"
+              style={{
+                backgroundColor: item.dark ? '#14161B' : look.sheet,
+                borderColor: item.dark ? '#38BDF8' : look.line,
+                boxShadow: '0 24px 48px -16px rgba(20,22,27,0.18)',
+              }}
+            >
+              <span
+                className="text-[22px] font-mono font-bold uppercase mb-[14px]"
+                style={{ color: item.dark ? '#38BDF8' : '#DC2626' }}
+              >
+                {item.card.label}
+              </span>
+
+              <svg width="210" height="210" viewBox="0 0 180 180" className="mb-[14px]">
+                <rect x="76" y="8" width="28" height="12" rx="4" fill={item.dark ? '#9CA3AF' : '#14161B'} />
+                <circle
+                  cx="90"
+                  cy="96"
+                  r="72"
+                  fill={item.dark ? '#1C2029' : '#FFFFFF'}
+                  stroke={item.accent}
+                  strokeWidth="8"
+                />
+                {Array.from({ length: 12 }).map((_, tIdx) => {
+                  const rad = (tIdx * 30 * Math.PI) / 180;
+                  return (
+                    <line
+                      key={tIdx}
+                      x1={90 + Math.sin(rad) * 54}
+                      y1={96 - Math.cos(rad) * 54}
+                      x2={90 + Math.sin(rad) * 63}
+                      y2={96 - Math.cos(rad) * 63}
+                      stroke={item.dark ? 'rgba(255,255,255,0.4)' : '#9CA3AF'}
+                      strokeWidth="3"
+                    />
+                  );
+                })}
+                <g transform={`rotate(${item.angle.toFixed(1)} 90 96)`}>
+                  <line x1="90" y1="104" x2="90" y2="38" stroke={item.accent} strokeWidth="6" strokeLinecap="round" />
+                </g>
+                <circle cx="90" cy="96" r="8" fill={item.accent} />
+              </svg>
+
+              <div
+                className="text-[54px] font-extrabold leading-none tabular-nums"
+                style={{ color: item.dark ? '#FFFFFF' : look.ink, fontFamily: look.fontDisplay }}
+              >
+                {item.card.value}
+              </div>
+              <div className="text-[24px] font-semibold mt-[6px]" style={{ color: item.dark ? '#9CA3AF' : look.ink2 }}>
+                {item.card.sub}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 1I. ROTARY CONSOLE (Anodized 3-knob audio/system rack rotating live)
+  if (vType === 'rotary_console') {
+    const knobs = (beat.dialKnobs && beat.dialKnobs.length >= 2
+      ? beat.dialKnobs
+      : [
+          { label: 'Précision', value: 92, unit: '%', active: true },
+          { label: 'Coût', value: 18, unit: '%', active: false },
+          { label: 'Vitesse', value: 88, unit: '%', active: true },
+        ]
+    ).slice(0, 3);
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(20 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[18px]">
+          <div className="flex items-center gap-[12px] min-w-0">
+            {beat.brandLogo ? <BrandLogoBadge brand={beat.brandLogo} size={46} /> : <NotoSvgIcon name={beat.notoIcon || 'control-knobs'} size={42} />}
+            <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </span>
+          </div>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#60A5FA] shrink-0">
+            {beat.screenLabel || 'RÉGLAGES'}
+          </span>
+        </div>
+
+        {/* Tactile Hardware Console */}
+        <div
+          className="w-full rounded-[34px] p-[34px] border-2"
+          style={{
+            background: 'linear-gradient(180deg, #ECE9E0 0%, #DFDBD0 100%)',
+            borderColor: '#C9C4B8',
+            boxShadow: '0 26px 52px -18px rgba(20,22,27,0.2)',
+          }}
+        >
+          <div className="grid grid-cols-3 gap-[22px]">
+            {knobs.map((k, idx) => {
+              const spinAt = 0.2 + idx * 0.45;
+              const p = spring(localT - spinAt, 15);
+              const valPct = clamp(k.value, 1, 100);
+              const dialDeg = -130 + (valPct / 100) * 260 * p;
+              const tone = k.active ? look.accent : '#DC2626';
+
+              return (
+                <div
+                  key={idx}
+                  className="rounded-[26px] px-[18px] py-[30px] bg-[#14161B] text-white flex flex-col items-center text-center border border-white/10"
+                >
+                  <div className="flex items-center gap-[8px] mb-[14px]">
+                    <span className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: tone }} />
+                    <span className="text-[20px] font-mono font-bold uppercase text-white/80 truncate max-w-[170px]">
+                      {k.label}
+                    </span>
+                  </div>
+
+                  <svg width="176" height="176" viewBox="0 0 140 140">
+                    <circle
+                      cx="70"
+                      cy="70"
+                      r="54"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.12)"
+                      strokeWidth="12"
+                      strokeDasharray="245 400"
+                      strokeLinecap="round"
+                      transform="rotate(135 70 70)"
+                    />
+                    <circle
+                      cx="70"
+                      cy="70"
+                      r="54"
+                      fill="none"
+                      stroke={tone}
+                      strokeWidth="12"
+                      strokeDasharray={`${((valPct / 100) * p * 245).toFixed(1)} 400`}
+                      strokeLinecap="round"
+                      transform="rotate(135 70 70)"
+                    />
+                    <circle cx="70" cy="70" r="36" fill="#232834" stroke="rgba(255,255,255,0.16)" strokeWidth="2" />
+                    <g transform={`rotate(${dialDeg.toFixed(1)} 70 70)`}>
+                      <rect x="67" y="38" width="6" height="18" rx="3" fill={tone} />
+                    </g>
+                  </svg>
+
+                  <div className="text-[42px] font-extrabold font-mono tabular-nums mt-[6px]" style={{ color: '#FFFFFF' }}>
+                    {Math.round(valPct * p)}
+                    <span className="text-[24px] ml-[2px]" style={{ color: tone }}>{k.unit || '%'}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="w-full mt-[18px] rounded-[22px] px-[26px] py-[18px] bg-[#14161B] text-white flex items-center justify-between gap-[16px]">
+          <span className="text-[24px] font-bold truncate">{beat.statLabel || 'Paramètres calibrés en direct'}</span>
+          <span className="text-[26px] font-extrabold font-mono text-[#34D399] shrink-0">{beat.statValue || 'CALIBRÉ'}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 1J. PIXEL DIFF (Side-by-side macOS windows Before vs After + laser diff scan + % score)
+  if (vType === 'pixel_diff') {
+    const targetScore = clamp(beat.diffScore ?? 96, 55, 99);
+    const morphP = seg(localT, 0.2, Math.max(1.4, beatSpan * 0.56));
+    const currentScore = Math.round(71 + (targetScore - 71) * morphP);
+    const scanY = (localT * 180) % 320;
+    const stripPrefix = (s: string) => s.replace(/^[-+✓✕•]\s*/, '').trim();
+    const beforeLines = (beat.diffBeforeLines?.slice(0, 3) || ['Flux non filtré', 'Erreurs manuelles', 'Temps perdu']).map(stripPrefix);
+    const afterLines = (beat.diffAfterLines?.slice(0, 3) || ['Tri instantané', 'Zéro oubli critique', 'Gain hebdo net']).map(stripPrefix);
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(22 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[18px]">
+          <div className="min-w-0 pr-[16px]">
+            <div className="text-[22px] font-mono font-bold uppercase tracking-wider" style={{ color: look.accent }}>
+              {beat.screenLabel || 'COMPARAISON DIRECTE'}
+            </div>
+            <div className="text-[48px] font-extrabold leading-none mt-[4px] truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </div>
+          </div>
+          <div className="px-[22px] py-[12px] rounded-[20px] bg-[#14161B] text-white text-right shrink-0">
+            <div className="text-[18px] font-mono uppercase text-white/60">Score net</div>
+            <div className="text-[42px] font-extrabold font-mono leading-none text-[#34D399] tabular-nums">
+              {currentScore} %
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full grid grid-cols-2 gap-[20px]">
+          <MacWindowChrome url="avant.txt" badge="BRUT">
+            <div className="relative p-[22px] space-y-[14px] h-[380px] overflow-hidden flex flex-col justify-between">
+              <div className="space-y-[14px]">
+                {beforeLines.map((line, i) => (
+                  <div key={i} className="rounded-[16px] px-[16px] py-[15px] bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[23px] font-bold truncate">
+                    ✕ {line}
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-[14px] px-[16px] py-[10px] bg-[#FEE2E2] text-[#991B1B] text-[19px] font-mono font-bold flex items-center justify-between">
+                <span>FRICTION</span>
+                <span>ÉLEVÉE</span>
+              </div>
+              <div
+                className="absolute inset-x-0 h-[4px]"
+                style={{ top: `${scanY.toFixed(0)}px`, backgroundColor: '#258EFF', boxShadow: '0 0 18px #258EFF' }}
+              />
+            </div>
+          </MacWindowChrome>
+
+          <MacWindowChrome url="apres.json" badge="VALIDÉ" dark>
+            <div className="relative p-[22px] space-y-[14px] h-[380px] overflow-hidden flex flex-col justify-between">
+              <div className="space-y-[14px]">
+                {afterLines.map((line, i) => {
+                  const on = morphP >= i * 0.25;
+                  return (
+                    <div
+                      key={i}
+                      className="rounded-[16px] px-[16px] py-[15px] border text-[23px] font-bold truncate"
+                      style={{
+                        backgroundColor: on ? 'rgba(16,185,129,0.16)' : 'rgba(255,255,255,0.05)',
+                        borderColor: on ? '#10B981' : 'rgba(255,255,255,0.12)',
+                        color: on ? '#34D399' : '#9CA3AF',
+                      }}
+                    >
+                      ✓ {line}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="rounded-[14px] px-[16px] py-[10px] bg-emerald-500/15 border border-emerald-400/30 text-[#34D399] text-[19px] font-mono font-bold flex items-center justify-between">
+                <span>STATUT</span>
+                <span>VÉRIFIÉ</span>
+              </div>
+            </div>
+          </MacWindowChrome>
+        </div>
+
+        <div className="w-full mt-[18px] rounded-[22px] px-[26px] py-[16px] bg-[#14161B] text-white flex items-center justify-between gap-[14px]">
+          <span className="text-[24px] font-bold truncate">{beat.statLabel || 'Écart vérifié point par point'}</span>
+          <span className="text-[24px] font-mono font-extrabold text-[#38BDF8] shrink-0">{beat.stampWord || 'FIDÈLE'}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 1K. HUMANIZER BELT (Horizontal conveyor scanner stripping slop & outputting clean copy)
+  if (vType === 'humanizer_belt') {
+    const rawItems = (beat.bullets && beat.bullets.length >= 2
+      ? beat.bullets
+      : ['Supprime le bruit inutile', 'Garde les preuves chiffrées', 'Passe au concret en 3s']
+    ).slice(0, 3);
+    const defaultBefore = ['Intro cliché IA', 'Tiret cadratin —', 'Ton robotique flou'];
+    const beltP = seg(localT, 0.08, beatSpan * 0.68);
+    const cleanedCount = Math.min(rawItems.length, Math.floor(beltP * rawItems.length + 0.45));
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(22 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        <div className="w-full flex items-center justify-between mb-[18px]">
+          <div className="flex items-center gap-[12px] min-w-0">
+            <NotoSvgIcon name={beat.notoIcon || 'shield'} size={42} />
+            <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </span>
+          </div>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#34D399] shrink-0">
+            {cleanedCount}/{rawItems.length} FILTRÉS
+          </span>
+        </div>
+
+        <div
+          className="relative w-full rounded-[32px] p-[28px] border-2 overflow-hidden"
+          style={{
+            backgroundColor: look.sheet,
+            borderColor: look.line,
+            boxShadow: '0 26px 52px -18px rgba(20,22,27,0.16)',
+          }}
+        >
+          {/* Central Vertical Scanner Gate */}
+          <div
+            className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[8px] z-20"
+            style={{ backgroundColor: '#258EFF', boxShadow: '0 0 24px rgba(37,142,255,0.65)' }}
+          />
+
+          <div className="space-y-[16px] relative z-10">
+            {rawItems.map((item, idx) => {
+              const itemPassed = beltP >= (idx + 0.3) / rawItems.length;
+              return (
+                <div key={idx} className="grid grid-cols-2 gap-[28px] items-center">
+                  <div
+                    className="rounded-[18px] px-[20px] py-[16px] border text-[24px] font-bold truncate"
+                    style={{
+                      backgroundColor: '#FEF2F2',
+                      borderColor: '#FECACA',
+                      color: '#991B1B',
+                      opacity: itemPassed ? 0.48 : 1,
+                      textDecoration: itemPassed ? 'line-through' : 'none',
+                    }}
+                  >
+                    {beat.diffBeforeLines?.[idx] || defaultBefore[idx]}
+                  </div>
+                  <div
+                    className="rounded-[18px] px-[20px] py-[16px] border text-[24px] font-extrabold truncate"
+                    style={{
+                      backgroundColor: itemPassed ? '#ECFDF5' : '#F3F4F6',
+                      borderColor: itemPassed ? '#10B981' : '#E5E7EB',
+                      color: itemPassed ? '#065F46' : '#6B7280',
+                    }}
+                  >
+                    {itemPassed ? `✓ ${item}` : 'En cours…'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="w-full mt-[16px] rounded-[22px] px-[26px] py-[16px] bg-[#14161B] text-white flex items-center justify-between gap-[14px]">
+          <span className="text-[24px] font-bold truncate">{beat.statLabel || 'Filtre qualité actif'}</span>
+          <span className="text-[24px] font-mono font-extrabold text-[#38BDF8] shrink-0">{beat.statValue || '100 % NET'}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 1L. HEADLINE NEWS (Press clipping with stacked desk card + year morph + highlighter sweep)
+  if (vType === 'headline_news') {
+    const hlP = seg(localT, 0.25, Math.min(2.0, beatSpan * 0.56));
+    const yr1 = beat.newsYears?.[0] || '2022';
+    const yr2 = beat.newsYears?.[1] || '2026';
+    const showYr2 = localT >= Math.min(1.25, beatSpan * 0.36);
+    const pub = beat.newsPublication || beat.sourceLabel || 'DÉPÊCHE OFFICIELLE';
+    const headline = beat.newsHeadline || beat.quoteText || beat.title;
+    const hlPhrase = beat.newsHighlightPhrase || beat.quoteHighlight || beat.statValue || '';
+
+    return (
+      <div
+        className="w-full flex flex-col items-center"
+        style={{
+          opacity: clamp(enter * 2.8, 0, 1) * exit,
+          transform: `translateY(${(22 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
+        }}
+      >
+        {/* Editorial Beat Title Header above press cutout */}
+        <div className="w-full flex items-center justify-between mb-[18px] gap-[12px]">
+          <div className="flex items-center gap-[12px] min-w-0">
+            {beat.brandLogo ? (
+              <BrandLogoBadge brand={beat.brandLogo} size={42} />
+            ) : (
+              <NotoSvgIcon name={beat.notoIcon || 'newspaper'} size={40} />
+            )}
+            <span className="text-[42px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+              {beat.title}
+            </span>
+          </div>
+          <span className="px-[16px] py-[6px] rounded-[12px] text-[20px] font-mono font-bold bg-[#14161B] text-[#38BDF8] shrink-0">
+            {beat.screenLabel || 'ARCHIVE PRESSE'}
+          </span>
+        </div>
+
+        {/* Stacked Desk Press Clipping */}
+        <div className="relative w-full">
+          <div
+            className="absolute inset-0 rounded-[32px] border border-[#D4CFC3]"
+            style={{
+              backgroundColor: '#EDE9DE',
+              transform: 'rotate(-1.8deg) translateY(8px)',
+            }}
+          />
+          <div
+            className="relative w-full rounded-[32px] p-[34px] border-2 overflow-hidden"
+            style={{
+              backgroundColor: '#FFFDF7',
+              borderColor: '#14161B',
+              boxShadow: '0 26px 52px -16px rgba(20,22,27,0.2)',
+            }}
+          >
+            <div className="flex items-center justify-between pb-[16px] mb-[20px] border-b-2 border-[#14161B]">
+              <div className="flex items-center gap-[12px]">
+                <NotoSvgIcon name="newspaper" size={34} />
+                <span className="text-[24px] font-mono font-extrabold uppercase tracking-wider text-[#14161B]">
+                  {pub}
+                </span>
+              </div>
+              <span
+                className="px-[18px] py-[6px] rounded-[12px] text-[26px] font-mono font-extrabold tabular-nums"
+                style={{
+                  backgroundColor: showYr2 ? '#258EFF' : '#14161B',
+                  color: '#FFFFFF',
+                }}
+              >
+                {showYr2 ? `${yr1} → ${yr2}` : yr1}
+              </span>
+            </div>
+
+            <div
+              className="text-[40px] font-extrabold leading-[1.18] tracking-[-0.02em]"
+              style={{ color: '#14161B', fontFamily: look.fontDisplay }}
+            >
+              <HighlighterSweep
+                text={headline}
+                highlight={hlPhrase}
+                progress={hlP}
+                highlightColor="rgba(56, 189, 248, 0.42)"
+              />
+            </div>
+
+            <div className="mt-[22px] pt-[14px] border-t border-black/10 flex items-center justify-between">
+              <span className="text-[22px] font-semibold text-[#5C5F68] truncate">
+                {beat.statLabel || 'Fait vérifié'}
+              </span>
+              <span className="px-[16px] py-[6px] rounded-[10px] bg-[#14161B] text-white text-[22px] font-mono font-extrabold shrink-0">
+                {beat.statValue || beat.stampWord || yr2}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 2. COUNTER FLIP (Rolling counter + diagonal slash + animated dashed SVG connector + Before/After UI switch)
   if (vType === 'counter_flip') {
     const countP = seg(localT, 0.2, Math.min(2.1, beatSpan * 0.45));
@@ -1489,14 +2091,11 @@ function renderDynamicBeatScene(
                 {beat.title}
               </div>
             </div>
-            <div className="shrink-0">
-              <IllustratedSubjectSvg
-                kind={iconKind}
-                accent={look.accent}
-                ink={look.ink}
-                size={104}
-                localT={localT}
-              />
+            <div
+              className="w-[96px] h-[96px] rounded-[26px] flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${look.accent}18` }}
+            >
+              <BeatVectorIcon kind={iconKind} size={52} color={look.accent} />
             </div>
           </div>
 
@@ -2103,13 +2702,8 @@ function renderDynamicBeatScene(
           transform: `translateY(${(24 * (1 - enter) - 18 * (1 - exit)).toFixed(1)}px)`,
         }}
       >
-        <MacDesktopBar
-          appName={beat.screenLabel || 'Analyse Direct'}
-          statusText={clicked ? 'Validé ✓' : 'Interactif'}
-        />
-
-        <div className="w-full flex items-center justify-between mb-[14px]">
-          <span className="text-[42px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
+        <div className="w-full flex items-center justify-between mb-[16px]">
+          <span className="text-[44px] font-extrabold leading-none truncate" style={{ color: look.ink, fontFamily: look.fontDisplay }}>
             {beat.title}
           </span>
           <span className="px-[16px] py-[6px] rounded-[12px] text-[22px] font-mono font-bold bg-[#14161B] text-[#60A5FA] shrink-0">
@@ -2177,7 +2771,7 @@ function renderDynamicBeatScene(
             </div>
 
             <ClickRipple x={780} y={344} progress={rippleP} color="#059669" />
-            <CursorPointer x={cursorX} y={cursorY} pressing={pressing} label="toi" badgeColor={look.accent} />
+            <CursorPointer x={cursorX} y={cursorY} pressing={pressing} />
           </div>
         </MacWindowChrome>
 
@@ -2947,7 +3541,7 @@ function renderDynamicBeatScene(
           const pressing =
             (localT >= clickAt - 0.08 && localT <= clickAt + 0.1) ||
             (localT >= clickAt + 0.44 && localT <= clickAt + 0.58);
-          return <CursorPointer x={cx} y={cy} pressing={pressing} label="toi" badgeColor={look.accent} />;
+          return <CursorPointer x={cx} y={cy} pressing={pressing} />;
         })()}
       </div>
 
@@ -3020,13 +3614,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
     [beats]
   );
 
-  const seam = getLayoutSeam(t, layoutKeys, 0.34);
-  const brollAsset = resolveBrollAsset(
-    activeBeat.brollKey,
-    project.topicCategory,
-    project.title,
-    activeBeat.index
-  );
+  const seam = getLayoutSeam(t, layoutKeys, 0.24);
 
   const wordCues: WordCue[] = useMemo(
     () =>
@@ -3041,25 +3629,23 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
     [project.transcript]
   );
 
-  const chunks = useMemo(() => buildCaptionChunks(wordCues, 3, 20), [wordCues]);
+  const chunks = useMemo(
+    () => buildSemanticCaptionChunks(wordCues, { maxWords: 4, maxChars: 24 }),
+    [wordCues]
+  );
   const activeChunk = getActiveCaptionChunk(t, chunks, []);
 
   const beatLocalT = Math.max(0, t - activeBeat.from);
   const beatSpan = Math.max(0.5, activeBeat.to - activeBeat.from);
-  const beatProgress = clamp(beatLocalT / beatSpan, 0, 1);
-  const gridShiftY = (t * 24) % 44;
-  const gridShiftX = Math.sin(t * 0.34) * 16;
-  // Smooth continuous Ken Burns push-in + gentle pan (zero 4s jump artifact)
-  const brollZoom = 1.04 + 0.055 * beatProgress;
-  const brollPanX = Math.sin(t * 0.52) * 16;
-  const cutFlash = 1 - seg(beatLocalT, 0, 0.32);
+  const gridShiftY = (t * 24) % 28;
+  const gridShiftX = Math.sin(t * 0.34) * 14;
+  const cutFlash = 1 - seg(beatLocalT, 0, 0.24);
 
-  // Unified caption Y coordinate matched to ShortCaptions.tsx
-  let captionTopY = 1130;
+  // Safe-zone aware subtitle center position (never overlaps top 220px or bottom 420px)
+  let captionTopY = 1140;
   if (seam >= 1650) captionTopY = 1365;
   else if (seam <= 300) captionTopY = 1230;
-  else captionTopY = seam - 24;
-  const overVideo = seam <= 600;
+  else captionTopY = seam - 20;
 
   return (
     <div
@@ -3067,8 +3653,8 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
       data-testid="dynamic-short-stage"
       className={
         renderMode
-          ? 'relative w-[1080px] h-[1920px] overflow-hidden bg-[#F1EEE6] select-none'
-          : 'relative w-full h-full aspect-[9/16] rounded-[20px] overflow-hidden border border-[#E3DED3] bg-[#F1EEE6] select-none'
+          ? 'relative w-[1080px] h-[1920px] overflow-hidden bg-[#F8F7F3] select-none'
+          : 'relative w-full h-full aspect-[9/16] rounded-[20px] overflow-hidden border border-[#E5E4DE] bg-[#F8F7F3] select-none'
       }
     >
       <div
@@ -3077,72 +3663,33 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
           height: '1920px',
           transform: renderMode ? undefined : `scale(${scale})`,
           transformOrigin: 'top left',
-          backgroundColor: look.paper,
+          backgroundColor: look.id === 'papier' ? '#F8F7F3' : look.paper,
         }}
         className="relative overflow-hidden"
       >
         {/* Paper Grain */}
-        {look.grain && <div className="absolute inset-0 paper-grain opacity-85 pointer-events-none" />}
+        {look.grain && <div className="absolute inset-0 paper-grain opacity-75 pointer-events-none" />}
 
-        {/* Dot-matrix grid + 3 drifting ambient sky-blue glows + orbital geometric shapes */}
+        {/* Warm Graph-Paper Grid (28px #E5E4DE) + Soft Ambient Spotlight */}
         {seam > 200 && (
           <div className="absolute inset-x-0 top-0 overflow-hidden pointer-events-none" style={{ height: `${seam.toFixed(1)}px` }}>
             <div
-              className="absolute inset-0 opacity-32"
+              className="absolute inset-0"
               style={{
-                backgroundImage: `radial-gradient(${look.ink3} 1.5px, transparent 1.5px)`,
-                backgroundSize: '44px 44px',
+                backgroundImage:
+                  'linear-gradient(to right, #E5E4DE 1px, transparent 1px), linear-gradient(to bottom, #E5E4DE 1px, transparent 1px)',
+                backgroundSize: '28px 28px',
                 backgroundPosition: `${gridShiftX.toFixed(1)}px ${gridShiftY.toFixed(1)}px`,
               }}
             />
 
-            {/* Floating Ambient Motion Dots & Ring */}
             <div
-              className="absolute w-[180px] h-[180px] rounded-full border-2 opacity-20"
+              className="absolute w-[820px] h-[820px] rounded-full blur-[42px]"
               style={{
-                borderColor: look.accent,
-                left: `${(760 + Math.sin(t * 0.7) * 55).toFixed(1)}px`,
-                top: `${(240 + Math.cos(t * 0.55) * 70).toFixed(1)}px`,
-                transform: `rotate(${(t * 22).toFixed(1)}deg)`,
-              }}
-            />
-            <div
-              className="absolute w-[42px] h-[42px] rounded-[12px] opacity-20"
-              style={{
-                backgroundColor: look.accent,
-                left: `${(92 + Math.cos(t * 0.65) * 40).toFixed(1)}px`,
-                top: `${(820 + Math.sin(t * 0.8) * 60).toFixed(1)}px`,
-                transform: `rotate(${(t * 36).toFixed(1)}deg)`,
-              }}
-            />
-
-            <div
-              className="absolute w-[840px] h-[840px] rounded-full blur-[34px]"
-              style={{
-                left: `${(120 + Math.sin(t * 0.48) * 320).toFixed(1)}px`,
-                top: `${(-90 + Math.cos(t * 0.34) * 260).toFixed(1)}px`,
+                left: `${(130 + Math.sin(t * 0.42) * 160).toFixed(1)}px`,
+                top: `${(seam * 0.25 - 120 + Math.cos(t * 0.34) * 120).toFixed(1)}px`,
                 background:
-                  'radial-gradient(circle, rgba(37,142,255,0.22) 0%, rgba(96,165,250,0.09) 42%, rgba(37,142,255,0) 72%)',
-                transform: `scale(${(1 + 0.08 * Math.sin(t * 0.62)).toFixed(3)})`,
-              }}
-            />
-            <div
-              className="absolute w-[720px] h-[720px] rounded-full blur-[38px]"
-              style={{
-                left: `${(220 + Math.cos(t * 0.39 + 1.4) * 340).toFixed(1)}px`,
-                top: `${(seam * 0.42 - 120 + Math.sin(t * 0.3 + 0.7) * 240).toFixed(1)}px`,
-                background:
-                  'radial-gradient(circle, rgba(56,189,248,0.18) 0%, rgba(147,197,253,0.07) 48%, rgba(56,189,248,0) 74%)',
-                transform: `scale(${(1 + 0.07 * Math.cos(t * 0.5)).toFixed(3)})`,
-              }}
-            />
-            <div
-              className="absolute w-[580px] h-[580px] rounded-full blur-[30px]"
-              style={{
-                left: `${(240 + Math.sin(t * 0.27 + 2.5) * 280).toFixed(1)}px`,
-                top: `${(160 + Math.sin(t * 0.44 + 1.1) * 290).toFixed(1)}px`,
-                background:
-                  'radial-gradient(circle, rgba(37,142,255,0.14) 0%, rgba(191,219,254,0.05) 52%, rgba(37,142,255,0) 76%)',
+                  'radial-gradient(circle, rgba(37,142,255,0.14) 0%, rgba(96,165,250,0.05) 45%, rgba(37,142,255,0) 72%)',
               }}
             />
 
@@ -3152,7 +3699,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
                 className="absolute inset-y-0 w-[260px]"
                 style={{
                   left: `${(-260 + (1 - cutFlash) * 1400).toFixed(1)}px`,
-                  background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(37,142,255,0.18), rgba(255,255,255,0))',
+                  background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(37,142,255,0.16), rgba(255,255,255,0))',
                   transform: 'skewX(-18deg)',
                   opacity: cutFlash,
                 }}
@@ -3161,7 +3708,7 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
           </div>
         )}
 
-        {/* Lower Split-Screen Clean B-Roll Panel (zero HUD progress bars or corner reticles) */}
+        {/* Lower Bright Semantic Editorial Illustration Panel (rotates every 2.5-3.8s across 225 local entries) */}
         {seam < 1918 && (
           <div
             className="absolute inset-x-0 bottom-0 overflow-hidden z-10"
@@ -3169,69 +3716,60 @@ export const DynamicShortStage: React.FC<DynamicShortStageProps> = ({
               top: `${seam.toFixed(1)}px`,
               borderTopLeftRadius: seam > 20 ? '36px' : '0px',
               borderTopRightRadius: seam > 20 ? '36px' : '0px',
-              boxShadow: seam > 20 ? '0 -24px 52px rgba(20, 22, 27, 0.22)' : 'none',
+              boxShadow: seam > 20 ? '0 -18px 42px rgba(20, 22, 27, 0.14)' : 'none',
             }}
           >
-            <img
-              src={brollAsset.src}
-              alt={activeBeat.brollCaption || brollAsset.defaultCaption}
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover"
-              style={{
-                transform: `translateX(${brollPanX.toFixed(1)}px) scale(${brollZoom.toFixed(4)})`,
-                transformOrigin: 'center center',
-              }}
+            <BottomIllustrationStage
+              brollKey={activeBeat.brollKey}
+              subBrollKeys={activeBeat.subBrollKeys}
+              topicCategory={project.topicCategory}
+              projectTitle={project.title}
+              beatIndex={activeBeat.index}
+              beatLocalT={beatLocalT}
+              beatSpan={beatSpan}
+              brollCaption={activeBeat.brollCaption}
+              look={look}
+              seam={seam}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/18 to-black/32" />
           </div>
         )}
 
-        {/* Upper Kinetic Motion Stage (z-20, balanced vertically inside safe zone above captions) */}
+        {/* Upper Kinetic Motion Stage (z-20, cleanly inside safe zone top >= 200px & above captions) */}
         <div
           className="absolute inset-x-0 z-20 px-[56px] flex flex-col justify-center pointer-events-none"
           style={{
-            top: '196px',
-            height: `${(seam >= 1650 ? 1104 : seam > 300 ? Math.max(580, seam - 300) : 1020).toFixed(0)}px`,
+            top: '200px',
+            height: `${(seam >= 1650 ? 1060 : seam > 300 ? Math.max(580, seam - 300) : 1020).toFixed(0)}px`,
           }}
         >
           {renderDynamicBeatScene(activeBeat, beatLocalT, beatSpan, look)}
         </div>
 
-        {/* Unified 4-word Captions Capsule on seam (z-30, zero word-by-word boxes) */}
+        {/* Crisp ALL-CAPS Outlined Subtitles (@melvynx.dev style — zero opaque black box) */}
         {activeChunk && (
           <div
-            className="absolute inset-x-0 flex justify-center items-center px-[56px] pointer-events-none z-30"
+            className="absolute inset-x-0 flex justify-center items-center px-[72px] pointer-events-none z-30"
             style={{ top: `${captionTopY.toFixed(1)}px`, transform: 'translateY(-50%)' }}
+            data-testid="dynamic-captions"
           >
-            <div
-              className="inline-flex flex-wrap items-baseline justify-center gap-x-[22px] px-[38px] py-[18px] rounded-[24px] border max-w-[920px]"
-              style={{
-                backgroundColor: overVideo ? 'rgba(20, 22, 27, 0.88)' : 'rgba(252, 251, 248, 0.96)',
-                borderColor: overVideo ? 'rgba(255, 255, 255, 0.14)' : look.line,
-                boxShadow: '0 18px 42px -12px rgba(20, 22, 27, 0.24)',
-              }}
-            >
+            <div className="inline-flex flex-wrap items-baseline justify-center gap-x-[28px] gap-y-[10px] max-w-[940px] text-center">
               {activeChunk.words.map((w, idx) => {
                 const isActive = idx === activeChunk.activeIndex;
                 const isPast = idx < activeChunk.activeIndex;
-                const highlightColor = overVideo ? '#5EA8FF' : look.accent;
-                const baseColor = overVideo
-                  ? isPast
-                    ? '#FFFFFF'
-                    : 'rgba(255, 255, 255, 0.72)'
-                  : isPast
-                    ? look.ink
-                    : look.ink2;
+                const fill = isActive ? '#FFD60A' : isPast ? '#FFFFFF' : 'rgba(255, 255, 255, 0.94)';
 
                 return (
                   <span
                     key={`${w.text}-${idx}`}
-                    className="inline-block font-extrabold leading-[1.12] tracking-[-0.03em]"
+                    className="inline-block uppercase font-black leading-[1.08] tracking-[0.02em]"
                     style={{
-                      fontFamily: look.fontDisplay,
-                      fontSize: '66px',
-                      color: isActive ? highlightColor : baseColor,
-                      transform: isActive ? 'scale(1.04) translateY(-2px)' : 'scale(1)',
+                      fontFamily: '"Archivo Black", "Bricolage Grotesque", "Inter", sans-serif',
+                      fontSize: '58px',
+                      color: fill,
+                      WebkitTextStroke: '10px #000000',
+                      paintOrder: 'stroke fill',
+                      textShadow: '0 5px 14px rgba(0, 0, 0, 0.78)',
+                      transform: isActive ? 'scale(1.07) translateY(-2px)' : 'scale(1)',
                     }}
                   >
                     {w.text}

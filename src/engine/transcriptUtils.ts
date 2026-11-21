@@ -1,4 +1,4 @@
-import type { DynamicIconKind, DynamicVisualType } from '../types/batch';
+import type { BrandLogoId, DynamicIconKind, DynamicVisualType } from '../types/batch';
 import type { ShortProject, WhisperWord } from '../types/studio';
 
 export interface TranscriptSection {
@@ -21,6 +21,7 @@ export interface DynamicBeat {
   layout: 'split' | 'fullscreen';
   visualType?: DynamicVisualType;
   brollKey?: string;
+  subBrollKeys?: string[];
   brollCaption?: string;
   iconKind?: DynamicIconKind;
   stampWord?: string;
@@ -46,6 +47,35 @@ export interface DynamicBeat {
   comparisonRight?: { label: string; value: string; ratio: number };
   multiplierBadge?: string;
   gaugePct?: number;
+  brandLogo?: BrandLogoId;
+  notoIcon?: string;
+  matrixHighlightPct?: number;
+  matrixTotalDots?: number;
+  matrixCalloutLabel?: string;
+  dialKnobs?: Array<{ label: string; value: number; unit?: string; active?: boolean }>;
+  diffBeforeLines?: string[];
+  diffAfterLines?: string[];
+  diffScore?: number;
+  newsPublication?: string;
+  newsHeadline?: string;
+  newsHighlightPhrase?: string;
+  newsYears?: [string, string];
+  neuralLayers?: string[];
+  neuralEquation?: string;
+  codeLines?: string[];
+  repoName?: string;
+  repoStars?: string;
+  authorName?: string;
+  slashCommands?: string[];
+  heatCells?: number[];
+  hookVariantsList?: Array<{ hook: string; retention: string }>;
+  fanCards?: Array<{ tag: string; metric: string; label: string }>;
+  toolboxTools?: string[];
+  cableAppLabel?: string;
+  crtYear?: string;
+  crtMetric?: string;
+  beforeBadText?: string;
+  afterGoodText?: string;
 }
 
 /**
@@ -134,6 +164,7 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
         layout: layoutRaw === 'fullscreen' ? 'fullscreen' : 'split',
         visualType: vType,
         brollKey: typeof b.brollKey === 'string' ? b.brollKey : undefined,
+        subBrollKeys: Array.isArray(b.subBrollKeys) ? b.subBrollKeys.map(String) : undefined,
         brollCaption: typeof b.brollCaption === 'string' ? b.brollCaption : undefined,
         iconKind: typeof b.iconKind === 'string' ? (b.iconKind as DynamicIconKind) : undefined,
         stampWord: typeof b.stampWord === 'string' ? b.stampWord : undefined,
@@ -177,6 +208,39 @@ export function buildDynamicBeatsFromProject(project: ShortProject): DynamicBeat
             : undefined,
         multiplierBadge: typeof b.multiplierBadge === 'string' ? b.multiplierBadge : undefined,
         gaugePct: typeof b.gaugePct === 'number' ? b.gaugePct : undefined,
+        brandLogo: typeof b.brandLogo === 'string' ? (b.brandLogo as BrandLogoId) : undefined,
+        notoIcon: typeof b.notoIcon === 'string' ? b.notoIcon : undefined,
+        matrixHighlightPct: typeof b.matrixHighlightPct === 'number' ? b.matrixHighlightPct : undefined,
+        matrixTotalDots: typeof b.matrixTotalDots === 'number' ? b.matrixTotalDots : undefined,
+        matrixCalloutLabel: typeof b.matrixCalloutLabel === 'string' ? b.matrixCalloutLabel : undefined,
+        dialKnobs: Array.isArray(b.dialKnobs) ? (b.dialKnobs as DynamicBeat['dialKnobs']) : undefined,
+        diffBeforeLines: Array.isArray(b.diffBeforeLines) ? b.diffBeforeLines.map(String) : undefined,
+        diffAfterLines: Array.isArray(b.diffAfterLines) ? b.diffAfterLines.map(String) : undefined,
+        diffScore: typeof b.diffScore === 'number' ? b.diffScore : undefined,
+        newsPublication: typeof b.newsPublication === 'string' ? b.newsPublication : undefined,
+        newsHeadline: typeof b.newsHeadline === 'string' ? b.newsHeadline : undefined,
+        newsHighlightPhrase: typeof b.newsHighlightPhrase === 'string' ? b.newsHighlightPhrase : undefined,
+        newsYears: Array.isArray(b.newsYears) && b.newsYears.length >= 2
+          ? [String(b.newsYears[0]), String(b.newsYears[1])]
+          : undefined,
+        neuralLayers: Array.isArray(b.neuralLayers) ? b.neuralLayers.map(String) : undefined,
+        neuralEquation: typeof b.neuralEquation === 'string' ? b.neuralEquation : undefined,
+        codeLines: Array.isArray(b.codeLines) ? b.codeLines.map(String) : undefined,
+        repoName: typeof b.repoName === 'string' ? b.repoName : undefined,
+        repoStars: typeof b.repoStars === 'string' ? b.repoStars : undefined,
+        authorName: typeof b.authorName === 'string' ? b.authorName : undefined,
+        slashCommands: Array.isArray(b.slashCommands) ? b.slashCommands.map(String) : undefined,
+        heatCells: Array.isArray(b.heatCells) ? b.heatCells.map(Number) : undefined,
+        hookVariantsList: Array.isArray(b.hookVariantsList)
+          ? (b.hookVariantsList as DynamicBeat['hookVariantsList'])
+          : undefined,
+        fanCards: Array.isArray(b.fanCards) ? (b.fanCards as DynamicBeat['fanCards']) : undefined,
+        toolboxTools: Array.isArray(b.toolboxTools) ? b.toolboxTools.map(String) : undefined,
+        cableAppLabel: typeof b.cableAppLabel === 'string' ? b.cableAppLabel : undefined,
+        crtYear: typeof b.crtYear === 'string' ? b.crtYear : undefined,
+        crtMetric: typeof b.crtMetric === 'string' ? b.crtMetric : undefined,
+        beforeBadText: typeof b.beforeBadText === 'string' ? b.beforeBadText : undefined,
+        afterGoodText: typeof b.afterGoodText === 'string' ? b.afterGoodText : undefined,
       };
     });
   }

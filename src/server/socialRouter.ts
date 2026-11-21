@@ -55,6 +55,10 @@ import {
   verifyTregEmailLogin,
 } from './tregClient';
 import {
+  readCompetitorsWatchlist,
+  scanWatchlistOutliers,
+} from './outliersService';
+import {
   PLATFORM_META,
   buildTemplateSocialCopy,
   truncateForYouTubeTitle,
@@ -1076,6 +1080,30 @@ Propose un branding unifié cohérent en français en JSON strict avec exactemen
       return;
     }
     res.json({ success: true, queue: getScheduledQueue() });
+  });
+
+  // Treg + Watchlist Outliers Discovery
+  router.get('/api/outliers/watchlist', (_req: Request, res: Response) => {
+    const watchlist = readCompetitorsWatchlist();
+    res.json({
+      watchlist,
+      tregLoggedIn: Boolean(readTregSession()?.token),
+    });
+  });
+
+  router.post('/api/outliers/scan', async (req: Request, res: Response) => {
+    try {
+      const body = (req.body || {}) as { handle?: string; focus?: string };
+      const result = await scanWatchlistOutliers({
+        handle: body.handle,
+        focus: body.focus,
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Erreur scan Outliers',
+      });
+    }
   });
 
   return router;

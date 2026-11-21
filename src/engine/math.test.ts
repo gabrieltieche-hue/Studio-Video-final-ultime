@@ -5,6 +5,7 @@ import {
   leave,
   track,
   buildCaptionChunks,
+  buildSemanticCaptionChunks,
   getActiveCaptionChunk,
   getLayoutSeam,
   generateSrt,
@@ -132,7 +133,8 @@ test('shortSpec WORD_CUES are strictly monotonic and CAPTION_CHUNKS contain <= 4
   }
 });
 
-test('shortSpec BEATS cover 0 to SHORT_DURATION continuously and run 45-55s at default speed', () => {
+test('shortSpec BEATS cover 0 to SHORT_DURATION continuously and run at DEFAULT_PLAYBACK_SPEED = 1.10', () => {
+  assert.equal(DEFAULT_PLAYBACK_SPEED, 1.10);
   assert.equal(BEATS[0].from, 0);
   for (let i = 1; i < BEATS.length; i++) {
     assert.equal(BEATS[i].from, BEATS[i - 1].to, `Gap or overlap at beat ${i + 1}`);
@@ -142,3 +144,72 @@ test('shortSpec BEATS cover 0 to SHORT_DURATION continuously and run 45-55s at d
   assert.ok(finalSec >= 45 && finalSec <= 56, `Unexpected duration ${finalSec}`);
 });
 
+test('buildSemanticCaptionChunks strictly flushes on sentence boundaries and protects atomic tokens', () => {
+  const sentenceTokens = [
+    'Offres',
+    'en',
+    'France.',
+    'Croisement',
+    'Banque',
+    'de',
+    'France',
+    '!',
+    'Découvert',
+    'sans',
+    'plafond',
+    ';',
+    'Sur',
+    'ton',
+    'compte.',
+    'Deux',
+    'outils',
+    'réunis',
+    '—',
+    'Du',
+    'coup',
+    'tu',
+    'payes',
+    '-28',
+    '%',
+    'soit',
+    '13',
+    '$/j',
+    'ou',
+    '2',
+    '000',
+    '$',
+    'avec',
+    'Claude',
+    'Code',
+    'et',
+    'DeepSeek',
+    'V4.1',
+    'dans',
+    '~/.claude.json',
+    'via',
+    '/effort',
+    'et',
+    'SKILL.md.',
+  ].map((text, idx) => ({ text, start: idx * 0.25, end: idx * 0.25 + 0.2 }));
+
+  const chunks = buildSemanticCaptionChunks(sentenceTokens, { maxWords: 4, maxChars: 24 });
+  const strings = chunks.map((c) => c.words.map((w) => w.text).join(' '));
+
+  // Hard sentence boundary checks: ZERO block may mix end of sentence N with start of sentence N+1
+  for (const s of strings) {
+    assert.ok(!s.includes('France. Croisement'), `Cross-sentence leak in "${s}"`);
+    assert.ok(!s.includes('plafond; Sur') && !s.includes('plafond ; Sur'), `Cross-sentence leak in "${s}"`);
+    assert.ok(!s.includes('réunis — Du'), `Cross-sentence leak in "${s}"`);
+  }
+
+  // Atomic protection checks: numbers+units, compound names, and CLI paths stay glued together
+  assert.ok(strings.some((s) => s.includes('Banque de France')), `Banque de France split in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('-28 %')), `-28 % split in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('13 $/j')), `13 $/j split in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('2 000 $')), `2 000 $ split in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('Claude Code')), `Claude Code split in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('DeepSeek V4.1')), `DeepSeek V4.1 split in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('~/.claude.json')), `~/.claude.json missing in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('/effort')), `/effort missing in ${JSON.stringify(strings)}`);
+  assert.ok(strings.some((s) => s.includes('SKILL.md.')), `SKILL.md missing in ${JSON.stringify(strings)}`);
+});
